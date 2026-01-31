@@ -27,8 +27,10 @@ Read more on this project's [Github Pages](https://jmburke4.github.io/capstone-d
 
     ```docker-compose -f <compose script> up```
 5. Run migrations
-    
+
     ```docker-compose -f <compose script> exec web python manage.py migrate --noinput```
+
+    > If you have added new models or a new app, run ```docker-compose -f <compose script> exec web python manage.py makemigrations``` before running the migrate command
 
 6. Stop containers
 

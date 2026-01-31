@@ -1,3 +1,4 @@
 # TODO Pick package versions to use [#3]
 django
+djangorestframework
 psycopg[binary,pool]
