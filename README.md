@@ -32,7 +32,13 @@ Read more on this project's [Github Pages](https://jmburke4.github.io/capstone-d
 
     > If you have added new models or a new app, run ```docker-compose -f <compose script> exec web python manage.py makemigrations``` before running the migrate command
 
-6. Stop containers
+6. Create Admin User
+
+    ```docker-compose -f <compose script> exec web python manage.py createsuperuser ```
+
+    > Setting up an admin will allow you to log in to the Django admin page.
+
+7. Stop containers
 
     ```docker-compose -f <compose script> stop```
 
