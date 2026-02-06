@@ -35,6 +35,7 @@ class Project(models.Model):
     )
 
     # [Optional] A website related to the project
+    # TODO Adapt this field to be allowed to support multiple URLs
     website = models.TextField(blank=True, null=True)
 
     def __str__(self):
