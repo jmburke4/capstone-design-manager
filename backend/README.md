@@ -2,7 +2,7 @@
 
 ## Manipulating Objects
 
-The web API can be interacted with by using ```curl```, the [Django Browsable API](https://www.django-rest-framework.org/topics/browsable-api/), or any other software that can send REST requests via HTTP (including your code).
+The REST API can be interacted with by using ```curl```, the [Django Browsable API](https://www.django-rest-framework.org/topics/browsable-api/), or any other software that can send REST requests via HTTP (including your code).
 
 | Action | Request | Route |
 | - | - | - |
@@ -13,13 +13,13 @@ The web API can be interacted with by using ```curl```, the [Django Browsable AP
 
 ## Creating New Models (w/ associated tables)
 
-Currently only the ```Project``` model has been created in ```backend/project/models.py```. The ```project``` subdirectory of the ```backend``` directory represents a standalone Python module, that is used by the ```core``` module. The ```Project``` module will hold and route models relating to non-user related objects, and the ```User``` module will hold user models and user-related models. Each model in ```models.py``` requires an entry in the associated ```serializers.py```, ```views.py```, and ```urls.py``` classes.
+The ```project``` subdirectory of the ```backend``` directory represents a standalone Python module, that is used by the ```core``` module. The ```Project``` module will hold and route models relating to non-user related objects, and the ```User``` module will hold user models and user-related models. Each model in ```models.py``` requires an entry in the associated ```serializers.py```, ```views.py```, and ```urls.py``` classes.
 
 Use the Python files in the ```backend/project/``` directory to see the ```Project``` model as an example. Please follow the [Django Coding style](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/coding-style/#model-style).
 
 1. RUN MIGRATIONS BEFORE MAKING EDITS TO THE CODEBASE (Your containers will need to be running to run this command):
 
-    1. ```docker-compose -f <compose script> exec web python manage.py migrate```
+    1. ```docker-compose -f <compose script> exec backend python manage.py migrate```
 
 2. Define the model for your table in ```backend/<module>/models.py```
     > Django automatically creates and assigns primary key ID fields to every model, so you do not need to add your own ID fields
@@ -34,10 +34,9 @@ Use the Python files in the ```backend/project/``` directory to see the ```Proje
 
 6. Spin up the containers and run migrations
 
-    <!-- # TODO double check this is the right command -->
-    1. ```docker-compose -f <compose script> exec web python manage.py makemigrations```
+    1. ```docker-compose -f <compose script> exec backend python manage.py makemigrations```
 
-    2. ```docker-compose -f <compose script> exec web python manage.py migrate```
+    2. ```docker-compose -f <compose script> exec backend python manage.py migrate```
 
 7. Test CRUD operations at ```http://localhost:8000/api/v1/<your new object>/```
 
@@ -46,12 +45,11 @@ Use the Python files in the ```backend/project/``` directory to see the ```Proje
 ### Project Module
 
 - [x] project
-- [ ] preference?
-- [ ] assignment?
+- [ ] preference
+- [ ] assignment
 
 ### User Module
 
 - [x] sponsor
 - [x] student
 - [ ] admin
-- [ ] login info?
