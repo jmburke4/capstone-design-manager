@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Projects</h1>
+    <h1>Sponsors</h1>
     <h5 v-if="loading">Fetching data...</h5>
     <div v-if="error">Error: {{ error.message }}</div>
     <div ref="tableContainer"></div>
@@ -23,7 +23,7 @@ let tabulator = null; // Hold Tabulator instance
 // 2. Define the asynchronous fetching function
 const fetchData = async () => {
   try {
-    const response = await axios.get('http://localhost:8000/api/v1/projects/?format=json'); // Example API endpoint
+    const response = await axios.get('http://localhost:8000/api/v1/sponsors/?format=json'); // Example API endpoint
     posts.value = response.data; // Axios automatically parses JSON into the .data property
   } catch (err) {
     error.value = err;
@@ -39,15 +39,14 @@ onMounted(() => {
   tabulator = new Tabulator(tableContainer.value, {
     data: [], // Start empty
     layout: "fitColumns",
-    responsiveLayout: "collapse",
     columns: [
       { title: "ID", field: "id", width: 50 },
-      { title: "Name", field: "name", sorter: "string" },
-      { title: "Description", field: "description", sorter: "string" },
-      { title: "Sponsor", field: "sponsor" },
-      { title: "Website", field: "website", sorter: "string" },
-      { title: "Created", field: "created_at", sorter: "string" },
-      { title: "Status", field: "status", sorter: "string" },
+      { title: "First Name", field: "first_name", sorter: "string" },
+      { title: "Last Name", field: "last_name", sorter: "string" },
+      { title: "Organization", field: "organization", sorter: "string" },
+      { title: "Email", field: "email", sorter: "string" },
+      { title: "Phone Number", field: "phone_number", sorter: "string" },
+      { title: "Date Created", field: "created_at", sorter: "string" },
     ],
   });
 
