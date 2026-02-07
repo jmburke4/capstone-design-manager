@@ -17,7 +17,7 @@ Currently only the ```Project``` model has been created in ```backend/project/mo
 
 Use the Python files in the ```backend/project/``` directory to see the ```Project``` model as an example. Please follow the [Django Coding style](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/coding-style/#model-style).
 
-1. RUN MIGRATIONS BEFORE MAKING EDITS TO THE CODEBASE:
+1. RUN MIGRATIONS BEFORE MAKING EDITS TO THE CODEBASE (Your containers will need to be running to run this command):
 
     1. ```docker-compose -f <compose script> exec web python manage.py migrate```
 
