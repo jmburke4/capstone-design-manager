@@ -35,19 +35,7 @@ Use the Python files in the ```backend/project/``` directory to see the ```Proje
 
     2. ```docker-compose -f <compose script> exec web python manage.py migrate```
 
-6. IF STEP 5 DOES NOT WORK
-
-    1. Stop containers: ```docker-compose -f <compose script> down -v```
-
-    2. Delete all migration files in project EXCEPT FOR THE __init__.py file (IE: 001_initial.py)
-
-    3. Spin up containers: ```docker-compose -f <compose script> up -d``` And then run the following commands:
-
-    4. ```docker-compose -f <compose script> exec web python manage.py makemigrations```
-
-    5. ```docker-compose -f <compose script> exec web python manage.py migrate```
-
-7. Test CRUD operations at ```http://localhost:8000/api/v1/<your new object>/```
+6. Test CRUD operations at ```http://localhost:8000/api/v1/<your new object>/```
 
 ## Tables to be added
 
