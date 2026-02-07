@@ -17,25 +17,29 @@ Currently only the ```Project``` model has been created in ```backend/project/mo
 
 Use the Python files in the ```backend/project/``` directory to see the ```Project``` model as an example. Please follow the [Django Coding style](https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/coding-style/#model-style).
 
-1. Define the model for your table in ```backend/<module>/models.py```
+1. RUN MIGRATIONS BEFORE MAKING EDITS TO THE CODEBASE:
+
+    1. ```docker-compose -f <compose script> exec web python manage.py migrate```
+
+2. Define the model for your table in ```backend/<module>/models.py```
     > Django automatically creates and assigns primary key ID fields to every model, so you do not need to add your own ID fields
 
     > Project, Preference, and Assignment objects should go under the ```Project``` module, while Sponsors, Students, Admins, login info and other user related info should go under the ```User``` module
 
-2. Add a class in ```backend/<module>/serializers.py```
+3. Add a class in ```backend/<module>/serializers.py```
 
-3. Create a ```ViewSet``` for the new model in ```backend/<module>/views.py```
+4. Create a ```ViewSet``` for the new model in ```backend/<module>/views.py```
 
-4. Register a route for the new model in ```backend/<module>/urls.py```
+5. Register a route for the new model in ```backend/<module>/urls.py```
 
-5. Spin up the containers and run migrations
+6. Spin up the containers and run migrations
 
     <!-- # TODO double check this is the right command -->
     1. ```docker-compose -f <compose script> exec web python manage.py makemigrations```
 
     2. ```docker-compose -f <compose script> exec web python manage.py migrate```
 
-6. Test CRUD operations at ```http://localhost:8000/api/v1/<your new object>/```
+7. Test CRUD operations at ```http://localhost:8000/api/v1/<your new object>/```
 
 ## Tables to be added
 
