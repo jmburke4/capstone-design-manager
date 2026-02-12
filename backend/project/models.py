@@ -1,5 +1,6 @@
 from django.db import models
 from user.models import Sponsor
+from user.models import Student
 
 # The project module will handle project, preference, and assignment objects
 
@@ -40,3 +41,34 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+class Preference(models.Model):
+
+    # [Default] Tracks when the Preference record was created
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # [Required] FK to a Student, this field is required, which means a valid Student must first exist
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.PROTECT
+    )
+
+    # [Required] FK to a Project, this field is required, which means a valid Project must first exist
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.PROTECT
+    )
+
+    # Available choices for the rank field (lower number = higher rank)
+    class RankChoices(models.IntegerChoices):
+        ONE = 1, '1'
+        TWO = 2, '2'
+        THREE = 3, '3'
+        
+    # [Required] Number rank of student's preference toward project
+    rank = models.PositiveSmallIntegerField(
+        choices=RankChoices.choices
+    )
+
+    def __str__(self):
+        return f"{self.student} {self.project}"
