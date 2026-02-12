@@ -10,6 +10,7 @@ import Sponsors from './components/Sponsors.vue'
       <router-link to="/">Home</router-link>
       <router-link to="/projects">Projects</router-link>
       <router-link to="/sponsors">Sponsors</router-link>
+      <router-link to="/students">Students</router-link>
     </nav>
     <main class="content">
       <router-view />
