@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from .models import Project
-from .models import Preference
+from .models import Preference, Project, Assignment
 
 class ProjectSerializer(serializers.ModelSerializer):
 
@@ -14,3 +13,8 @@ class PreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Preference
         fields = ['id', 'created_at', 'student', 'project', 'rank']
+        
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = "__all__"

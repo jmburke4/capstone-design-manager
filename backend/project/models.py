@@ -72,3 +72,38 @@ class Preference(models.Model):
 
     def __str__(self):
         return f"{self.student} {self.project}"
+      
+class Assignment(models.Model):
+    class PersonType(models.TextChoices):
+        SPONSOR = "sponsor", "Sponsor"
+        STUDENT = "student", "Student"
+
+    class Semester(models.TextChoices):
+        FALL = "fall", "Fall"
+        SPRING = "spring", "Spring"
+        SUMMER = "summer", "Summer"
+
+    project = models.ForeignKey(
+        "project.Project",
+        related_name="assignments",
+        on_delete=models.CASCADE,
+    )
+
+    person_id = models.PositiveIntegerField()
+
+    person_type = models.CharField(
+        max_length=10,
+        choices=PersonType.choices,
+    )
+
+    semester = models.CharField(
+        max_length=10,
+        choices=Semester.choices,
+    )
+
+    year = models.PositiveIntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.person_type} {self.person_id} → {self.project} ({self.semester} {self.year})"
