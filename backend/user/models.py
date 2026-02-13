@@ -3,13 +3,6 @@ from django.core.validators import RegexValidator
 
 # The user app will handle the user related tables:
 
-# NOTE Does this have to be defined inside a model class?
-phone_regex = RegexValidator(
-    regex=r"^\+?1?\d{10,11}$",
-    message="Phone number must be entered in the format: '9999999999'. Up to 11 digits allowed.",
-)
-
-
 class Sponsor(models.Model):
     # [Default] Tracks when the Sponsor record was created
     created_at = models.DateTimeField(auto_now_add=True)
@@ -29,7 +22,15 @@ class Sponsor(models.Model):
 
     # [Optional] A phone number for the sponsor
     phone_number = models.CharField(
-        validators=[phone_regex], max_length=17, blank=True, null=True
+        max_length=17,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{8}$',
+                message='Student ID must be exactly 8 digits.'
+            )
+        ]
     )
 
     def __str__(self):

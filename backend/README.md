@@ -45,11 +45,11 @@ Use the Python files in the ```backend/project/``` directory to see the ```Proje
 ### Project Module
 
 - [x] project
-- [ ] preference
-- [ ] assignment
+- [x] preference
+- [x] assignment
 
 ### User Module
 
 - [x] sponsor
 - [x] student
-- [ ] admin
+- [ ] admin (Not planned at this time)

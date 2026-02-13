@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'project',
     'user',
     'corsheaders',
+    'import_export',
 ]
 
 MIDDLEWARE = [
