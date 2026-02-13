@@ -27,8 +27,8 @@ class Sponsor(models.Model):
         null=True,
         validators=[
             RegexValidator(
-                regex=r'^\d{8}$',
-                message='Student ID must be exactly 8 digits.'
+                regex=r'^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$',
+                message='Must be a valid phone number.'
             )
         ]
     )
