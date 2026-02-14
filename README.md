@@ -28,13 +28,13 @@ Read more on this project's [Github Pages](https://jmburke4.github.io/capstone-d
     ```docker-compose -f <compose script> up```
 5. Run migrations
 
-    ```docker-compose -f <compose script> exec web python manage.py migrate --noinput```
+    ```docker-compose -f <compose script> exec backend python manage.py migrate --noinput```
 
-    > If you have added new models or a new app, run ```docker-compose -f <compose script> exec web python manage.py makemigrations``` before running the migrate command
+    > If you have added new models or a new app, run ```docker-compose -f <compose script> exec backend python manage.py makemigrations``` before running the migrate command
 
 6. Create Admin User
 
-    ```docker-compose -f <compose script> exec web python manage.py createsuperuser ```
+    ```docker-compose -f <compose script> exec backend python manage.py createsuperuser ```
 
     > Setting up an admin will allow you to log in to the Django admin page.
 

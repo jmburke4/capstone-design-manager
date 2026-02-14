@@ -1,5 +1,6 @@
 # TODO Pick package versions to use [#3]
 django
 django-cors-headers
+django-import-export
 djangorestframework
 psycopg[binary,pool]
