@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 
 # The user app will handle the user related tables:
 
+
 class Sponsor(models.Model):
     # [Default] Tracks when the Sponsor record was created
     created_at = models.DateTimeField(auto_now_add=True)
@@ -22,7 +23,7 @@ class Sponsor(models.Model):
 
     # [Optional] A phone number for the sponsor
     phone_number = models.CharField(
-        max_length=17,
+        max_length=18,
         blank=True,
         null=True,
         validators=[
@@ -41,16 +42,41 @@ class Student(models.Model):
     # [Default] Tracks when the Student record was created
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # [Optional] Student class code - not sure what the values are
+    class_code = models.CharField(max_length=9, blank=True, null=True)
+
+    # [Optional] Major code (CYS/CS?)
+    major_code = models.CharField(max_length=3, blank=True, null=True)
+
+    # [Required] Student's CWID
+    cwid = models.CharField(
+        max_length=8,
+        unique=True,
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{8}$',
+                message='CWID must be exactly 8 digits.'
+            )
+        ]
+    )
+
     # [Required] The email address for the student
     email = models.EmailField()
 
-    # [Required] The Student last name
+    # [Required] The Student first name
     first_name = models.CharField(max_length=30)
+
+    # [Optional] The Student middle name
+    middle_name = models.CharField(max_length=30, blank=True, null=True)
 
     # [Required] The Student last name
     last_name = models.CharField(max_length=30)
 
-    # Organi     woudl be redundant? Since everyone is through UA....
+    # [Optional] A students preferred name
+    preferred_name = models.CharField(max_length=30, blank=True, null=True)
+
+    # Organization would be redundant? Since everyone is through UA....
     # I think we will forgo phone numbers for students for now...
 
     def __str__(self):

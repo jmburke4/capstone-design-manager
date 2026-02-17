@@ -3,6 +3,7 @@ from user.models import Sponsor, Student
 
 # The project module will handle project, preference, and assignment objects
 
+
 class Project(models.Model):
     # [Default] Tracks when the Project record was created
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,7 +63,7 @@ class Preference(models.Model):
         ONE = 1, '1'
         TWO = 2, '2'
         THREE = 3, '3'
-        
+
     # [Required] Number rank of student's preference toward project
     rank = models.PositiveSmallIntegerField(
         choices=RankChoices.choices
@@ -70,7 +71,7 @@ class Preference(models.Model):
 
     def __str__(self):
         return f"{self.student} {self.project}"
-      
+
 
 class Assignment(models.Model):
     # Available person enumerable
