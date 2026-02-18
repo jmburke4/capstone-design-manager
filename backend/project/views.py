@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import Project, Assignment, Preference
-from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer
+from project.models import Project, Preference, Assignment, Attachment
+from project.serializers import ProjectSerializer, PreferenceSerializer, AssignmentSerializer, AttachmentSerializer
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -16,3 +16,8 @@ class PreferenceViewSet(viewsets.ModelViewSet):
 class AssignmentViewSet(viewsets.ModelViewSet):
     queryset = Assignment.objects.all()
     serializer_class = AssignmentSerializer
+
+
+class AttachmentViewSet(viewsets.ModelViewSet):
+    queryset = Attachment.objects.all()
+    serializer_class = AttachmentSerializer

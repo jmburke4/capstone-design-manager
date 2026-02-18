@@ -1,6 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import ProjectViewSet, AssignmentViewSet, PreferenceViewSet
+from project.views import ProjectViewSet, PreferenceViewSet, AssignmentViewSet, AttachmentViewSet
 
 app_name = 'project'
 
@@ -11,6 +11,7 @@ router = DefaultRouter()
 router.register(r'projects', ProjectViewSet, basename='project')
 router.register(r'preferences', PreferenceViewSet, basename='preference')
 router.register(r'assignments', AssignmentViewSet, basename='assignment')
+router.register(r'attachments', AttachmentViewSet, basename='attachment')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -1,17 +1,22 @@
-from import_export import resources, fields
-from project import models
+from import_export.resources import ModelResource
+from project.models import Project, Preference, Assignment, Attachment
 
 
-class ProjectResource(resources.ModelResource):
+class ProjectResource(ModelResource):
     class Meta:
-        model = models.Project
+        model = Project
 
 
-class PreferenceResource(resources.ModelResource):
+class PreferenceResource(ModelResource):
     class Meta:
-        model = models.Preference
+        model = Preference
 
 
-class AssignmentResource(resources.ModelResource):
+class AssignmentResource(ModelResource):
     class Meta:
-        model = models.Assignment
+        model = Assignment
+
+
+class AttachmentResource(ModelResource):
+    class Meta:
+        model = Attachment

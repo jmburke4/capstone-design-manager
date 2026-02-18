@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'user',
     'corsheaders',
     'import_export',
+    'storages'
 ]
 
 MIDDLEWARE = [
@@ -138,3 +139,30 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
 ]
+
+
+# Set default file storage backend
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+#     },
+#     "staticfiles": {
+#         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+#     }
+# }
+
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
+
+# Critical: enable MinIO endpoint
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
+
+# Keep files private by default
+AWS_DEFAULT_ACL = "private"
+
+# Use S3 v4 signature (required by MinIO)
+AWS_S3_SIGNATURE_VERSION = "s3v4"

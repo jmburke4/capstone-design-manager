@@ -115,3 +115,22 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f"{self.person_type} {self.person_id} → {self.project} ({self.semester} {self.year})"
+
+
+# def attachment_upload_path(instance, filename):
+    # return f'{instance.project.id}/attachments/{filename}'
+
+
+class Attachment(models.Model):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE
+    )
+
+    file = models.FileField(upload_to='uploads/')
+
+    # [Default] Tracks when the record was created
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.project} {self.file.name}"

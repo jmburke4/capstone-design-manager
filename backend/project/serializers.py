@@ -1,8 +1,8 @@
-from rest_framework import serializers
-from .models import Preference, Project, Assignment
+from rest_framework.serializers import ModelSerializer
+from project.models import Project, Preference, Assignment, Attachment
 
 
-class ProjectSerializer(serializers.ModelSerializer):
+class ProjectSerializer(ModelSerializer):
 
     class Meta:
         model = Project
@@ -10,15 +10,22 @@ class ProjectSerializer(serializers.ModelSerializer):
                   'sponsor', 'website', 'created_at', 'status']
 
 
-class PreferenceSerializer(serializers.ModelSerializer):
+class PreferenceSerializer(ModelSerializer):
 
     class Meta:
         model = Preference
         fields = ['id', 'created_at', 'student', 'project', 'rank']
 
 
-class AssignmentSerializer(serializers.ModelSerializer):
+class AssignmentSerializer(ModelSerializer):
 
     class Meta:
         model = Assignment
+        fields = "__all__"
+
+
+class AttachmentSerializer(ModelSerializer):
+
+    class Meta:
+        model = Attachment
         fields = "__all__"

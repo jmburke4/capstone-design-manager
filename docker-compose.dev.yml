@@ -10,6 +10,7 @@ services:
       - ./.env.dev
     depends_on:
       - db
+      - minio
   
   db:
     # TODO Upgrade version of Postgres [#3]
@@ -19,5 +20,18 @@ services:
     env_file:
       - ./.env.dev.db 
 
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    env_file:
+      - ./.env.dev.minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
 volumes:
   postgres_data:
+  minio_data:
+
