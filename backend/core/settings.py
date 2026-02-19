@@ -39,12 +39,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Libraries
     'rest_framework',
-    'project',
-    'user',
     'corsheaders',
     'import_export',
-    'storages'
+    'storages',
+    # Your apps
+    'project',
+    'user',
 ]
 
 MIDDLEWARE = [
@@ -116,18 +118,37 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_LOCATION = 'static'
+STATICFILES_STORAGE = "project.storage.StaticS3Boto3Storage"
+
+MEDIA_URL = '/media/'
+DEFAULT_FILE_STORAGE = "project.storage.S3MediaStorage"
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+
+# Critical: enable MinIO endpoint
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
+MINIO_ACCESS_URL = os.getenv("MINIO_ACCESS_URL")
+
+# Keep files private by default
+AWS_DEFAULT_ACL = "private"
+
+# Use S3 v4 signature (required by MinIO)
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+
+
+# REST API
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
@@ -139,30 +160,3 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
 ]
-
-
-# Set default file storage backend
-# STORAGES = {
-#     "default": {
-#         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-#     },
-#     "staticfiles": {
-#         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-#     }
-# }
-
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
-
-# Critical: enable MinIO endpoint
-AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
-
-# Keep files private by default
-AWS_DEFAULT_ACL = "private"
-
-# Use S3 v4 signature (required by MinIO)
-AWS_S3_SIGNATURE_VERSION = "s3v4"

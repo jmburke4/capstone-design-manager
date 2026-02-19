@@ -1,5 +1,6 @@
 from django.db import models
 from user.models import Sponsor, Student
+from project.storage import S3MediaStorage
 
 # The project module will handle project, preference, and assignment objects
 
@@ -117,20 +118,23 @@ class Assignment(models.Model):
         return f"{self.person_type} {self.person_id} → {self.project} ({self.semester} {self.year})"
 
 
-# def attachment_upload_path(instance, filename):
-    # return f'{instance.project.id}/attachments/{filename}'
+def attachment_upload_path(instance, filename):
+    return f'{instance.project.id}/{filename}'
 
 
 class Attachment(models.Model):
+    # [Required] FK to a project
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE
     )
 
-    file = models.FileField(upload_to='uploads/')
+    # [Required] A reference to where the file is stored
+    file = models.FileField(
+        upload_to=attachment_upload_path, storage=S3MediaStorage())
 
     # [Default] Tracks when the record was created
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.project} {self.file.name}"
+        return f"{self.project}{self.file.name[self.file.name.find('/'):]}"
