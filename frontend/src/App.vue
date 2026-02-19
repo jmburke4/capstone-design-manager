@@ -8,8 +8,6 @@ import Sponsors from './components/Sponsors.vue'
   <div class="app-container">
     <nav class="navbar">
       <router-link to="/">Home</router-link>
-      <router-link to="/projects">Projects</router-link>
-      <router-link to="/sponsors">Sponsors</router-link>
     </nav>
     <main class="content">
       <router-view />
@@ -41,8 +39,8 @@ import Sponsors from './components/Sponsors.vue'
   color: white;
   text-decoration: none;
 }
-.router-link-active {
+/* .router-link-active {
   font-weight: bold;
   border-bottom: 2px solid white;
-}
+} */
 </style>

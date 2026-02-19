@@ -12,7 +12,9 @@ import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import 'tabulator-tables/dist/css/tabulator.min.css'; // Theme required for table to be visible, can use CSS overrides to adjust
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 // 1. Define reactive state for data, loading, and errors
 const posts = ref(null);
 const loading = ref(true);
@@ -42,7 +44,24 @@ onMounted(() => {
     responsiveLayout: "collapse",
     columns: [
       { title: "ID", field: "id", width: 50 },
-      { title: "Name", field: "name", sorter: "string" },
+      { title: "Name",
+        field: "name",
+        formatter: function(cell) {
+            return `<span style="color: var(--crimson); text-decoration: underline; cursor: pointer;">${cell.getValue()}</span>`;
+          },
+        sorter: "string",
+          cellClick: function (e, cell) {
+            // get data from tabulator
+            const proxyData = cell.getData();
+            // strip proxy to make it a plain object
+            const plainData = JSON.parse(JSON.stringify(proxyData));
+            // navigate to description page
+            router.push({
+              name: 'ProjectDescription',
+              params: { id: plainData.id },
+              state: { project: plainData }
+            });
+          } },
       { title: "Description", field: "description", sorter: "string" },
       { title: "Sponsor", field: "sponsor" },
       { title: "Website", field: "website", sorter: "string" },
