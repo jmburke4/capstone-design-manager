@@ -11,4 +11,8 @@ RUN npm install
 # Copy project files
 COPY . .
 
+RUN chown -R node:node /app
+
+USER node
+
 EXPOSE 5173
