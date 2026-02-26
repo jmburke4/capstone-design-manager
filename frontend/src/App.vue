@@ -29,7 +29,7 @@ import Sponsors from './components/Sponsors.vue'
 }
 .navbar {
   left: 0;
-  width: 100%;
+  /* width: 100%; */
   padding: 1rem;
   background: #9e1b32;
   display: flex;

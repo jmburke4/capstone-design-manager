@@ -17,7 +17,7 @@
         <router-link to="/sponsor">
             <button>View project</button>
         </router-link>
-        <router-link to="/sponsor">
+        <router-link to="/sponsor/submit">
             <button>Submit project</button>
         </router-link>
         <router-link to="/sponsor">
@@ -31,6 +31,8 @@
 
 <style scoped>
 .wrapper {
+    margin: 0 auto;
+    max-width: var(--max-content-width);
     display: flex;
     flex-direction: column;
     gap: 1rem;

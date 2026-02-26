@@ -13,7 +13,18 @@
   -moz-osx-font-smoothing: grayscale;
 
   --crimson: #9e1b32;
+  --text: #fff;
+  --text-muted: #808080;
+
+  --max-content-width: 900px;
+
+  /* FormKit overrides */
+  --fk-color-primary: var(--crimson) !important;
+  --fk-color-input: var(--text) !important;
+  --fk-color-help: var(--text-muted) !important;
+  --fk-max-width-input: 100% !important;
 }
+
 
 a {
   font-weight: 500;

@@ -12,7 +12,7 @@
 <h1>Student Page</h1>
 <!-- TODO: assign proper router destinations for submit rankings button -->
 <div class="wrapper">
-    <router-link to="/student">
+    <router-link to="/student/submit">
         <button>Submit project rankings</button>
     </router-link>
     <router-link to="/projects">
@@ -23,6 +23,8 @@
 
 <style scoped>
 .wrapper {
+    margin: 0 auto;
+    max-width: var(--max-content-width);
     display: flex;
     flex-direction: column;
     gap: 1rem;
