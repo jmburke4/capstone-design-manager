@@ -30,19 +30,18 @@ services:
       - frontend_node_modules:/app/node_modules
     ports:
       - 5173:5173
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
     cap_drop:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
+    environment:
+    - CHOKIDAR_USEPOLLING=true
+    - TMPDIR=/tmp/vite      # or just rely on /tmp
     tmpfs:
-      # Vite needs write access to both of these at runtime
       - /tmp
-      - /app/node_modules/.vite
-      - /app/node_modules/.vite-temp
+      - /tmp/vite:size=256m 
 
   db:
     # TODO Upgrade version of Postgres [#3]
