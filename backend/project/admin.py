@@ -1,17 +1,31 @@
 from django.contrib import admin
-from project.models import Project, Preference, Assignment
+from django.urls import reverse
+from django.utils.html import format_html
 from import_export.admin import ImportExportModelAdmin
+from project.models import Assignment, Preference, Project
+from project.resources import (AssignmentResource, PreferenceResource, ProjectResource)
 
 # Register your models here.
 
+
 @admin.register(Project)
 class ProjectAdmin(ImportExportModelAdmin):
-    pass
+    resource_classes = [ProjectResource]
+    list_display = ['name', 'sponsor_link', 'status']
+    list_filter = ['status', 'sponsor']
+    search_fields = ['name', 'sponsor', 'description']
+    ordering = ['status', 'name']
+
+    def sponsor_link(self, obj):
+        url = reverse('admin:user_sponsor_change', args=[obj.sponsor.id])
+        return format_html(f'<a href="{url}">{obj.sponsor}</a>')
+
 
 @admin.register(Preference)
 class PreferenceAdmin(ImportExportModelAdmin):
-    pass
+    resource_classes = [PreferenceResource]
+
 
 @admin.register(Assignment)
 class AssignmentAdmin(ImportExportModelAdmin):
-    pass
+    resource_classes = [AssignmentResource]
