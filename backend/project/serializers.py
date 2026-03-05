@@ -4,10 +4,11 @@ from .models import Preference, Project, Assignment
 
 class ProjectSerializer(serializers.ModelSerializer):
 
+    status = serializers.CharField(source='get_status_display', read_only=True)
+
     class Meta:
         model = Project
-        fields = ['id', 'name', 'description',
-                  'sponsor', 'website', 'created_at', 'status']
+        fields = ['id', 'name', 'description', 'sponsor', 'website', 'created_at', 'status']
 
 
 class PreferenceSerializer(serializers.ModelSerializer):

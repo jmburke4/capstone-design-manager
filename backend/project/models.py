@@ -1,5 +1,6 @@
 from django.db import models
 from user.models import Sponsor, Student
+from django.utils.translation import gettext_lazy as _
 
 # The project module will handle project, preference, and assignment objects
 
@@ -22,10 +23,10 @@ class Project(models.Model):
 
     # Available choices for the status field
     class StatusChoices(models.TextChoices):
-        IN_PROGRESS = 'IP'
-        CANCELLED = 'CNCL'
-        COMPLETE = 'CMPL'
-        PENDING = 'PNDG'
+        IN_PROGRESS = 'IP', _('In Progress')
+        CANCELLED = 'CNCL', _('Cancelled')
+        COMPLETE = 'CMPL', _('Complete')
+        PENDING = 'PNDG', _('Pending')
 
     # [Required] The current status of the project
     status = models.CharField(
