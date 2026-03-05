@@ -9,6 +9,7 @@ from project.resources import (AssignmentResource, PreferenceResource, ProjectRe
 @admin.register(Project)
 class ProjectAdmin(ImportExportModelAdmin):
     resource_classes = [ProjectResource]
+
     list_display = ['name', 'sponsor_link', 'status']
     list_filter = ['status', 'sponsor']
     search_fields = ['name', 'sponsor', 'description']
@@ -23,6 +24,10 @@ class ProjectAdmin(ImportExportModelAdmin):
 @admin.register(Preference)
 class PreferenceAdmin(ImportExportModelAdmin):
     resource_classes = [PreferenceResource]
+
+    list_display = search_fields = ordering = ['id', 'student', 'rank', 'project']
+    list_display_links = ['id']
+    list_filter = ['rank', 'project']
 
 
 @admin.register(Assignment)

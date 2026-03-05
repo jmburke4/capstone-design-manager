@@ -6,7 +6,7 @@ from django.core.validators import RegexValidator
 
 class Sponsor(models.Model):
     # [Default] Tracks when the Sponsor record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     # [Required] The email address for the sponsor
     email = models.EmailField()
@@ -43,9 +43,10 @@ class Sponsor(models.Model):
 
 class Student(models.Model):
     # [Default] Tracks when the Student record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     # [Optional] Student class code - not sure what the values are
+    # TODO Convert to enum for Freshman, Sophomore, Faculty, Staff etc.
     class_code = models.CharField(max_length=9, blank=True, null=True)
 
     # [Optional] Major code (CYS/CS?)

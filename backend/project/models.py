@@ -1,13 +1,14 @@
 from django.db import models
 from user.models import Sponsor, Student
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 
 # The project module will handle project, preference, and assignment objects
 
 
 class Project(models.Model):
     # [Default] Tracks when the Project record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     # [Optional] Description of project
     description = models.TextField(blank=True, null=True)
@@ -44,19 +45,23 @@ class Project(models.Model):
 
 
 class Preference(models.Model):
+
+    # [Calculated] Serves as a PK created from a combination of the student and project FKs
+    id = models.SlugField(max_length=64, primary_key=True, editable=False)
+
     # [Default] Tracks when the Preference record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     # [Required] FK to a Student, this field is required, which means a valid Student must first exist
     student = models.ForeignKey(
         Student,
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     # [Required] FK to a Project, this field is required, which means a valid Project must first exist
     project = models.ForeignKey(
         Project,
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     # Available choices for the rank field (lower number = higher rank)
@@ -72,6 +77,17 @@ class Preference(models.Model):
 
     def __str__(self):
         return f"{self.student} {self.project}"
+
+    # Override the model save method to compute the slug from the fields on saving to DB
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = slugify(f'{self.student.id}-{self.project.id}')
+        super().save(*args, **kwargs)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['student', 'project'], name='unique_student_project_preference')
+        ]
 
 
 class Assignment(models.Model):
@@ -112,7 +128,7 @@ class Assignment(models.Model):
     year = models.PositiveIntegerField()
 
     # [Default] Tracks when the record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     def __str__(self):
         return f"{self.person_type} {self.person_id} → {self.project} ({self.semester} {self.year})"
