@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework_bulk import ListBulkCreateUpdateDestroyAPIView
 from .models import Project, Assignment, Preference
 from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer
 import logging
@@ -11,7 +12,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
 
 
-class PreferenceViewSet(viewsets.ModelViewSet):
+class PreferenceAPIView(ListBulkCreateUpdateDestroyAPIView):
     queryset = Preference.objects.all()
     serializer_class = PreferenceSerializer
 

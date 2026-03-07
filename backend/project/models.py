@@ -84,10 +84,14 @@ class Preference(models.Model):
             self.id = slugify(f'{self.student.id}-{self.project.id}')
         super().save(*args, **kwargs)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['student', 'project'], name='unique_student_project_preference')
-        ]
+    # class Meta:
+    #     constraints = [
+    #         models.UniqueConstraint(
+    #             fields=['student', 'project'],
+    #             name='unique_student_project_preference',
+    #             violation_error_message='This user already has a preference for this project (Try updating instead)'
+    #         )
+    #     ]
 
 
 class Assignment(models.Model):
