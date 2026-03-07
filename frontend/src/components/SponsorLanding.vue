@@ -7,11 +7,18 @@
 -->
 
 <script setup>
-
+    import ProjectTable from './ProjectTable.vue'
+/*  <!-- Optional: filter table by current sponsor -->
+    <!-- Uncomment and provide the current sponsor ID once available -->
+    <!-- <ProjectTable:sponsor-id="currentSponsorId" /> -->*/
 </script>
 
 <template>
     <h1>Sponsor Page</h1>
+    <div class="table-wrapper">
+        <ProjectTable />
+    </div>
+
     <!-- TODO: assign proper router destinations for buttons -->
     <div class="wrapper">
         <router-link to="/sponsor">
@@ -30,6 +37,9 @@
 </template>
 
 <style scoped>
+.table-wrapper {
+  margin-bottom: 2rem; /* Adjust this value to increase/decrease space */
+}
 .wrapper {
     margin: 0 auto;
     max-width: var(--max-content-width);

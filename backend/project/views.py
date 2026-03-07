@@ -5,7 +5,7 @@ from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSeri
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
-
+    filterset_fields = ['sponsor']  # allows ?sponsor=<id>
 
 class PreferenceViewSet(viewsets.ModelViewSet):
     queryset = Preference.objects.all()
