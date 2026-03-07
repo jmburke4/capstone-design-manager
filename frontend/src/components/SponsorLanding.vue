@@ -21,9 +21,6 @@
 
     <!-- TODO: assign proper router destinations for buttons -->
     <div class="wrapper">
-        <router-link to="/sponsor">
-            <button>View project</button>
-        </router-link>
         <router-link to="/sponsor/submit">
             <button>Submit project</button>
         </router-link>
