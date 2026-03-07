@@ -86,10 +86,10 @@ const submitRankings = async () => {
 
 <template>
 <div class="ranking-container">
-    <header>
-      <h1>Project Preference Rankings</h1>
-      <p>Select exactly 5 projects for each priority level.</p>
-    </header>
+    <h1>Project Preference Rankings</h1>
+
+    <div class="card">
+    <p>Select exactly 5 projects for each priority level.</p>
 
     <div v-if="loading" class="status-msg">Loading projects...</div>
     <div v-else-if="error" class="status-msg error">{{ error }}</div>
@@ -149,6 +149,7 @@ const submitRankings = async () => {
         
       </footer>
     </div>
+    </div>
   </div>
 </template>
 
@@ -166,7 +167,8 @@ const submitRankings = async () => {
 
 .ranking-grid th, .ranking-grid td {
   padding: 15px;
-  border-bottom: 1px solid #565656;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: center;
 }
 
 .project-name {
@@ -186,9 +188,9 @@ const submitRankings = async () => {
   transition: all 0.2s ease;
 }
 
-.rank-btn.high.active { background: #ef4444; border-color: #b91c1c; color: white; }
-.rank-btn.medium.active { background: #f59e0b; border-color: #b45309; color: white; }
-.rank-btn.low.active { background: #3b82f6; border-color: #1d4ed8; color: white; }
+.rank-btn.high.active { background: var(--accent-primary); border-color: var(--accent-dark); color: white; }
+.rank-btn.medium.active { background: var(--accent-primary); border-color: var(--accent-dark); color: white; }
+.rank-btn.low.active { background: var(--accent-primary); border-color: var(--accent-dark); color: white; }
 
 .rank-btn:hover:not(.active) {
   border-color: #999;
@@ -213,15 +215,16 @@ const submitRankings = async () => {
   width: 100%;
   padding: 10px 20px;
   border-radius: 8px;
-  color: var(--text-muted);
-  border: 1px solid var(--text-muted);
+  color: var(--text-negative);
+  background: var(--background-negative);
+  border: 1px solid var(--accent-negative);
   text-align: center;
 }
 
 .counter-box.complete {
-  border-color: #10b981;
-  /* background: #ecfdf5; */
-  color: #10b981;
+  border-color: var(--accent-positive);
+  background: var(--background-positive);
+  color: var(--text-positive);
 }
 
 .submit-button {
@@ -233,7 +236,7 @@ const submitRankings = async () => {
 }
 
 .submit-button:disabled {
-  background: var(--text-muted);
+  background: var(--accent-neutral);
   cursor: not-allowed;
 }
 

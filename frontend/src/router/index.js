@@ -10,10 +10,10 @@ import StudentRankForm from '../components/StudentRankForm.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Homepage },
-  { path: '/projects', name: 'Projects', component: Projects },
   { path: '/sponsor', name: 'Sponsor', component: SponsorLanding},
   { path: '/admin', name: 'Admin', component: AdminLanding},
   { path: '/student', name: 'Student', component: StudentLanding},
+  { path: '/student/projects', name: 'Projects', component: Projects },
   { path: '/student/submit', name: 'StudentSubmit', component: StudentRankForm},
   { path: '/projects/:id', name: 'ProjectDescription', component: ProjectDescription, props: true},
   { path: '/sponsor/submit', name: 'SponsorSubmit', component: SponsorProjectForm}

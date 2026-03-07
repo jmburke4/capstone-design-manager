@@ -1,46 +1,78 @@
 <script setup>
 import HelloWorld from './components/HelloWorld.vue'
 import Projects from './components/Projects.vue'
+import Sidebar from './components/Sidebar.vue';
 import Sponsors from './components/Sponsors.vue'
 </script>
 
 <template>
   <div class="app-container">
-    <nav class="navbar">
-      <router-link to="/">Home</router-link>
+    <nav class="sidebar">
+      <Sidebar />
     </nav>
-    <main class="content">
-      <router-view />
-    </main>
+    <div class="wrapper">
+      <header class="header">
+        <router-link to="/">Home</router-link>
+      </header>
+      <div class="content">
+        <router-view />
+      </div> 
+    </div>
   </div>
 </template>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
 .app-container {
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   min-height: 100vh;
   width: 100%;
 }
-.content {
-  padding: 2rem;
+.wrapper {
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-right: auto;
+  margin-left: 240px;
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 240px);
+  z-index: 10;
+  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.4);
+
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  right: 0;
+  overflow-y: auto;
 }
-.navbar {
+.sidebar {
+  position: fixed;
+  top: 0;
   left: 0;
-  /* width: 100%; */
+  width: 240px;
+}
+.content {
+  padding: 0rem 2rem 2rem 2rem;
+  margin: 0 auto;
+  width: 100%;
+}
+.header {
+  /* left: 0; */
+  width: 100%;
+  /* position: fixed; */
   padding: 1rem;
-  background: #9e1b32;
+  background: #ffffff;
   display: flex;
   gap: 20px;
+  display: none;
 }
 .navbar a {
   color: white;
   text-decoration: none;
 }
-/* .router-link-active {
-  font-weight: bold;
-  border-bottom: 2px solid white;
-} */
 </style>

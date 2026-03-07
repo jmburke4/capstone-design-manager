@@ -1,38 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --crimson: #9e1b32;
-  --text: #fff;
-  --text-muted: #808080;
+  --text-font-family: 'Poppins', sans-serif;
 
-  --max-content-width: 900px;
+  /* Text colors */
+  --text-default: #35363b;
+  --text-alt: #4a4c54;
+  --text-subtle: #757c88;
+  --text-accent: #9e1b32;
+  --text-link: #9e1b32;
+  --text-link-hover: #70202c;
+  --text-positive: #194b1f;
+  --text-negative: #723900;
+  --text-info: #012a4c;
+
+  /* Background colors */
+  --background-surface: #eeeeee;
+  --background-element: #ffffff;
+  --background-chip: #dfe2e5;
+  --background-positive: #f0f5ef;
+  --background-negative: #faf4e6;
+  --background-info: #e8f2fc;
+
+  /* Accent colors */
+  --accent-primary: #9e1b32;
+  --accent-dark: #70202c;
+  --accent-neutral: #757C88;
+  --accent-info: #0070dd;
+  --accent-negative: #dc8e0e;
+  --accent-positive: #39a845;
+  --accent-link: #9e1b32;
+
+  /* Border colors */
+  --border-subtle: #d4d4d4;
+
+  --max-content-width: 1200px;
 
   /* FormKit overrides */
-  --fk-color-primary: var(--crimson) !important;
-  --fk-color-input: var(--text) !important;
+  --fk-color-primary: var(--accent-primary) !important;
+  --fk-color-input: var(--text-default) !important;
   --fk-color-help: var(--text-muted) !important;
+  --fk-color-error: var(--text-negative) !important;
+
+  --fk-font-size-label: 1rem !important;
+  --fk-font-family-label: var(--text-font-family) !important;
+  --fk-font-size-input: 1rem !important;
+  --fk-font-family-input: var(--text-font-family) !important;
+  --fk-font-family-help: var(--text-font-family) !important;
+  --fk-font-family: var(--text-font-family) !important;
+
+  --fk-border-radius: 8px !important;
   --fk-max-width-input: 100% !important;
+
+  /* Basic theming */
+  color: var(--text-default);
+  background: var(--background-surface);
 }
 
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: var(--ua_color-text--link);
 }
 a:hover {
-  color: #535bf2;
+  color: var(--ua_color-text--link-hover);
 }
 
 body {
@@ -44,18 +81,47 @@ body {
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 4rem;
+  line-height: 4rem;
+}
+
+h2 {
+  font-size: 3rem;
+  line-height: 3.5rem;
+}
+
+h3 {
+  font-size: 2.25rem;
+  line-height: 2.75rem;
+}
+
+h4 {
+  font-size: 1.5rem;
+  font-size: 2rem;
+}
+
+h5 {
+  font-size: 1.25rem;
+  line-height: 1.5rem;
+}
+
+p, span {
+  font-size: 1.25rem;
+  line-height: 2rem;
+}
+
+hr {
+  color: var(--border-subtle);
 }
 
 button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
+  font-size: 1rem;
   font-family: inherit;
-  background-color: #9e1b32;
+  background-color: var(--accent-primary);
+  color: #fff;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -69,14 +135,17 @@ button:focus-visible {
 
 .card {
   padding: 2em;
+  border-radius: 16px;
+  background: var(--background-element);
+  
+  /* box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.25); */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 #app {
   width: 100%;
-  /* max-width: 1280px; */
   margin: 0;
   padding: 0;
-  text-align: center;
 }
 
 @media (prefers-color-scheme: light) {

@@ -4,6 +4,9 @@ import { FormKit } from '@formkit/vue';
 </script>
 
 <template>
+    <div class="container">
+    <h1>Sponsor Project Submission</h1>
+    <div class="card">
     <div class="form-container">
         <FormKit 
         type="form" 
@@ -11,10 +14,9 @@ import { FormKit } from '@formkit/vue';
         submit-label="Submit Project Proposal"
         @submit="handleSubmission"
         >
-        <h1>Sponsor Project Submission</h1>
 
         <FormKit type="group" name="sponsor_info">
-            <h2>Contact Information</h2>
+            <h3>Contact Information</h3>
             <FormKit
             type="text"
             name="company_name"
@@ -32,7 +34,7 @@ import { FormKit } from '@formkit/vue';
         <hr />
 
         <FormKit type="group" name="project_details">
-            <h2>Project Details</h2>
+            <h3>Project Details</h3>
             <FormKit
             type="text"
             name="name"
@@ -58,11 +60,15 @@ import { FormKit } from '@formkit/vue';
         </FormKit>
         </FormKit>
     </div>
+    </div>
+    </div>
 </template>
 
 <style scoped>
-
-.form-container {
+hr {
+    margin-top: 2rem;
+}
+.container {
   text-align: left;
   max-width: var(--max-content-width);
   margin: 0 auto;

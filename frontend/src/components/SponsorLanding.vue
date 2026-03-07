@@ -11,7 +11,7 @@
 </script>
 
 <template>
-    <h1>Sponsor Page</h1>
+    <h1>Sponsor Dashboard</h1>
     <!-- TODO: assign proper router destinations for buttons -->
     <div class="wrapper">
         <router-link to="/sponsor">
