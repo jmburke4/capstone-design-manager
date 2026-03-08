@@ -11,7 +11,7 @@ const route = useRoute();
 // });
 
 // Hardcode state information for testing
-const userRole = 'student';
+const userRole = 'sponsor';
 const hasRanked = false;
 const isDeadlinePast = false;
 const isAssigned = false;

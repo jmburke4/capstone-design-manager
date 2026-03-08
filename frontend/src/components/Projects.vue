@@ -3,15 +3,17 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import StudentProjectCard from './StudentProjectCard.vue';
+import ProjectDetailsSidebar from './ProjectDetailsSidebar.vue';
 
 const router = useRouter();
 
-// 1. Reactive State
+// Reactive State
 const posts = ref([]); // Initialize as empty array to avoid v-for errors
 const loading = ref(true);
 const error = ref(null);
+const selectedProject = ref(null); // For sidebar details
 
-// 2. Fetch Logic
+// Fetch Logic
 const fetchData = async () => {
   try {
     loading.value = true; // Reset loading state if called again
@@ -25,38 +27,47 @@ const fetchData = async () => {
   }
 };
 
-// 3. Navigation Logic (Missing from your snippet)
-const handleNavigate = (project) => {
-  router.push({
-    name: 'ProjectDescription',
-    params: { id: project.id },
-    state: { project: JSON.parse(JSON.stringify(project)) }
-  });
-};
+// Toggle sidebar
+const openDetails = (project) => {
+  selectedProject.value = project;
+}
 
-// 4. Trigger the fetch on mount
-onMounted(() => {
-  fetchData();
-});
+const closeDetails = () => {
+  selectedProject.value = null;
+}
+
+// Trigger the fetch on mount
+onMounted(fetchData);
 </script>
 
 <template>
   <div>
-    <h1>Project Gallery</h1>
-    <!-- <h5 v-if="loading">Fetching data...</h5>
-    <div v-if="error">Error: {{ error.message }}</div>
-    <div ref="tableContainer"></div> -->
-    
-    <div v-if="loading" class="status-msg">Fetching projects...</div>
-    <div v-else-if="error" class="status-msg error">Error: {{ error.message }}</div>
-    
-    <div v-else class="project-grid">
-      <StudentProjectCard 
-        v-for="project in posts" 
-        :key="project.id" 
-        :project="project"
-        @view-details="handleNavigate"
-      />
+
+    <div class="gallery-layout">
+
+      <div class="grid-container" :class="{ 'pane-open': selectedProject}">
+        <h1>Project Gallery</h1>
+        
+        <div v-if="loading" class="status-msg">Fetching projects...</div>
+        <div v-else-if="error" class="status-msg error">Error: {{ error.message }}</div>
+        <div v-else class="project-grid">
+          <StudentProjectCard 
+            v-for="project in posts" 
+            :key="project.id" 
+            :project="project"
+            @click="openDetails(project)"
+          />
+        </div>
+      </div>
+
+      <transition name="slide-fade">
+        <aside v-if="selectedProject" class="card-details">
+          <ProjectDetailsSidebar
+            :project="selectedProject"
+            @close="closeDetails"
+          />
+        </aside>
+      </transition>
     </div>
   </div>
 </template>
@@ -69,10 +80,50 @@ onMounted(() => {
   gap: 1.5rem;
 }
 
+.gallery-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  min-height: 80vh;
+}
+
+.grid-container {
+  flex: 1; /* Takes all space when pane is closed */
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* When pane is open, force grid to fewer cols */
+.grid-container.pane-open .project-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.card-details {
+  width: 450px;
+  /* padding: 2rem; */
+  border-radius: 16px;
+  height: calc(100vh - 4rem);
+  background: var(--background-element);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 2rem;
+  overflow-y: scroll;
+}
+
+/* Smooth transition for opening the pane */
+.slide-fade-enter-active, .slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-fade-enter-from, .slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
 .status-msg {
   text-align: center;
   padding: 3rem;
   font-size: 1.2rem;
-  color: #666;
+  color: var(--text-muted);
 }
 </style>

@@ -134,7 +134,7 @@ button:focus-visible {
 }
 
 .card {
-  padding: 2em;
+  padding: 2rem;
   border-radius: 16px;
   background: var(--background-element);
   

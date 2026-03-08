@@ -32,11 +32,7 @@ const formatDate = (dateStr) => {
             <h3 class="project-title">{{ project.name }}</h3>
             <p class="project-description">{{ truncate(project.description) }}</p>
         </div>
-
-        <div class="card-footer">
-            <!-- <span class="date">{{ formatDate(project.created_at) }}</span> -->
-            <button class="btn-text">View Project →</button>
-        </div>
+        
     </div>
 </template>
 
