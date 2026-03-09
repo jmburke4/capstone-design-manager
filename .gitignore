@@ -6,3 +6,5 @@ env.*
 !.env.example
 !.env.example.db
 .DS_Store
+.lsp/
+docs/
