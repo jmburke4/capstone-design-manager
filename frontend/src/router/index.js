@@ -5,6 +5,8 @@ import SponsorLanding from '../components/SponsorLanding.vue';
 import AdminLanding from '../components/AdminLanding.vue';
 import StudentLanding from '../components/StudentLanding.vue';
 import ProjectDescription from '../components/ProjectDescription.vue';
+import EmailForm from '../components/EmailForm.vue';
+import SponsorOutreach from '../components/SponsorOutreach.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Homepage },
@@ -13,6 +15,8 @@ const routes = [
   { path: '/admin', name: 'Admin', component: AdminLanding},
   { path: '/student', name: 'Student', component: StudentLanding},
   { path: '/projects/:id', name: 'ProjectDescription', component: ProjectDescription, props: true},
+  { path: '/email', name: 'Email', component: EmailForm},
+  { path: '/sponsor-outreach', name: 'SponsorOutreach', component: SponsorOutreach},
 ];
 
 const router = createRouter({

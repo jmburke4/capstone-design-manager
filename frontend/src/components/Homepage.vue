@@ -14,6 +14,12 @@
         <router-link to="/sponsor">
             <button>Sponsor Page</button>
         </router-link>
+        <router-link to="/email">
+            <button>Send Email</button>
+        </router-link>
+        <router-link to="/sponsor-outreach">
+            <button>Sponsor Outreach</button>
+        </router-link>
     </div>
 </template>
 

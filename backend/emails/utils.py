@@ -33,5 +33,12 @@ class EmailClient:
             html_message=html_content,
         )
 
+    def send_sponsor_outreach(self, recipient_list):
+        return self.send_templated_email(
+            subject="UA CS Capstone Project Opportunity - Spring 2025",
+            recipient_list=recipient_list,
+            template_name="sponsor_outreach",
+        )
+
 
 email_client = EmailClient()
