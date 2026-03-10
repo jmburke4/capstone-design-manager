@@ -2,6 +2,7 @@ services:
   backend:
     build: ./backend
     command: python manage.py runserver 0.0.0.0:8000
+    user: "appuser"
     volumes:
       - ./backend/:/usr/src/app/
     ports:
@@ -10,20 +11,38 @@ services:
       - ./.env.dev
     depends_on:
       - db
+    cap_drop:
+      - ALL
+    cap_add:
+      # Django's dev server needs these to bind to a port and handle processes
+      - NET_BIND_SERVICE
+      - SETUID
+      - SETGID
+    tmpfs:
+      - /tmp
 
   frontend:
     build: ./frontend
     command: npm run dev -- --host
     volumes:
       - ./frontend:/app
-      - /app/node_modules
-    ports: 
+      # Named volume instead of anonymous — preserves the chown we did in the image
+      - frontend_node_modules:/app/node_modules
+    ports:
       - 5173:5173
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
-  
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+    - CHOKIDAR_USEPOLLING=true
+    - TMPDIR=/tmp/vite      # or just rely on /tmp
+    tmpfs:
+      - /tmp
+      - /tmp/vite:size=256m 
+
   db:
     # TODO Upgrade version of Postgres [#3]
     image: postgres:17
@@ -31,6 +50,17 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - ./.env.dev.db 
+    cap_drop:
+      - ALL
+    cap_add:
+      # Postgres needs these to initialize and manage its data directory
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - IPC_LOCK
 
 volumes:
   postgres_data:
+  frontend_node_modules:
