@@ -2,16 +2,22 @@
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 
+const props = defineProps({
+    userRole: {
+        type: String,
+        default: ''
+    },
+    userName: {
+        type: String,
+        default: ''
+    }
+});
+
+const emit = defineEmits(['logout']);
+
 const router = useRouter();
 const route = useRoute();
 
-// const props = defineProps({
-//     userRole: { type: String, required: true }// 'student' or 'sponsor',
-//     // appStatus: { type: Object, required: true }
-// });
-
-// Hardcode state information for testing
-const userRole = 'sponsor';
 const hasRanked = false;
 const isDeadlinePast = false;
 const isAssigned = false;
@@ -19,64 +25,32 @@ const isAssigned = false;
 const menuItems = computed(() => {
     const items = [];
 
-    // Student flow
-    if (userRole === 'student') {
-        items.push({ name: 'Dashboard', path: '/student', icon: '📊' });
-        items.push({ name: 'Project Gallery', path: '/student/projects', icon: '🔍' });
+    if (props.userRole === 'student') {
+        items.push({ name: 'Dashboard', path: '/student' });
+        items.push({ name: 'Project Gallery', path: '/student/projects' });
 
-        // State 1 - before deadline, show ranking
         if (!isDeadlinePast) {
             const rankLabel = hasRanked ? 'Edit Preferences' : 'Submit Rankings';
-            items.push({ name: rankLabel, path: '/student/submit', icon: '🔢' });
+            items.push({ name: rankLabel, path: '/student/submit' });
         }
-        // State 2 - after deadline, assignment made
         if (isDeadlinePast && isAssigned) {
-            items.push({ name: 'View Assignment', path: '/student/assignment', icon: '🏆' });
+            items.push({ name: 'View Assignment', path: '/student/assignment' });
         }
     }
-
-    // Sponsor flow
-    else if (userRole == 'sponsor') {
-        items.push({ name: 'Dashboard', path: '/sponsor', icon: '📊' });
-        items.push({ name: 'Submit Project', path: '/sponsor/submit', icon: '➕' });
-        items.push({ name: 'Submit Feedback', path: '/sponsor/feedback', icon: '📝'});
+    else if (props.userRole === 'sponsor') {
+        items.push({ name: 'Dashboard', path: '/sponsor' });
+        items.push({ name: 'Submit Project', path: '/sponsor/submit' });
+        items.push({ name: 'Submit Feedback', path: '/sponsor/feedback' });
     }
 
     return items;
 });
-
-/*
-const menuItems = computed(() => {
-    const items = [];
-
-    // Student flow
-    if (props.userRole === 'student') {
-        items.push({ name: 'Dashboard', path: '/student', icon: '📊' });
-        items.push({ name: 'Project Gallery', path: '/student/projects', icon: '🔍' });
-
-        // State 1 - before deadline, show ranking
-        if (!props.appStatus.isDeadlinePast) {
-            const rankLabel = props.appStatus.hasRanked ? 'Edit Preferences' : 'Submit Rankings';
-            items.push({ name: rankLabel, path: '/ranking', icon: '🔢' });
-        }
-        // State 2 - after deadline, assignment made
-        if (props.appStatus.isDeadlinePast && props.appStatus.isAssigned) {
-            items.push({ name: 'View Assignment', path: '/student/assignment', icon: '🏆' });
-        }
-    }
-
-    // Sponsor flow
-    else if (props.userRole == 'sponsor') {
-        items.push({ name: 'Dashboard', path: '/sponsor', icon: '📊' });
-        items.push({ name: 'Submit Project', path: '/sponsor/submit', icon: '➕' });
-        items.push({ name: 'Submit Feedback', path: '/sponsor/feedback', icon: '📝'});
-    }
-
-    return items;
-});
-*/
 
 const isActive = (path) => route.path === path;
+
+const handleLogout = () => {
+    emit('logout');
+};
 </script>
 
 <template>
@@ -93,19 +67,28 @@ const isActive = (path) => route.path === path;
                 :class="{ active: isActive(item.path) }"
                 @click="router.push(item.path)"
             >
-                <!-- <span class="nav-icon">{{ item.icon }}</span> -->
                 <span class="nav-text">{{ item.name }}</span>
             </div>
         </nav>
+        
+        <div class="profile-section">
+            <div
+                class="nav-item"
+                :class="{ active: isActive('/profile/edit') }"
+                @click="router.push('/profile/edit')"
+            >
+                <span class="nav-text">Edit Profile</span>
+            </div>
+        </div>
+        
         <footer class="user-info">
-            <span>First Last</span>
-            <span style="text-decoration: underline;">Logout</span>
+            <span>{{ userName || 'User' }}</span>
+            <span class="logout-link" @click="handleLogout">Logout</span>
         </footer>
     </aside>
 </template>
 
 <style scoped>
-
 .sidebar {
     height: 100%;
     background: var(--accent-primary);
@@ -125,7 +108,15 @@ const isActive = (path) => route.path === path;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    flex: 1;
 }
+
+.profile-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
 .nav-item {
     display: flex;
     align-items: center;
@@ -144,5 +135,12 @@ const isActive = (path) => route.path === path;
     display: flex;
     justify-content: space-between;
     margin-top: auto;
+}
+.logout-link {
+    cursor: pointer;
+    text-decoration: underline;
+}
+.logout-link:hover {
+    opacity: 0.8;
 }
 </style>

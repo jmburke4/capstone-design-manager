@@ -4,3 +4,5 @@ django-cors-headers
 django-import-export
 djangorestframework
 psycopg[binary,pool]
+python-jose[cryptography]
+requests
