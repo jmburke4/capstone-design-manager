@@ -1,5 +1,4 @@
 from rest_framework.serializers import ModelSerializer, CharField
-from rest_framework_bulk import BulkListSerializer, BulkSerializerMixin
 from .models import Preference, Project, Assignment
 
 
@@ -9,19 +8,18 @@ class ProjectSerializer(ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id', 'name', 'description', 'sponsor', 'website', 'created_at', 'status']
+        fields = '__all__'
 
 
-class PreferenceSerializer(BulkSerializerMixin, ModelSerializer):
+class PreferenceSerializer(ModelSerializer):
 
     class Meta:
         model = Preference
-        fields = ['id', 'created_at', 'student', 'project', 'rank']
-        list_serializer_class = BulkListSerializer
+        fields = '__all__'
 
 
 class AssignmentSerializer(ModelSerializer):
 
     class Meta:
         model = Assignment
-        fields = "__all__"
+        fields = '__all__'
