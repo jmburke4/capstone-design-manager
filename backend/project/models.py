@@ -8,7 +8,7 @@ from django.utils.text import slugify
 
 class Project(models.Model):
     # [Default] Tracks when the Project record was created
-    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     # [Optional] Description of project
     description = models.TextField(blank=True, null=True)
@@ -50,7 +50,8 @@ class Preference(models.Model):
     id = models.SlugField(max_length=64, primary_key=True, editable=False)
 
     # [Default] Tracks when the Preference record was created
-    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
     # [Required] FK to a Student, this field is required, which means a valid Student must first exist
     student = models.ForeignKey(
@@ -76,12 +77,19 @@ class Preference(models.Model):
     )
 
     def __str__(self):
-        return f"{self.student} {self.project}"
+        return f"{self.student} ({self.project})"
+
+    # Use this method to make slugify available outside of the save method
+    def generate_id(self, student_id=None, project_id=None):
+        if (not student_id or not project_id) and self:
+            student_id = self.student.id
+            project_id = self.project.id
+        return slugify(f'{student_id}-{project_id}')
 
     # Override the model save method to compute the slug from the fields on saving to DB
     def save(self, *args, **kwargs):
         if not self.id:
-            self.id = slugify(f'{self.student.id}-{self.project.id}')
+            self.id = self.generate_id()
         super().save(*args, **kwargs)
 
 
@@ -123,7 +131,8 @@ class Assignment(models.Model):
     year = models.PositiveIntegerField()
 
     # [Default] Tracks when the record was created
-    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
     def __str__(self):
         return f"{self.person_type} {self.person_id} → {self.project} ({self.semester} {self.year})"

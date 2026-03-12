@@ -25,9 +25,9 @@ class ProjectAdmin(ImportExportModelAdmin):
 class PreferenceAdmin(ImportExportModelAdmin):
     resource_classes = [PreferenceResource]
 
-    list_display = search_fields = ordering = ['id', 'student', 'rank', 'project']
+    list_display = search_fields = ordering = ['id', 'student', 'rank', 'project', 'created_at']
     list_display_links = ['id']
-    list_filter = ['rank', 'project']
+    list_filter = ['rank', 'project', 'created_at']
 
 
 @admin.register(Assignment)

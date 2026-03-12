@@ -3,5 +3,4 @@ django
 django-cors-headers
 django-import-export
 djangorestframework
-djangorestframework-bulk
 psycopg[binary,pool]
