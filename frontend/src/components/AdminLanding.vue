@@ -30,6 +30,8 @@
 
 <style scoped>
 .wrapper {
+    margin: 0 auto;
+    max-width: var(--max-content-width);
     display: flex;
     flex-direction: column;
     gap: 1rem;

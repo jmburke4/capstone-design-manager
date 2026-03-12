@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
-
+    filterset_fields = ['sponsor']  # allows ?sponsor=<id>
 
 class PreferenceAPIView(APIView):
 
