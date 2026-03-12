@@ -7,17 +7,18 @@ from project.models import Project
 from user.models import Sponsor, Student
 from user.resources import SponsorResource, StudentResource
 
-# Register your models here.
-
 
 @admin.register(Sponsor)
 class SponsorAdmin(ImportExportModelAdmin):
     resource_classes = [SponsorResource]
-    list_display = ['name', 'projects', 'email', 'organization']
+
+    list_display = ['name', 'email', 'projects', 'organization']
+    list_display_links = ['name']
     list_filter = ['organization']
-    search_fields = ['last_name', 'first_name', 'organization']
+    search_fields = ['last_name', 'first_name', 'organization', 'email']
     ordering = ['last_name', 'first_name', 'organization', 'id']
 
+    # Allows for custom computed field
     def projects(self, obj):
         url = (
             reverse('admin:project_project_changelist')
@@ -31,4 +32,9 @@ class SponsorAdmin(ImportExportModelAdmin):
 @admin.register(Student)
 class StudentAdmin(ImportExportModelAdmin):
     resource_classes = [StudentResource]
-    list_display = ['id', 'name', 'cwid', 'email']
+
+    list_display = ['cwid', 'name', 'email', 'major_code', 'class_code']
+    list_display_links = ['cwid', 'name']
+    list_filter = ['major_code', 'class_code']
+    search_fields = ['last_name', 'first_name', 'cwid', 'email']
+    ordering = ['last_name', 'first_name', 'cwid']
