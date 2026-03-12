@@ -1,0 +1,60 @@
+<diagram program="umletino" version="15.1"><zoom_level>8</zoom_level><element><id>UMLClass</id><coordinates><x>173</x><y>72</y><w>232</w><h>128</h></coordinates><panel_attributes>User.Sponsor
+--
+id: int (PK)
+first_name: string (max_length=30)
+last_name: string (max_length=30)
+email: string (email)
+organization: string (max_length=50, nullable)
+phone_number: string (max_length=18, nullable)
+created_at: datetime (auto)
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>125</x><y>352</y><w>240</w><h>160</h></coordinates><panel_attributes>User.Student
+--
+id: int (PK)
+cwid: string (max_length=8, unique)
+first_name: string (max_length=30)
+middle_name: string (max_length=30, nullable)
+last_name: string (max_length=30)
+preferred_name: string (max_length=30, nullable)
+email: string (email)
+class_code: string (max_length=9, nullable)
+major_code: string (max_length=3, nullable)
+created_at: datetime (auto)
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>525</x><y>72</y><w>224</w><h>128</h></coordinates><panel_attributes>Project.Project
+--
+id: int (PK)
+name: string (max_length=100)
+description: text (nullable)
+sponsor_id: int (FK to Sponsor)
+status: string (choices: IP, CNCL, CMPL, PNDG)
+website: url (nullable)
+created_at: datetime (auto)
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>525</x><y>432</y><w>224</w><h>104</h></coordinates><panel_attributes>Project.Preference
+--
+id: slug (PK, &lt;student_id&gt;-&lt;project_id&gt;)
+student_id: int (FK to Student)
+project_id: int (FK to Project)
+rank: int (choices: 1, 2, 3)
+created_at: datetime (auto)
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>429</x><y>280</y><w>224</w><h>128</h></coordinates><panel_attributes>Project.Assignment
+--
+id: int (PK)
+project_id: int (FK to Project)
+person_id: int
+person_type: string (choices: sponsor, student)
+semester: string (choices: fall, spring, summer)
+year: int
+created_at: datetime (auto)
+updated_at: datetime (auto)
+
+bg=orange
+transparency=70</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>397</x><y>96</y><w>144</w><h>32</h></coordinates><panel_attributes>lt=-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;160;10</additional_attributes></element><element><id>Relation</id><coordinates><x>357</x><y>464</y><w>184</w><h>32</h></coordinates><panel_attributes>lt=-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;210;10</additional_attributes></element><element><id>Relation</id><coordinates><x>709</x><y>192</y><w>40</w><h>256</h></coordinates><panel_attributes>lt=-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;10;300</additional_attributes></element><element><id>Relation</id><coordinates><x>357</x><y>376</y><w>88</w><h>32</h></coordinates><panel_attributes>lt=-
+m1=1
+m2=1</panel_attributes><additional_attributes>10;10;90;10</additional_attributes></element><element><id>Relation</id><coordinates><x>565</x><y>192</y><w>40</w><h>104</h></coordinates><panel_attributes>lt=-
+m1=1
+m2=0..*</panel_attributes><additional_attributes>10;10;10;110</additional_attributes></element></diagram>

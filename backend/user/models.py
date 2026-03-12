@@ -1,28 +1,26 @@
 from django.db import models
 from django.core.validators import RegexValidator
 
-# The user app will handle the user related tables:
+# The user module will handle the user-related objects
+# Fields are ordered by importance descending
 
 
 class Sponsor(models.Model):
-    # [Default] Tracks when the Sponsor record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Model representing a project sponsor"""
 
-
-    # [Required] The email address for the sponsor
-    email = models.EmailField()
-
-    # [Required] The sponsors last name
     first_name = models.CharField(max_length=30)
+    """[Required] The sponsors first name"""
 
-    # [Required] The sponsors last name
     last_name = models.CharField(max_length=30)
+    """[Required] The sponsors last name"""
 
-    # [Optional] A company, school, or other organization the sponsor may be attached to
+    email = models.EmailField()
+    """[Required] The email address for the sponsor"""
+
     # TODO Add an Organization model, and make this field an FK to an Organization record
     organization = models.TextField(max_length=50, blank=True, null=True)
+    """[Optional] A company, school, or other organization the sponsor may be attached to"""
 
-    # [Optional] A phone number for the sponsor
     phone_number = models.CharField(
         max_length=18,
         blank=True,
@@ -34,27 +32,25 @@ class Sponsor(models.Model):
             )
         ]
     )
+    """[Optional] A phone number for the sponsor"""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    """[Default] Tracks when the record was created"""
+
+    updated_at = models.DateTimeField(auto_now=True)
+    """[Default] Tracks when the record was last updated"""
+
+    def name(self):
+        """Returns first and last name"""
+        return f"{self.first_name} {self.last_name}"
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
-    def name(self):
-        return f"{self.first_name} {self.last_name}"
-
 
 class Student(models.Model):
-    # [Default] Tracks when the Student record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Model representing a student to be assigned to a project"""
 
-
-    # [Optional] Student class code - not sure what the values are
-    # TODO Convert to enum for Freshman, Sophomore, Faculty, Staff etc.
-    class_code = models.CharField(max_length=9, blank=True, null=True)
-
-    # [Optional] Major code (CYS/CS?)
-    major_code = models.CharField(max_length=3, blank=True, null=True)
-
-    # [Required] Student's CWID
     cwid = models.CharField(
         max_length=8,
         unique=True,
@@ -66,24 +62,39 @@ class Student(models.Model):
             )
         ]
     )
+    """[Required] The student's CWID"""
 
-    # [Required] The email address for the student
-    email = models.EmailField()
-
-    # [Required] The Student first name
     first_name = models.CharField(max_length=30)
+    """[Required] The student's first name"""
 
-    # [Optional] The Student middle name
     middle_name = models.CharField(max_length=30, blank=True, null=True)
+    """[Optional] The student's middle name"""
 
-    # [Required] The Student last name
     last_name = models.CharField(max_length=30)
+    """[Required] The student's last name"""
 
-    # [Optional] A students preferred name
     preferred_name = models.CharField(max_length=30, blank=True, null=True)
+    """[Optional] A students preferred name"""
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+    email = models.EmailField()
+    """[Required] The student's email address"""
+
+    # TODO Convert to enum for Freshman, Sophomore, Faculty, Staff etc.
+    class_code = models.CharField(max_length=9, blank=True, null=True)
+    """[Optional] The student's class code, such as Freshman, Sophomore..."""
+
+    major_code = models.CharField(max_length=3, blank=True, null=True)
+    """[Optional] The student's major code, such as CS for Computer Science, CYS for Cybersecurity"""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    """[Default] Tracks when the record was created"""
+
+    updated_at = models.DateTimeField(auto_now=True)
+    """[Default] Tracks when the record was last updated"""
 
     def name(self):
+        """Returns first and last name"""
+        return f"{self.first_name} {self.last_name}"
+
+    def __str__(self):
         return f"{self.first_name} {self.last_name}"

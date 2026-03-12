@@ -4,83 +4,87 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 
 # The project module will handle project, preference, and assignment objects
+# Fields are ordered by importance descending
 
 
 class Project(models.Model):
-    # [Default] Tracks when the Project record was created
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Model representing a senior design project that students can be assigned to"""
 
-    # [Optional] Description of project
-    description = models.TextField(blank=True, null=True)
-
-    # [Required] Project name
     name = models.CharField(max_length=100)
+    """[Required] Project name"""
 
-    # [Required] FK to a Sponsor, this field is required, which means a valid Sponsor must first exist
+    description = models.TextField(blank=True, null=True)
+    """[Optional] A description of the project"""
+
     sponsor = models.ForeignKey(
         Sponsor,
         on_delete=models.PROTECT
     )
+    """[Required] FK to a Sponsor (on_delete=PROTECT)"""
 
-    # Available choices for the status field
     class StatusChoices(models.TextChoices):
         IN_PROGRESS = 'IP', _('In Progress')
         CANCELLED = 'CNCL', _('Cancelled')
         COMPLETE = 'CMPL', _('Complete')
         PENDING = 'PNDG', _('Pending')
 
-    # [Required] The current status of the project
     status = models.CharField(
         max_length=4,
         choices=StatusChoices.choices,
         default=StatusChoices.PENDING
     )
+    """[Required] The current status of the project"""
 
-    # [Optional] A website related to the project
     # TODO Adapt this field to be allowed to support multiple URLs
-    website = models.TextField(blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
+    """[Optional] A URL field for the project's website"""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    """[Default] Tracks when the record was created"""
+
+    updated_at = models.DateTimeField(auto_now=True)
+    """[Default] Tracks when the record was last updated"""
 
     def __str__(self):
         return self.name
 
 
 class Preference(models.Model):
+    """Model representing a student's ranked preference for a project"""
 
-    # [Calculated] Serves as a PK created from a combination of the student and project FKs
     id = models.SlugField(max_length=64, primary_key=True, editable=False)
+    """[Calculated] A slug field that serves as the PK for the model, this is generated from the student and project FKs"""
 
-    # [Default] Tracks when the Preference record was created
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-    # [Required] FK to a Student, this field is required, which means a valid Student must first exist
     student = models.ForeignKey(
         Student,
         on_delete=models.CASCADE
     )
+    """[Required] FK to a Student"""
 
-    # [Required] FK to a Project, this field is required, which means a valid Project must first exist
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE
     )
+    """[Required] FK to a Project"""
 
-    # Available choices for the rank field (lower number = higher rank)
     class RankChoices(models.IntegerChoices):
         ONE = 1, '1'
         TWO = 2, '2'
         THREE = 3, '3'
 
-    # [Required] Number rank of student's preference toward project
     rank = models.PositiveSmallIntegerField(
         choices=RankChoices.choices
     )
+    """[Required] Number rank of student's preference toward project, 1 being the first choice"""
 
-    def __str__(self):
-        return f"{self.student} ({self.project})"
+    created_at = models.DateTimeField(auto_now_add=True)
+    """[Default] Tracks when the record was created"""
 
-    # Use this method to make slugify available outside of the save method
+    updated_at = models.DateTimeField(auto_now=True)
+    """[Default] Tracks when the record was last updated"""
+
     def generate_id(self, student_id=None, project_id=None):
+        """Generates a slug from the student and project FKs, this is used as the PK for the model"""
         if (not student_id or not project_id) and self:
             student_id = self.student.id
             project_id = self.project.id
@@ -91,6 +95,9 @@ class Preference(models.Model):
         if not self.id:
             self.id = self.generate_id()
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.student} ({self.project})"
 
 
 class Assignment(models.Model):
@@ -133,6 +140,8 @@ class Assignment(models.Model):
     # [Default] Tracks when the record was created
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # [Default] Tracks when the Assignment record was updated
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.person_type} {self.person_id} → {self.project} ({self.semester} {self.year})"
