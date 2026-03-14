@@ -6,10 +6,10 @@ from django.core.mail.backends.base import BaseEmailBackend
 class EmailClient:
     def __init__(self):
         self.default_from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
-    
+
     def send_email(self, subject, message, recipient_list, from_email=None, html_message=None):
         from_email = from_email or self.default_from_email
-        
+
         return send_mail(
             subject=subject,
             message=message,
@@ -21,11 +21,11 @@ class EmailClient:
 
     def send_templated_email(self, subject, recipient_list, template_name, context=None):
         from django.template.loader import render_to_string
-        
+
         context = context or {}
-        text_content = render_to_string(f'emails/{template_name}.txt', context)
-        html_content = render_to_string(f'emails/{template_name}.html', context)
-        
+        text_content = render_to_string(f'{template_name}.txt', context)
+        html_content = render_to_string(f'{template_name}.html', context)
+
         return self.send_email(
             subject=subject,
             message=text_content,
