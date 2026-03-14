@@ -20,6 +20,9 @@
         <router-link to="/sponsor-outreach">
             <button>Sponsor Outreach</button>
         </router-link>
+        <router-link to="/project-presentation">
+            <button>Project Presentation</button>
+        </router-link>
     </div>
 </template>
 

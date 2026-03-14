@@ -2,6 +2,8 @@
 import { ref } from 'vue';
 
 const recipients = ref('');
+const semester = ref('spring');
+const collectionDate = ref('Spring 2025 (1/14/25)');
 const status = ref('');
 const error = ref('');
 
@@ -19,7 +21,9 @@ const sendSponsorOutreach = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        recipients: recipients.value
+        recipients: recipients.value,
+        semester: semester.value,
+        collection_date: collectionDate.value
       })
     });
 
@@ -66,6 +70,19 @@ const sendSponsorOutreach = async () => {
         />
       </label>
 
+      <label>
+        Semester
+        <select v-model="semester">
+          <option value="spring">Spring</option>
+          <option value="fall">Fall</option>
+        </select>
+      </label>
+
+      <label>
+        Collection Date
+        <input v-model="collectionDate" type="text" placeholder="Spring 2025 (1/14/25)" />
+      </label>
+
       <button type="submit">Send Outreach Email</button>
     </form>
 
@@ -96,7 +113,7 @@ label {
   font-weight: bold;
 }
 
-input {
+input, select {
   width: 100%;
   padding: 8px;
   margin-top: 5px;

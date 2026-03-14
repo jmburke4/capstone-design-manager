@@ -33,11 +33,41 @@ class EmailClient:
             html_message=html_content,
         )
 
-    def send_sponsor_outreach(self, recipient_list):
+    def send_sponsor_outreach(self, recipient_list, semester='spring', collection_date='Spring 2025 (1/14/25)'):
         return self.send_templated_email(
-            subject="UA CS Capstone Project Opportunity - Spring 2025",
+            subject=f"UA CS Capstone Project Opportunity - {semester.capitalize()} 2025",
             recipient_list=recipient_list,
             template_name="sponsor_outreach",
+            context={
+                'semester': semester.lower(),
+                'collection_date': collection_date,
+            },
+        )
+
+    def send_project_presentation(
+        self,
+        recipient_list,
+        date,
+        time,
+        project_name,
+        project_description,
+        contact_name,
+        contact_email,
+        zoom_details,
+    ):
+        return self.send_templated_email(
+            subject=f"Project Presentation: {project_name}",
+            recipient_list=recipient_list,
+            template_name="project_presentation",
+            context={
+                'date': date,
+                'time': time,
+                'project_name': project_name,
+                'project_description': project_description,
+                'contact_name': contact_name,
+                'contact_email': contact_email,
+                'zoom_details': zoom_details,
+            },
         )
 
 

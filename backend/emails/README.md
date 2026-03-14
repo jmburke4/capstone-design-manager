@@ -30,20 +30,56 @@ DEFAULT_FROM_EMAIL=your-email@gmail.com
 
 ### Using the API
 
+**Send custom email:**
+```bash
+POST /api/v1/emails/send
+{
+    "subject": "Hello",
+    "message": "Body text",
+    "recipients": ["email1@example.com", "email2@example.com"],
+    "html_message": "<p>HTML</p>"
+}
+```
+
+**Send sponsor outreach:**
+```bash
+POST /api/v1/emails/sponsor-outreach
+{
+    "recipients": "email1@example.com, email2@example.com",
+    "semester": "spring",
+    "collection_date": "Spring 2025 (1/14/25)"
+}
+```
+
+**Send project presentation:**
+```bash
+POST /api/v1/emails/project-presentation
+{
+    "recipients": "email@example.com",
+    "date": "Tuesday Jan 14, 2025",
+    "time": "3:45 - 4:00",
+    "project_name": "Project Name",
+    "project_description": "Description of the project",
+    "contact_name": "John Doe",
+    "contact_email": "john@example.com",
+    "zoom_details": "Zoom meeting link and details"
+}
+```
 
 ## Templates
 
 Email templates are located in `backend/emails/templates/emails/`:
 
-- `sponsor_outreach.txt` - Plain text sponsor outreach email
-- `sponsor_outreach.html` - HTML sponsor outreach email
-- `base.html` - absolute basic text for an email template
+- `sponsor_outreach.txt` / `.html` - Sponsor outreach email
+- `project_presentation.txt` / `.html` - Project presentation invitation email
+- `base.html` - Base HTML template
 
 ## Frontend
 
-The frontend provides two pages for sending emails:
+The frontend provides pages for sending emails:
 
-1. **Send Email** (`/email`) - Send custom emails with subject, message, and recipients
-2. **Sponsor Outreach** (`/sponsor-outreach`) - Send the sponsor outreach template
+1. **Send Email** (`/email`) - Send custom emails
+2. **Sponsor Outreach** (`/sponsor-outreach`) - Send sponsor outreach template
+3. **Project Presentation** (`/project-presentation`) - Send project presentation invitation
 
-Access these at `http://localhost:5173/email` and `http://localhost:5173/sponsor-outreach` when the frontend is running.
+Access these at `http://localhost:5173/email`, `http://localhost:5173/sponsor-outreach`, and `http://localhost:5173/project-presentation` when the frontend is running.
