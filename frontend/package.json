@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@formkit/themes": "^1.7.2",
+    "@formkit/vue": "^1.7.2",
     "axios": "^1.13.4",
     "pinia": "^3.0.4",
     "tabulator-tables": "^6.3.1",

@@ -1,17 +1,18 @@
-from django.urls import include, path
+from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
-from .views import ProjectViewSet, AssignmentViewSet, PreferenceViewSet
+from .views import ProjectViewSet, AssignmentViewSet, PreferenceAPIView
 
 app_name = 'project'
 
 router = DefaultRouter()
 
-# The first parameter is the route used to access the resource
-# The third field is the name of the Python class that you added
+# For viewsets
 router.register(r'projects', ProjectViewSet, basename='project')
-router.register(r'preferences', PreferenceViewSet, basename='preference')
 router.register(r'assignments', AssignmentViewSet, basename='assignment')
 
 urlpatterns = [
     path('', include(router.urls)),
+    # For APIViews
+    path('preferences/', PreferenceAPIView.as_view(), name='preference-list'),
+    re_path(r'^preferences/(?P<pk>\d+-\d+)/$', PreferenceAPIView.as_view(), name='preference-detail')
 ]
