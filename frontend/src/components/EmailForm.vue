@@ -4,7 +4,7 @@ import { ref } from 'vue';
 const recipients = ref('');
 const subject = ref('');
 const message = ref('');
-const htmlMessage = ref('');
+const sendAsHtml = ref(false);
 const status = ref('');
 const error = ref('');
 
@@ -18,15 +18,20 @@ const sendEmail = async () => {
     .filter(e => e);
 
   try {
+    const payload = {
+      subject: subject.value,
+      message: message.value,
+      recipients: recipientList,
+    };
+
+    if (sendAsHtml.value) {
+      payload.html_message = message.value;
+    }
+
     const response = await fetch('http://localhost:8000/api/v1/emails/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subject: subject.value,
-        message: message.value,
-        recipients: recipientList,
-        html_message: htmlMessage.value || undefined
-      })
+      body: JSON.stringify(payload)
     });
 
     const contentType = response.headers.get('content-type');
@@ -36,7 +41,6 @@ const sendEmail = async () => {
         recipients.value = '';
         subject.value = '';
         message.value = '';
-        htmlMessage.value = '';
       } else {
         error.value = 'Server error occurred';
         status.value = '';
@@ -51,7 +55,6 @@ const sendEmail = async () => {
       recipients.value = '';
       subject.value = '';
       message.value = '';
-      htmlMessage.value = '';
     } else {
       error.value = JSON.stringify(result);
       status.value = '';
@@ -87,9 +90,9 @@ const sendEmail = async () => {
         <textarea v-model="message" required></textarea>
       </label>
 
-      <label>
-        HTML Message (optional)
-        <textarea v-model="htmlMessage" placeholder="<p>HTML content</p>"></textarea>
+      <label class="checkbox-label">
+        <input v-model="sendAsHtml" type="checkbox" />
+        Format message as HTML
       </label>
 
       <button type="submit">Send Email</button>
@@ -117,7 +120,20 @@ label {
   font-weight: bold;
 }
 
-input, textarea {
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  margin-bottom: 20px;
+}
+
+.checkbox-label input {
+  width: auto;
+  margin: 0;
+}
+
+input[type="text"], textarea {
   width: 100%;
   padding: 8px;
   margin-top: 5px;
