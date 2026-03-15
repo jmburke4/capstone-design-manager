@@ -1,3 +1,4 @@
+from datetime import date
 from django.db import models
 from django.core.validators import RegexValidator
 
@@ -33,6 +34,9 @@ class Sponsor(models.Model):
         ]
     )
     """[Optional] A phone number for the sponsor"""
+
+    projects_allowed = models.SmallIntegerField(default=3)
+    """[Default] The number of projects a sponsor is allowed to sponsor"""
 
     created_at = models.DateTimeField(auto_now_add=True)
     """[Default] Tracks when the record was created"""
@@ -79,9 +83,34 @@ class Student(models.Model):
     email = models.EmailField()
     """[Required] The student's email address"""
 
-    # TODO Convert to enum for Freshman, Sophomore, Faculty, Staff etc.
-    class_code = models.CharField(max_length=9, blank=True, null=True)
-    """[Optional] The student's class code, such as Freshman, Sophomore..."""
+    class Semester(models.TextChoices):
+        FALL = "Fall"
+        SPRING = "Spring"
+        SUMMER = "Summer"
+
+    semester = models.CharField(
+        max_length=10,
+        choices=Semester.choices,
+        blank=True,
+        null=True
+    )
+    """[Default] The semester the student is in senior design"""
+
+    year = models.PositiveSmallIntegerField(blank=True, null=True)
+    """[Default] The year the student is in senior design"""
+
+    description = models.TextField(blank=True, null=True)
+    """[Optional] Attributes or skills of the student"""
+
+    class Class(models.TextChoices):
+        FRESHMAN = "FR", "Freshman"
+        SOPHOMORE = "SO", "Sophomore"
+        JUNIOR = "JR", "Junior"
+        SENIOR = "SR", "Senior"
+        GRADUATE = "GR", "Graduate"
+
+    class_code = models.CharField(max_length=9, blank=True, null=True, choices=Class.choices)
+    """[Optional] The student's year/class code"""
 
     major_code = models.CharField(max_length=3, blank=True, null=True)
     """[Optional] The student's major code, such as CS for Computer Science, CYS for Cybersecurity"""
@@ -95,6 +124,20 @@ class Student(models.Model):
     def name(self):
         """Returns first and last name"""
         return f"{self.first_name} {self.last_name}"
+
+    # Override the model save method
+    def save(self, *args, **kwargs):
+        if not self.semester:
+            m = date.today().month
+            if m in range(1, 6):
+                self.semester = self.Semester.SPRING
+            elif m in range(6, 9):
+                self.semester = self.Semester.SUMMER
+            else:
+                self.semester = self.Semester.FALL
+        if not self.year:
+            self.year = date.today().year
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"

@@ -1,4 +1,4 @@
-<diagram program="umletino" version="15.1"><zoom_level>8</zoom_level><element><id>UMLClass</id><coordinates><x>173</x><y>72</y><w>232</w><h>128</h></coordinates><panel_attributes>User.Sponsor
+<diagram program="umletino" version="15.1"><zoom_level>9</zoom_level><element><id>UMLClass</id><coordinates><x>207</x><y>171</y><w>261</w><h>153</h></coordinates><panel_attributes>User.Sponsor
 --
 id: int (PK)
 first_name: string (max_length=30)
@@ -6,8 +6,9 @@ last_name: string (max_length=30)
 email: string (email)
 organization: string (max_length=50, nullable)
 phone_number: string (max_length=18, nullable)
+projects_allowed: int (default=3)
 created_at: datetime (auto)
-updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>125</x><y>352</y><w>240</w><h>160</h></coordinates><panel_attributes>User.Student
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>63</x><y>486</y><w>360</w><h>225</h></coordinates><panel_attributes>User.Student
 --
 id: int (PK)
 cwid: string (max_length=8, unique)
@@ -16,10 +17,13 @@ middle_name: string (max_length=30, nullable)
 last_name: string (max_length=30)
 preferred_name: string (max_length=30, nullable)
 email: string (email)
+semester: string (default=current, choices: fall, spring, summer)
+year: int (default=current)
+description: text(nullable)
 class_code: string (max_length=9, nullable)
 major_code: string (max_length=3, nullable)
 created_at: datetime (auto)
-updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>525</x><y>72</y><w>224</w><h>128</h></coordinates><panel_attributes>Project.Project
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>567</x><y>171</y><w>252</w><h>144</h></coordinates><panel_attributes>Project.Project
 --
 id: int (PK)
 name: string (max_length=100)
@@ -28,33 +32,48 @@ sponsor_id: int (FK to Sponsor)
 status: string (choices: IP, CNCL, CMPL, PNDG)
 website: url (nullable)
 created_at: datetime (auto)
-updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>525</x><y>432</y><w>224</w><h>104</h></coordinates><panel_attributes>Project.Preference
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>567</x><y>576</y><w>252</w><h>117</h></coordinates><panel_attributes>Project.Preference
 --
 id: slug (PK, &lt;student_id&gt;-&lt;project_id&gt;)
 student_id: int (FK to Student)
 project_id: int (FK to Project)
 rank: int (choices: 1, 2, 3)
 created_at: datetime (auto)
-updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>429</x><y>280</y><w>224</w><h>128</h></coordinates><panel_attributes>Project.Assignment
+updated_at: datetime (auto)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>495</x><y>405</y><w>270</w><h>144</h></coordinates><panel_attributes>Project.Assignment
 --
 id: int (PK)
 project_id: int (FK to Project)
-person_id: int
-person_type: string (choices: sponsor, student)
-semester: string (choices: fall, spring, summer)
+**student_id: int (FK to Student)**
+**person_type: string (choices: sponsor, student)**
+**semester: string (choices: fall, spring, summer)**
 year: int
 created_at: datetime (auto)
 updated_at: datetime (auto)
 
 bg=orange
-transparency=70</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>397</x><y>96</y><w>144</w><h>32</h></coordinates><panel_attributes>lt=-
+transparency=70</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>459</x><y>198</y><w>126</w><h>36</h></coordinates><panel_attributes>lt=-
 m1=1
-m2=0..*</panel_attributes><additional_attributes>10;10;160;10</additional_attributes></element><element><id>Relation</id><coordinates><x>357</x><y>464</y><w>184</w><h>32</h></coordinates><panel_attributes>lt=-
+m2=0..*</panel_attributes><additional_attributes>10;10;120;10</additional_attributes></element><element><id>Relation</id><coordinates><x>414</x><y>612</y><w>171</w><h>36</h></coordinates><panel_attributes>lt=-
 m1=1
-m2=0..*</panel_attributes><additional_attributes>10;10;210;10</additional_attributes></element><element><id>Relation</id><coordinates><x>709</x><y>192</y><w>40</w><h>256</h></coordinates><panel_attributes>lt=-
+m2=0..*</panel_attributes><additional_attributes>10;10;170;10</additional_attributes></element><element><id>Relation</id><coordinates><x>774</x><y>306</y><w>45</w><h>288</h></coordinates><panel_attributes>lt=-
 m1=1
-m2=0..*</panel_attributes><additional_attributes>10;10;10;300</additional_attributes></element><element><id>Relation</id><coordinates><x>357</x><y>376</y><w>88</w><h>32</h></coordinates><panel_attributes>lt=-
+m2=0..*</panel_attributes><additional_attributes>10;10;10;300</additional_attributes></element><element><id>Relation</id><coordinates><x>414</x><y>513</y><w>99</w><h>36</h></coordinates><panel_attributes>lt=-
 m1=1
-m2=1</panel_attributes><additional_attributes>10;10;90;10</additional_attributes></element><element><id>Relation</id><coordinates><x>565</x><y>192</y><w>40</w><h>104</h></coordinates><panel_attributes>lt=-
+m2=1</panel_attributes><additional_attributes>10;10;90;10</additional_attributes></element><element><id>Relation</id><coordinates><x>648</x><y>306</y><w>45</w><h>117</h></coordinates><panel_attributes>lt=-
 m1=1
-m2=0..*</panel_attributes><additional_attributes>10;10;10;110</additional_attributes></element></diagram>
+m2=0..*</panel_attributes><additional_attributes>10;10;10;110</additional_attributes></element><element><id>UMLClass</id><coordinates><x>567</x><y>9</y><w>252</w><h>99</h></coordinates><panel_attributes>Project.Attachment
+--
+id: int (PK)
+project_id: int (FK to Project)
+file_url: url
+created_at: datetime (auto)
+updated_at: datetime (auto)
+
+bg=orange
+transparency=70</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>675</x><y>99</y><w>45</w><h>90</h></coordinates><panel_attributes>lt=-
+m1=0..*
+m2=1</panel_attributes><additional_attributes>10;10;10;80</additional_attributes></element><element><id>UMLClass</id><coordinates><x>225</x><y>18</y><w>189</w><h>36</h></coordinates><panel_attributes>This color means WIP
+bold means outstanding changes
+
+bg=orange
+transparency=70</panel_attributes><additional_attributes></additional_attributes></element></diagram>
