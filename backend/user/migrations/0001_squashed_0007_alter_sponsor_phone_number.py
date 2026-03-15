@@ -6,7 +6,8 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    replaces = [('user', '0001_initial'), ('user', '0002_student'), ('user', '0003_student_cwid_alter_sponsor_phone_number'), ('user', '0004_student_class_code_student_major_code_and_more'), ('user', '0005_alter_sponsor_phone_number'), ('user', '0003_alter_sponsor_phone_number'), ('user', '0006_merge_20260304_1537'), ('user', '0007_alter_sponsor_phone_number')]
+    replaces = [('user', '0001_initial'), ('user', '0002_student'), ('user', '0003_student_cwid_alter_sponsor_phone_number'), ('user', '0004_student_class_code_student_major_code_and_more'),
+                ('user', '0005_alter_sponsor_phone_number'), ('user', '0003_alter_sponsor_phone_number'), ('user', '0006_merge_20260304_1537'), ('user', '0007_alter_sponsor_phone_number')]
 
     initial = True
 
@@ -22,7 +23,8 @@ class Migration(migrations.Migration):
                 ('email', models.EmailField(max_length=254)),
                 ('first_name', models.CharField(max_length=30)),
                 ('last_name', models.CharField(max_length=30)),
-                ('cwid', models.CharField(db_index=True, default=12345678, max_length=8, unique=True, validators=[django.core.validators.RegexValidator(message='CWID must be exactly 8 digits.', regex='^\\d{8}$')])),
+                ('cwid', models.CharField(db_index=True, default=12345678, max_length=8, unique=True, validators=[
+                 django.core.validators.RegexValidator(message='CWID must be exactly 8 digits.', regex='^\\d{8}$')])),
                 ('class_code', models.CharField(blank=True, max_length=9, null=True)),
                 ('major_code', models.CharField(blank=True, max_length=3, null=True)),
                 ('middle_name', models.CharField(blank=True, max_length=30, null=True)),
@@ -38,7 +40,8 @@ class Migration(migrations.Migration):
                 ('first_name', models.CharField(max_length=30)),
                 ('last_name', models.CharField(max_length=30)),
                 ('organization', models.TextField(blank=True, max_length=50, null=True)),
-                ('phone_number', models.CharField(blank=True, max_length=18, null=True, validators=[django.core.validators.RegexValidator(message='Must be a valid phone number.', regex='^(\\+\\d{1,2}\\s)?\\(?\\d{3}\\)?[\\s.-]\\d{3}[\\s.-]\\d{4}$')])),
+                ('phone_number', models.CharField(blank=True, max_length=18, null=True, validators=[django.core.validators.RegexValidator(
+                    message='Must be a valid phone number.', regex='^(\\+\\d{1,2}\\s)?\\(?\\d{3}\\)?[\\s.-]\\d{3}[\\s.-]\\d{4}$')])),
             ],
         ),
     ]

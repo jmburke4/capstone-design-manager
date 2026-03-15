@@ -28,5 +28,6 @@ urlpatterns = [
 
     # Mount app URLConfs
     path(f'{API_PREFIX}', include(('project.urls', 'project'), namespace='project')),
-    path(f'{API_PREFIX}', include(('user.urls', 'user'), namespace='user'))
+    path(f'{API_PREFIX}', include(('user.urls', 'user'), namespace='user')),
+    path(f'{API_PREFIX}', include(('emails.urls', 'emails'), namespace='emails')),
 ]

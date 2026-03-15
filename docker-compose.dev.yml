@@ -61,6 +61,14 @@ services:
       - DAC_OVERRIDE
       - IPC_LOCK
 
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    cap_drop:
+      - ALL
+
 volumes:
   postgres_data:
   frontend_node_modules:

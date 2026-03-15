@@ -6,15 +6,16 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    replaces = [('project', '0001_initial'), ('project', '0003_preference'), ('project', '0002_assignment'), ('project', '0004_merge_0002_assignment_0003_preference'), ('project', '0005_preference_unique_student_project'), ('project', '0006_remove_preference_unique_student_project_and_more'), ('project', '0007_remove_preference_id_alter_preference_slug'), ('project', '0008_rename_slug_preference_id')]
+    replaces = [('project', '0001_initial'), ('project', '0003_preference'), ('project', '0002_assignment'), ('project', '0004_merge_0002_assignment_0003_preference'), ('project', '0005_preference_unique_student_project'),
+                ('project', '0006_remove_preference_unique_student_project_and_more'), ('project', '0007_remove_preference_id_alter_preference_slug'), ('project', '0008_rename_slug_preference_id')]
 
     initial = True
 
-    dependencies = [
-        ('user', '0001_initial'),
-        ('user', '0002_student'),
-        ('user', '0007_alter_sponsor_phone_number'),
-    ]
+    # dependencies = [
+    #     ('user', '0001_initial'),
+    #     ('user', '0002_student'),
+    #     ('user', '0007_alter_sponsor_phone_number'),
+    # ]
 
     operations = [
         migrations.CreateModel(
@@ -24,7 +25,8 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('description', models.TextField(blank=True, null=True)),
                 ('name', models.CharField(max_length=100)),
-                ('status', models.CharField(choices=[('IP', 'In Progress'), ('CNCL', 'Cancelled'), ('CMPL', 'Complete'), ('PNDG', 'Pending')], default='PNDG', max_length=4)),
+                ('status', models.CharField(choices=[('IP', 'In Progress'), ('CNCL', 'Cancelled'),
+                 ('CMPL', 'Complete'), ('PNDG', 'Pending')], default='PNDG', max_length=4)),
                 ('website', models.TextField(blank=True, null=True)),
                 ('sponsor', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='user.sponsor')),
             ],
@@ -34,11 +36,14 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('person_id', models.PositiveIntegerField()),
-                ('person_type', models.CharField(choices=[('sponsor', 'Sponsor'), ('student', 'Student')], max_length=10)),
-                ('semester', models.CharField(choices=[('fall', 'Fall'), ('spring', 'Spring'), ('summer', 'Summer')], max_length=10)),
+                ('person_type', models.CharField(choices=[
+                 ('sponsor', 'Sponsor'), ('student', 'Student')], max_length=10)),
+                ('semester', models.CharField(choices=[('fall', 'Fall'),
+                 ('spring', 'Spring'), ('summer', 'Summer')], max_length=10)),
                 ('year', models.PositiveIntegerField()),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='assignments', to='project.project')),
+                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                 related_name='assignments', to='project.project')),
             ],
         ),
         migrations.CreateModel(
