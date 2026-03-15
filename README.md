@@ -56,3 +56,20 @@ Read more on this project's [Github Pages](https://jmburke4.github.io/capstone-d
 |```docker-compose exec <service> <command>```| Execute a command inside the specified container |
 
 Quick psql [reference](google.com/search?smstk=ChhCWU5MUDBsODdkNUFLM3BaK1hxRnpvdz0QBA%3D%3D&smstidx=0&q=quick+and+dirty+psql+commands&udm=50&csuir=1&aep=34&kgs=9e62baadf59f9e95&shem=bdsle,epsdc&shndl=37&shmd=H4sIAAAAAAAA_3WNOw7CMBAFSZsjICG5RiImDQXiLtbGttYr4k92HQWOR8upMDWinac307-6_rCsZO8KklOOuD5VkWVWNsfYkOxvodYiV623bRtQKlSyQ1u1eGAbToVzzBooGgnA3tSwxikBzUNJeNy9O_NPQBHQi564dSihxpxx9miQwZFPVY-PH2baPzlgZ8bL2ZVv4wMhIaRZxAAAAA&shmds=v1_ATWGeePY93TdMuXM0BfH7IdnnF4SioeAjgHOXkjlgJovPO_njw&source=sh/x/aio/m1/1)
+
+
+## Setting Up Oauth (Shared dev tenant)
+
+- **Auth0 Tenant:** `dev-qjyd077ykn3qqq7v.us.auth0.com`
+- **Client ID:** `WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3`
+- **API Identifier:** `https://backend-api-capstone/`
+
+Instructions:
+1. Perform clean build (You may need to remove/delete cotainers and volumes. This is easily done via the docker desktop GUI dashboard or CLI.)
+2. Copy and paste the following values int /.env.dev **AND** /frontend/.env.local (if /frontend/.env.local dne, create it and add the env variables):
+
+    AUTH0_DOMAIN=dev-qjyd077ykn3qqq7v.us.auth0.com
+    AUTH0_CLIENT_ID=WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3
+    AUTH0_AUDIENCE=https://backend-api-capstone/
+
+(These are front public variables and it is fine to include them in the readme and upload to repo. These values are subject to change.)

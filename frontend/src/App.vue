@@ -1,16 +1,65 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import Projects from './components/Projects.vue'
 import Sidebar from './components/Sidebar.vue';
-import Sponsors from './components/Sponsors.vue'
+import { useAuth0 } from '@auth0/auth0-vue';
+import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router';
+
+const { isAuthenticated, isLoading, user, logout: auth0Logout } = useAuth0();
+const route = useRoute();
+
+const ROLE_KEY = 'https://backend-api-capstone/roles';
+const showDebug = ref(false);
+
+function getUserRole() {
+  if (!user.value) return null;
+  const roles = user.value[ROLE_KEY];
+  if (Array.isArray(roles) && roles.length > 0) {
+    return roles[0].toLowerCase();
+  }
+  if (typeof roles === 'string') {
+    return roles.toLowerCase();
+  }
+  return null;
+}
+
+function getUserName() {
+  if (!user.value) return '';
+  return user.value.name || user.value.email || '';
+}
+
+const userRole = computed(() => getUserRole());
+const userName = computed(() => getUserName());
+
+const showSidebar = computed(() => {
+  // Don't show sidebar on login page
+  if (route.path === '/' || route.name === 'Login') return false;
+  return isAuthenticated.value && !isLoading.value;
+});
+
+const showFullWidth = computed(() => {
+  // Full width on login page or when not authenticated
+  if (route.path === '/' || route.name === 'Login') return true;
+  return !isAuthenticated.value || isLoading.value;
+});
+
+const handleLogout = () => {
+  auth0Logout({ logoutParams: { returnTo: window.location.origin } });
+};
+
+const toggleDebug = () => {
+  showDebug.value = !showDebug.value;
+};
 </script>
 
 <template>
   <div class="app-container">
-    <nav class="sidebar">
-      <Sidebar />
-    </nav>
-    <div class="wrapper">
+    <Sidebar 
+      v-if="showSidebar" 
+      :user-role="userRole" 
+      :user-name="userName" 
+      @logout="handleLogout"
+    />
+    <div class="wrapper" :class="{ 'full-width': showFullWidth }">
       <header class="header">
         <router-link to="/">Home</router-link>
       </header>
@@ -18,6 +67,57 @@ import Sponsors from './components/Sponsors.vue'
         <router-view />
       </div> 
     </div>
+    
+    <!-- Debug Overlay -->
+    <div v-if="showDebug" class="debug-overlay">
+      <div class="debug-header">
+        <span>DEBUG INFO</span>
+        <button @click="toggleDebug" class="debug-close">×</button>
+      </div>
+      <div class="debug-content">
+        <div class="debug-row">
+          <span class="debug-label">Authenticated:</span>
+          <span class="debug-value">{{ isAuthenticated ? '✓ Yes' : '✗ No' }}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">Loading:</span>
+          <span class="debug-value">{{ isLoading ? 'Yes' : 'No' }}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">User Email:</span>
+          <span class="debug-value">{{ user?.email || 'N/A' }}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">User Name:</span>
+          <span class="debug-value">{{ user?.name || 'N/A' }}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">Roles:</span>
+          <span class="debug-value">{{ userRole || 'NONE' }}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">Current Route:</span>
+          <span class="debug-value">{{ route.path }}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">Raw Token Roles:</span>
+          <span class="debug-value">{{ user?.[ROLE_KEY] || 'NONE' }}</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">Full User Object:</span>
+          <pre class="debug-json">{{ JSON.stringify(user, null, 2) }}</pre>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Debug Toggle Button -->
+    <button 
+      v-if="!showDebug" 
+      @click="toggleDebug" 
+      class="debug-toggle"
+    >
+      DEBUG
+    </button>
   </div>
 </template>
 
@@ -50,6 +150,11 @@ import Sponsors from './components/Sponsors.vue'
   right: 0;
   overflow-y: auto;
 }
+.wrapper.full-width {
+  margin-left: 0;
+  width: 100%;
+  box-shadow: none;
+}
 .sidebar {
   position: fixed;
   top: 0;
@@ -62,17 +167,102 @@ import Sponsors from './components/Sponsors.vue'
   width: 100%;
 }
 .header {
-  /* left: 0; */
   width: 100%;
-  /* position: fixed; */
   padding: 1rem;
   background: #ffffff;
   display: flex;
   gap: 20px;
-  display: none;
 }
 .navbar a {
   color: white;
   text-decoration: none;
+}
+
+/* Debug Overlay Styles */
+.debug-toggle {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 9999;
+  background: #9e1b32;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.debug-overlay {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.9);
+  color: #0f0;
+  padding: 0;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 12px;
+  max-width: 350px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: #333;
+  border-radius: 8px 8px 0 0;
+  font-weight: bold;
+  border-bottom: 1px solid #555;
+}
+
+.debug-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.debug-content {
+  padding: 15px;
+}
+
+.debug-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid #333;
+}
+
+.debug-row:last-child {
+  border-bottom: none;
+}
+
+.debug-label {
+  color: #888;
+}
+
+.debug-value {
+  color: #0f0;
+  text-align: right;
+  word-break: break-all;
+  max-width: 200px;
+}
+
+.debug-json {
+  color: #0f0;
+  font-size: 10px;
+  margin: 5px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>
