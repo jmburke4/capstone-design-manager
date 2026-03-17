@@ -2,28 +2,90 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
+import apiService from '../services/api';
+
+const { getAccessTokenSilently } = useAuth0()
 
 const router = useRouter();
 
+const hasRanked = ref(false);
 const projects = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const isSubmitting = ref(false);
 
-const fetchProjects = async () => {
-    try {
-        const { data } = await axios.get('/api/v1/projects/');
-        // Initialize each project with no selection
-        projects.value = data.map(p => ({ ...p, selection: null }));
-    } catch (err) {
-        error.value = "Failed to load projects. Is the backend running?";
-        console.error(err);
-    } finally {
-        loading.value = false;
-    }
-};
+const studentProfile = ref(null);
 
-onMounted(fetchProjects);
+const fetchProfileAndProjects = async () => {
+  try {
+    loading.value = true;
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
+
+    // load projects + profile in parallel
+    const [projectsRes, profileRes] = await Promise.all([
+      apiService.client.get('/projects/'),
+      apiService.getProfile()
+    ]);
+
+    projects.value = projectsRes.data.map(p => ({ ...p, selection: null }));
+    studentProfile.value = profileRes?.data ?? profileRes;
+
+    // if we have a student id, fetch preferences and apply them to the projects
+    const studentId = studentProfile.value?.id;
+    if (studentId) {
+      const prefsRes = await apiService.client.get('/preferences/');
+      const prefs = Array.isArray(prefsRes.data) ? prefsRes.data : [];
+      hasRanked.value = prefs.some(pref => {
+        let prefStudent = pref.student;
+        if (prefStudent && typeof prefStudent === 'object') prefStudent = prefStudent.id;
+        return String(prefStudent) === String(studentId);
+      });
+
+      const rankToSelection = { 1: 'high', 2: 'medium', 3: 'low' };
+
+      prefs.forEach(pref => {
+        // normalize student id on preference (pref.student might be an id or object)
+        let prefStudent = pref.student;
+        if (prefStudent && typeof prefStudent === 'object') prefStudent = prefStudent.id;
+        if (String(prefStudent) !== String(studentId)) return;
+
+        // normalize project id (pref.project might be an id or object)
+        const prefProjectId = pref.project && typeof pref.project === 'object'
+          ? pref.project.id
+          : pref.project;
+
+        const project = projects.value.find(p => String(p.id) === String(prefProjectId));
+        if (project) {
+          project.selection = rankToSelection[pref.rank] ?? null;
+        }
+      });
+    }
+  } catch (err) {
+    error.value = "Identity verification failed. Please log in again.";
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(fetchProfileAndProjects);
+
+// const fetchProjects = async () => {
+//     try {
+//         const { data } = await axios.get('/api/v1/projects/');
+//         // Initialize each project with no selection
+//         projects.value = data.map(p => ({ ...p, selection: null }));
+//     } catch (err) {
+//         error.value = "Failed to load projects. Is the backend running?";
+//         console.error(err);
+//     } finally {
+//         loading.value = false;
+//     }
+// };
+
+// onMounted(fetchProjects);
 
 const togglePreference = (index, rank) => {
     if (projects.value[index].selection === rank) {
@@ -57,10 +119,14 @@ const rankMap = {
 
 // Compute payload to match preference model fields
 const rankingPayload = computed(() => {
+    if (!studentProfile.value) return [];
+
     return projects.value
         .filter(p => p.selection !== null)
         .map(p => ({
-            student: 1, // TODO: replace with current student's ID from auth/store
+            // Matches the "1-2" format: studentID-projectID
+            id: `${studentProfile.value.id}-${p.id}`, 
+            student: studentProfile.value.id,
             project: p.id,
             rank: rankMap[p.selection]
         }));
@@ -68,19 +134,31 @@ const rankingPayload = computed(() => {
 
 
 const submitRankings = async () => {
-    if (!isFormValid.value) return;
+  if (!isFormValid.value) return;
+  isSubmitting.value = true;
+  try {
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
 
-    isSubmitting.value = true;
-    try {
-        // TODO: implement post of preferences
-        alert('Submission successful.');
-        router.push('/student');
-    } catch (err) {
-        console.error('One or more requests failed:', err.response?.data);
-        alert('Error: Submission failed.');
-    } finally {
-        isSubmitting.value = false;
+    if (hasRanked.value) {
+      await apiService.client.patch('/preferences/', rankingPayload.value);
+    } else {
+      await apiService.client.post('/preferences/', rankingPayload.value);
+      hasRanked.value = true;
     }
+
+    // Refresh local view of preferences so UI shows updates
+    await fetchProfileAndProjects();
+
+    alert('Your preferences have been saved successfully.');
+    router.push('/student');
+  } catch (err) {
+    const errorDetail = err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Check console for details';
+    console.error('Submission Error:', err.response?.data ?? err);
+    alert(`Submission failed: ${errorDetail}`);
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -143,7 +221,7 @@ const submitRankings = async () => {
           :disabled="!isFormValid || isSubmitting"
           @click="submitRankings"
         >
-          {{ isSubmitting ? 'Saving...' : 'Submit Project Rankings' }}
+          {{ isSubmitting ? 'Saving...' : (hasRanked ? 'Update Project Rankings' : 'Submit Project Rankings') }}
         </button>
 
         

@@ -60,9 +60,9 @@ const toggleDebug = () => {
       @logout="handleLogout"
     />
     <div class="wrapper" :class="{ 'full-width': showFullWidth }">
-      <header class="header">
+      <!-- <header class="header">
         <router-link to="/">Home</router-link>
-      </header>
+      </header> -->
       <div class="content">
         <router-view />
       </div> 

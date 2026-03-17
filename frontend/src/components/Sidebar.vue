@@ -1,56 +1,68 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
+import apiService from '../services/api';
 
 const props = defineProps({
-    userRole: {
-        type: String,
-        default: ''
-    },
-    userName: {
-        type: String,
-        default: ''
-    }
+  userRole: { type: String, default: '' },
+  userName: { type: String, default: '' }
 });
-
 const emit = defineEmits(['logout']);
 
 const router = useRouter();
 const route = useRoute();
 
-const hasRanked = false;
+const { getAccessTokenSilently } = useAuth0();
+const hasRanked = ref(false);
 const isDeadlinePast = false;
 const isAssigned = false;
 
+onMounted(async () => {
+  if (props.userRole !== 'student') return;
+  try {
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
+
+    // profile endpoint returns { type, data } — normalize to the inner data
+    const profileResp = await apiService.getProfile();
+    const profile = profileResp?.data ?? profileResp;
+    const studentId = profile?.id;
+
+    if (!studentId) return;
+
+    const prefsResp = await apiService.client.get('/preferences/');
+    hasRanked.value = Array.isArray(prefsResp.data) && prefsResp.data.some(p => p.student === studentId);
+  } catch (e) {
+    console.error('Sidebar: failed to detect existing preferences', e);
+  }
+});
+
 const menuItems = computed(() => {
-    const items = [];
+  const items = [];
 
-    if (props.userRole === 'student') {
-        items.push({ name: 'Dashboard', path: '/student' });
-        items.push({ name: 'Project Gallery', path: '/student/projects' });
+  if (props.userRole === 'student') {
+    items.push({ name: 'Dashboard', path: '/student' });
+    items.push({ name: 'Project Gallery', path: '/student/projects' });
 
-        if (!isDeadlinePast) {
-            const rankLabel = hasRanked ? 'Edit Preferences' : 'Submit Rankings';
-            items.push({ name: rankLabel, path: '/student/submit' });
-        }
-        if (isDeadlinePast && isAssigned) {
-            items.push({ name: 'View Assignment', path: '/student/assignment' });
-        }
+    if (!isDeadlinePast) {
+      const rankLabel = hasRanked.value ? 'Edit Rankings' : 'Submit Rankings';
+      items.push({ name: rankLabel, path: '/student/submit' });
     }
-    else if (props.userRole === 'sponsor') {
-        items.push({ name: 'Dashboard', path: '/sponsor' });
-        items.push({ name: 'Submit Project', path: '/sponsor/submit' });
-        items.push({ name: 'Submit Feedback', path: '/sponsor/feedback' });
+    if (isDeadlinePast && isAssigned) {
+      items.push({ name: 'View Assignment', path: '/student/assignment' });
     }
+  } else if (props.userRole === 'sponsor') {
+    items.push({ name: 'Dashboard', path: '/sponsor' });
+    items.push({ name: 'Submit Project', path: '/sponsor/submit' });
+    items.push({ name: 'Submit Feedback', path: '/sponsor/feedback' });
+  }
 
-    return items;
+  return items;
 });
 
 const isActive = (path) => route.path === path;
-
-const handleLogout = () => {
-    emit('logout');
-};
+const handleLogout = () => emit('logout');
 </script>
 
 <template>
