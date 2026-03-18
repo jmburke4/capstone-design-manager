@@ -1,8 +1,7 @@
-from datetime import date
 from django.db import models
 from django.core.validators import RegexValidator
 
-# The user module will handle the user-related objects
+# Models are orded by chronological appearance
 # Fields are ordered by importance descending
 
 
@@ -46,10 +45,10 @@ class Sponsor(models.Model):
 
     def name(self):
         """Returns first and last name"""
-        return f"{self.first_name} {self.last_name}"
+        return f'{self.first_name} {self.last_name}'
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return self.name()
 
 
 class Student(models.Model):
@@ -83,22 +82,6 @@ class Student(models.Model):
     email = models.EmailField()
     """[Required] The student's email address"""
 
-    class Semester(models.TextChoices):
-        FALL = "Fall"
-        SPRING = "Spring"
-        SUMMER = "Summer"
-
-    semester = models.CharField(
-        max_length=10,
-        choices=Semester.choices,
-        blank=True,
-        null=True
-    )
-    """[Default] The semester the student is in senior design"""
-
-    year = models.PositiveSmallIntegerField(blank=True, null=True)
-    """[Default] The year the student is in senior design"""
-
     description = models.TextField(blank=True, null=True)
     """[Optional] Attributes or skills of the student"""
 
@@ -109,10 +92,10 @@ class Student(models.Model):
         SENIOR = "SR", "Senior"
         GRADUATE = "GR", "Graduate"
 
-    class_code = models.CharField(max_length=9, blank=True, null=True, choices=Class.choices)
+    class_code = models.CharField(max_length=9, blank=True, null=True, choices=Class.choices, verbose_name='class')
     """[Optional] The student's year/class code"""
 
-    major_code = models.CharField(max_length=3, blank=True, null=True)
+    major_code = models.CharField(max_length=3, blank=True, null=True, verbose_name='major')
     """[Optional] The student's major code, such as CS for Computer Science, CYS for Cybersecurity"""
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -123,21 +106,7 @@ class Student(models.Model):
 
     def name(self):
         """Returns first and last name"""
-        return f"{self.first_name} {self.last_name}"
-
-    # Override the model save method
-    def save(self, *args, **kwargs):
-        if not self.semester:
-            m = date.today().month
-            if m in range(1, 6):
-                self.semester = self.Semester.SPRING
-            elif m in range(6, 9):
-                self.semester = self.Semester.SUMMER
-            else:
-                self.semester = self.Semester.FALL
-        if not self.year:
-            self.year = date.today().year
-        super().save(*args, **kwargs)
+        return f'{self.first_name} {self.last_name}'
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return self.name()

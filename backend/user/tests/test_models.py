@@ -1,6 +1,4 @@
 import pytest
-from datetime import date
-from unittest.mock import patch
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from user.models import Sponsor, Student
@@ -163,6 +161,9 @@ class TestStudentCreation:
     def test_created_at_is_set_on_creation(self, sample_student):
         assert sample_student.created_at is not None
 
+    def test_updated_at_is_set_on_creation(self, sample_student):
+        assert sample_student.updated_at is not None
+
     def test_updated_at_changes_on_save(self, sample_student):
         original = sample_student.updated_at
         sample_student.first_name = "Updated"
@@ -217,87 +218,6 @@ class TestStudentCwidValidation:
 
 
 @pytest.mark.django_db
-class TestStudentSemesterAutoAssignment:
-    """semester and year are set automatically in save() when not provided."""
-
-    def _create_student_on_date(self, mock_date, cwid="10000001"):
-        with patch("user.models.date") as mock:
-            mock.today.return_value = mock_date
-            # range() is a builtin, so we re-expose it on the mock
-            mock.side_effect = None
-            return Student.objects.create(
-                cwid=cwid,
-                first_name="Test",
-                last_name="Student",
-                email="test@example.com",
-            )
-
-    @pytest.mark.parametrize("month,expected_semester", [
-        (1, Student.Semester.SPRING),
-        (5, Student.Semester.SPRING),
-        (6, Student.Semester.SUMMER),
-        (8, Student.Semester.SUMMER),
-        (9, Student.Semester.FALL),
-        (12, Student.Semester.FALL),
-    ])
-    def test_semester_set_by_month(self, db, month, expected_semester):
-        with patch("user.models.date") as mock_date_cls:
-            mock_date_cls.today.return_value = date(2026, month, 15)
-            student = Student.objects.create(
-                cwid=f"2000{month:04d}",
-                first_name="Test",
-                last_name="Student",
-                email="test@example.com",
-            )
-        assert student.semester == expected_semester
-
-    def test_year_defaults_to_current_year(self, db):
-        with patch("user.models.date") as mock_date_cls:
-            mock_date_cls.today.return_value = date(2026, 3, 15)
-            student = Student.objects.create(
-                cwid="30000001",
-                first_name="Test",
-                last_name="Student",
-                email="test@example.com",
-            )
-        assert student.year == 2026
-
-    def test_explicit_semester_not_overridden(self, db):
-        student = Student.objects.create(
-            cwid="40000001",
-            first_name="Test",
-            last_name="Student",
-            email="test@example.com",
-            semester=Student.Semester.SUMMER,
-        )
-        assert student.semester == Student.Semester.SUMMER
-
-    def test_explicit_year_not_overridden(self, db):
-        student = Student.objects.create(
-            cwid="50000001",
-            first_name="Test",
-            last_name="Student",
-            email="test@example.com",
-            year=2020,
-        )
-        assert student.year == 2020
-
-
-@pytest.mark.django_db
-class TestStudentSemesterChoices:
-    @pytest.mark.parametrize("value", ["Fall", "Spring", "Summer"])
-    def test_valid_semester_choices(self, db, value):
-        student = Student.objects.create(
-            cwid=f"6000{Student.Semester.values.index(value):04d}",
-            first_name="Test",
-            last_name="Student",
-            email="test@example.com",
-            semester=value,
-        )
-        assert student.semester == value
-
-
-@pytest.mark.django_db
 class TestStudentClassChoices:
     @pytest.mark.parametrize("code,label", [
         ("FR", "Freshman"),
@@ -315,3 +235,4 @@ class TestStudentClassChoices:
             class_code=code,
         )
         assert student.class_code == code
+        assert student.get_class_code_display() == label

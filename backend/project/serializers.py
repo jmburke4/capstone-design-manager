@@ -1,16 +1,21 @@
 from rest_framework.serializers import ModelSerializer, CharField, ListSerializer, ValidationError
-from .models import Preference, Project, Assignment
+from .models import Semester, Preference, Project, Assignment
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class ProjectSerializer(ModelSerializer):
-
     status = CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = Project
+        fields = '__all__'
+
+
+class SemesterSerializer(ModelSerializer):
+    class Meta:
+        model = Semester
         fields = '__all__'
 
 
@@ -68,7 +73,6 @@ class PreferenceListSerializer(ListSerializer):
 
 
 class PreferenceSerializer(ModelSerializer):
-
     class Meta:
         model = Preference
         fields = '__all__'
@@ -77,7 +81,6 @@ class PreferenceSerializer(ModelSerializer):
 
 
 class AssignmentSerializer(ModelSerializer):
-
     class Meta:
         model = Assignment
         fields = '__all__'

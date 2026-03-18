@@ -33,11 +33,8 @@ class SponsorAdmin(ImportExportModelAdmin):
 class StudentAdmin(ImportExportModelAdmin):
     resource_classes = [StudentResource]
 
-    list_display = ['cwid', 'name', 'email', 'major_code', 'class_code', 'semester_year']
+    list_display = ['cwid', 'name', 'email', 'major_code', 'class_code']
     list_display_links = ['cwid', 'name']
-    list_filter = ['major_code', 'class_code', 'semester', 'year']
+    list_filter = ['major_code', 'class_code']
     search_fields = ['last_name', 'first_name', 'cwid', 'email']
     ordering = ['last_name', 'first_name', 'cwid']
-
-    def semester_year(self, obj):
-        return f'{obj.semester} {obj.year % 100}'

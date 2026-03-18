@@ -14,6 +14,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     filterset_fields = ['sponsor']  # allows ?sponsor=<id>
 
+
 class PreferenceAPIView(APIView):
 
     def get(self, request, pk=None, format=None):
