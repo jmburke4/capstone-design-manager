@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@auth0/auth0-vue": "^2.5.0",
     "@formkit/themes": "^1.7.2",
     "@formkit/vue": "^1.7.2",
     "axios": "^1.13.4",

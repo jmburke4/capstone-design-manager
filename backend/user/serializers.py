@@ -4,12 +4,16 @@ from .models import Student
 
 
 class SponsorSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(read_only=True)
+
     class Meta:
         model = Sponsor
         fields = '__all__'
 
 
 class StudentSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(read_only=True)
+
     class Meta:
         model = Student
         fields = '__all__'

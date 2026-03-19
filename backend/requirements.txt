@@ -8,3 +8,5 @@ psycopg[binary,pool]
 pytest
 pytest-cov
 pytest-django
+python-jose[cryptography]
+requests

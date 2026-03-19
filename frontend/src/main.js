@@ -1,11 +1,27 @@
 import { createApp } from 'vue'
+import { createAuth0 } from '@auth0/auth0-vue'
 import './style.css'
 import App from './App.vue'
 import router from './router'
 import { plugin, defaultConfig } from '@formkit/vue'
 import '@formkit/themes/genesis'
 
-createApp(App)
-    .use(router)
-    .use(plugin, defaultConfig)
-    .mount('#app')
+const auth0 = createAuth0({
+  domain: import.meta.env.VITE_AUTH0_DOMAIN,
+  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID,
+  authorizationParams: {
+    redirect_uri: window.location.origin,
+    audience: import.meta.env.VITE_AUTH0_AUDIENCE
+  },
+  oidcConformant: true
+})
+
+const app = createApp(App)
+
+app.use(auth0)
+app.use(router)
+app.use(plugin, defaultConfig)
+
+app.mount('#app')
+
+export { auth0 }
