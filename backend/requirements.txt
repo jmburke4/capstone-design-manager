@@ -6,3 +6,6 @@ djangorestframework
 psycopg[binary,pool]
 python-jose[cryptography]
 requests
+pytest
+pytest-cov
+pytest-django
