@@ -5,9 +5,14 @@
 -->
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 import apiService from '../services/api';
+
+const route = useRoute();
+const router = useRouter();
+const flash = ref(null);
 
 const { getAccessTokenSilently } = useAuth0();
 
@@ -15,7 +20,58 @@ const topPreferences = ref([]);
 const hasRanked = ref(false);
 const loading = ref(true);
 
+// set the deadline (example): prefer reading from API
+// e.g. const deadline = new Date(import.meta.env.VITE_RANKING_DEADLINE);
+const deadline = new Date('2026-04-02T23:59:59Z');
+
+const days = ref('00');
+const hours = ref('00');
+const minutes = ref('00');
+const seconds = ref('00');
+
+let _timer = null;
+const pad = (n) => String(n).padStart(2, '0');
+
+const updateCountdown = () => {
+  const now = new Date();
+  let diff = Math.max(0, deadline - now); // ms
+  if (diff <= 0) {
+    days.value = '00';
+    hours.value = '00';
+    minutes.value = '00';
+    seconds.value = '00';
+    return;
+  }
+
+  const d = Math.floor(diff / 86_400_000);
+  diff %= 86_400_000;
+  const h = Math.floor(diff / 3_600_000);
+  diff %= 3_600_000;
+  const m = Math.floor(diff / 60_000);
+  diff %= 60_000;
+  const s = Math.floor(diff / 1000);
+
+  days.value = pad(d);
+  hours.value = pad(h);
+  minutes.value = pad(m);
+  seconds.value = pad(s);
+};
+
 onMounted(async () => {
+  // before loading, check for flash:
+  if (route.query?.flash) {
+    flash.value = {
+      type: route.query.flash,
+      message: route.query.message || (route.query.flash === 'success' ? 'Saved successfully.' : 'Operation result.')
+    };
+    // remove query parameters without navigating
+    router.replace({ path: route.path, query: {} });
+  }
+
+  // update countdown information
+  updateCountdown();
+  _timer = setInterval(updateCountdown, 1000);
+
   try {
     const token = await getAccessTokenSilently();
     apiService.setToken(token);
@@ -26,7 +82,7 @@ onMounted(async () => {
     if (!studentId){
         loading.value = false;
         return;
-    } 
+    }
 
     const prefsRes = await apiService.client.get('/preferences/');
     const prefs = Array.isArray(prefsRes.data) ? prefsRes.data : [];
@@ -65,6 +121,9 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+onUnmounted(() => {
+  if (_timer) clearInterval(_timer);
+});
 </script>
 
 <template>
@@ -72,12 +131,39 @@ onMounted(async () => {
 <!-- TODO: implement logic for deadline countdown, assignment -->
 <div class="inside-wrapper">
     <h1>Student Dashboard</h1>
+    <div v-if="flash" :class="['info', flash.type === 'success' ? 'success' : 'error']">
+        <strong v-if="flash.type === 'success'">Success</strong>
+        <strong v-else>Notice</strong>
+        <p>{{ flash.message }}</p>
+    </div>
     <div class="card">
         <h2>Submission Deadline Countdown</h2>
-        <span>14 days, 4 hours</span>
+        <hr />
+        <div class="timer">
+            <div class="time-segment">
+            <div class="time-value">{{ days }}</div>
+            <div class="time-label">Days</div>
+            </div>
+            <div class="time-separator">:</div>
+            <div class="time-segment">
+            <div class="time-value">{{ hours }}</div>
+            <div class="time-label">Hours</div>
+            </div>
+            <div class="time-separator">:</div>
+            <div class="time-segment">
+            <div class="time-value">{{ minutes }}</div>
+            <div class="time-label">Minutes</div>
+            </div>
+            <div class="time-separator">:</div>
+            <div class="time-segment">
+            <div class="time-value">{{ seconds }}</div>
+            <div class="time-label">Seconds</div>
+            </div>
+        </div>
     </div>
     <div class="card">
         <h2>Top 5 Rankings</h2>
+        <hr />
         <div v-if="loading"><p>Loading...</p></div>
         <div v-else-if="hasRanked && topPreferences.length">
             <ul class="preference-list">
@@ -94,15 +180,21 @@ onMounted(async () => {
     
     <div class="card">
         <h2>Project Assignment</h2>
+        <hr />
         <span>Due date has not passed yet.</span>
     </div>
 </div>
 </template>
 
 <style scoped>
+hr {
+    margin: 0.5rem 0 1rem 0;
+    /* display: none; */
+}
 h2 {
-    margin-top: 0em;
-    margin-bottom: 0.5em;
+    margin-top: 0rem;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
 }
 .redirect {
     color: var(--text-link)
@@ -116,5 +208,81 @@ h2 {
 }
 button {
     width: 100%;
+}
+strong {
+    font-weight: 800;
+    font-size: 1.1rem;
+    line-height: 2rem;
+}
+.info {
+    border: 1px solid var(--accent-info);
+    background: var(--background-info);
+    color: var(--accent-info);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+}
+.info.success {
+    border-color: var(--accent-positive);
+    background: var(--background-positive);
+    color: var(--text-positive);
+}
+.info.error {
+    border-color: var(--accent-negative);
+    background: var(--background-negative);
+    color: var(--text-negative);
+}
+.info p {
+    line-height: 0.75rem;
+}
+
+.countdown-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.time-segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 20%;
+}
+
+.time-value {
+  font-family: "Noto Sans Mono";
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-default);
+}
+
+.time-label {
+  margin-top: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+}
+
+.time-separator {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-accent);
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .time-value { font-size: 1.6rem; }
+  .time-segment { min-width: 48px; }
+  .time-separator { font-size: 1.6rem; }
 }
 </style>

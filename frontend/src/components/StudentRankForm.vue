@@ -4,10 +4,13 @@ import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 import apiService from '../services/api';
+import ConfirmationModal from './ConfirmationModal.vue';
 
 const { getAccessTokenSilently } = useAuth0()
 
 const router = useRouter();
+
+const showConfirm = ref(false);
 
 const hasRanked = ref(false);
 const projects = ref([]);
@@ -132,6 +135,13 @@ const rankingPayload = computed(() => {
         }));
 });
 
+const openConfirm = () => { showConfirm.value = true; };
+
+const onConfirm = async () => {
+  showConfirm.value = false;
+  await submitRankings();
+}
+
 
 const submitRankings = async () => {
   if (!isFormValid.value) return;
@@ -150,12 +160,18 @@ const submitRankings = async () => {
     // Refresh local view of preferences so UI shows updates
     await fetchProfileAndProjects();
 
-    alert('Your preferences have been saved successfully.');
-    router.push('/student');
+    router.push({
+      path: '/student',
+      query: { flash: 'success', message: 'Your preferences have been saved.' }
+    });
+    
   } catch (err) {
     const errorDetail = err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Check console for details';
     console.error('Submission Error:', err.response?.data ?? err);
-    alert(`Submission failed: ${errorDetail}`);
+    router.push({
+      path: '/student',
+      query: { flash: 'failure', message: `Submission failed: ${errorDetail}` }
+    });
   } finally {
     isSubmitting.value = false;
   }
@@ -219,11 +235,11 @@ const submitRankings = async () => {
         <button 
           class="submit-button" 
           :disabled="!isFormValid || isSubmitting"
-          @click="submitRankings"
+          @click="openConfirm"
         >
           {{ isSubmitting ? 'Saving...' : (hasRanked ? 'Update Project Rankings' : 'Submit Project Rankings') }}
         </button>
-
+        <ConfirmationModal :show="showConfirm" title="Submit rankings?" message="These changes can be updated any amount of times before the deadline." @confirm="onConfirm" @cancel="() => showConfirm = false" />
         
       </footer>
     </div>
@@ -308,7 +324,6 @@ const submitRankings = async () => {
 .submit-button {
   padding: 1rem 2rem;
   width: 100%;
-  font-weight: bold;
   color: white;
   cursor: pointer;
 }

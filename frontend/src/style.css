@@ -120,13 +120,14 @@ button {
   padding: 0.6em 1.2em;
   font-size: 1rem;
   font-family: inherit;
+  font-weight: bold;
   background-color: var(--accent-primary);
   color: #fff;
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #f68297;
+  filter: brightness(.9)
 }
 button:focus,
 button:focus-visible {
