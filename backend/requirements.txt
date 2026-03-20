@@ -1,9 +1,13 @@
 # TODO Pick package versions to use [#3]
 django
 django-cors-headers
+django-filter
 django-import-export
 djangorestframework
 psycopg[binary,pool]
+pytest
+pytest-cov
+pytest-django
 python-jose[cryptography]
 requests
 pytest
