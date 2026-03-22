@@ -70,34 +70,37 @@ const loginAsSponsor = () => {
 </template>
 
 <style scoped>
+
 .login-container {
+  /* background-image: url(https://rolltide.com/images/2024/12/3/082723_ADMIN_ShelbyQuad_Campus_CLized.jpg); */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 4rem);
+  margin-top: 2rem;
   gap: 2rem;
   padding: 2rem;
 }
 
 .login-card {
-  background: white;
+  background: rgb(255, 255, 255);
   padding: 3rem;
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
   text-align: center;
 }
 
 h1 {
-  font-size: 1.75rem;
+  font-size: 2.25rem;
   margin: 0 0 0.5rem 0;
-  color: #9e1b32;
+  color: var(--text-default);
 }
 
 .subtitle {
-  color: #757c88;
+  color: var(--text-subtle);
   margin: 0 0 2rem 0;
   font-size: 1rem;
 }
@@ -145,12 +148,12 @@ button:hover {
 }
 
 .btn-student {
-  background-color: #9e1b32;
+  background-color: var(--accent-primary);
   color: white;
 }
 
 .btn-student:hover {
-  background-color: #70202c;
+  filter: brightness(.9);
 }
 
 .btn-sponsor {
@@ -164,6 +167,6 @@ button:hover {
 
 .loading {
   font-size: 1rem;
-  color: #757c88;
+  color: var(--text-subtle);
 }
 </style>

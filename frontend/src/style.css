@@ -57,6 +57,7 @@
   --fk-font-family: var(--text-font-family) !important;
 
   --fk-border-radius: 8px !important;
+  --fk-border-box-shadow: 0 0 0 1px var(--accent-neutral) !important;
   --fk-max-width-input: 100% !important;
 
   /* Basic theming */
@@ -127,7 +128,7 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  filter: brightness(.9)
+  filter: brightness(.9);
 }
 button:focus,
 button:focus-visible {

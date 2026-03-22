@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 import apiService from '../services/api';
 import ConfirmationModal from './ConfirmationModal.vue';
+import { FormKit } from '@formkit/vue';
 
 const { getAccessTokenSilently } = useAuth0()
 
@@ -232,6 +233,15 @@ const submitRankings = async () => {
           </div>
         </div>
 
+        <div class="comment-area">
+          <p>Provide any additional information. We will not be able to accommodate all requests.</p>
+          <FormKit
+            type="textarea"
+            name="comment"
+            validation="length:0,2000"
+            />
+        </div>
+
         <button 
           class="submit-button" 
           :disabled="!isFormValid || isSubmitting"
@@ -319,6 +329,10 @@ const submitRankings = async () => {
   border-color: var(--accent-positive);
   background: var(--background-positive);
   color: var(--text-positive);
+}
+
+.comment-area {
+  width: 100%;
 }
 
 .submit-button {
