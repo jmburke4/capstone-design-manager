@@ -1,10 +1,15 @@
-from import_export import resources, fields
+from import_export import resources
 from project import models
 
 
 class ProjectResource(resources.ModelResource):
     class Meta:
         model = models.Project
+
+
+class SemesterResource(resources.ModelResource):
+    class Meta:
+        model = models.Semester
 
 
 class PreferenceResource(resources.ModelResource):

@@ -52,5 +52,19 @@ class StudentResource(resources.ModelResource):
         attribute='major_code'
     )
 
+    def clean_class_code(self, value):
+        class_code_map = {
+            'Freshman': 'FR',
+            'Sophomore': 'SO',
+            'Junior': 'JR',
+            'Senior': 'SR',
+            'Graduate': 'GR'
+        }
+        return class_code_map.get(value, value)
+
+    def before_import_row(self, row, **kwargs):
+        row['STU_CLASS_CODE'] = self.clean_class_code(row.get('STU_CLASS_CODE', ''))
+        return row
+
     class Meta:
         model = models.Student

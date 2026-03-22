@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from user.authentication import Auth0Authentication
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Project, Assignment, Preference
 from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer
 import logging
@@ -14,7 +15,9 @@ logger = logging.getLogger(__name__)
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+    filter_backends = [DjangoFilterBackend]
     filterset_fields = ['sponsor']  # allows ?sponsor=<id>
+
 
 class PreferenceAPIView(APIView):
     authentication_classes = [Auth0Authentication]
@@ -110,3 +113,5 @@ class PreferenceAPIView(APIView):
 class AssignmentViewSet(viewsets.ModelViewSet):
     queryset = Assignment.objects.all()
     serializer_class = AssignmentSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['project', 'semester']
