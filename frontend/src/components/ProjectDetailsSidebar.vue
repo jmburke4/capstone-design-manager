@@ -52,6 +52,10 @@ hr {
   color: var(--border-subtle);
 }
 
+li {
+  font-size: 1.1rem;
+}
+
 .sidebar-header {
   padding: 2rem;
   /* border-bottom: 1px solid var(--border-subtle); */

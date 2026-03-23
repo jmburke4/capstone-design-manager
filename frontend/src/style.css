@@ -109,7 +109,7 @@ h5 {
 }
 
 p,
-span {
+span, li {
   font-size: 1.25rem;
   line-height: 2rem;
 }
