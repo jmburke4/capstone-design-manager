@@ -38,18 +38,24 @@ const role = computed(() => {
 const handleSubmit = async (formData) => {
   loading.value = true;
   error.value = null;
-  
+
   try {
     const token = await getAccessTokenSilently();
     apiService.setToken(token);
-    
-    await apiService.createProfile(formData);
-    
+
+    const email = user.value?.email;
+    if (!email) {
+      throw new Error('No email provided from authentication service.');
+    }
+
+    const payload = { ...formData, email };
+    await apiService.createProfile(payload);
+
     const redirectPath = role.value === 'sponsor' ? '/sponsor' : '/student';
     router.push(redirectPath);
   } catch (err) {
     const errorData = err.response?.data;
-    error.value = errorData?.error || errorData?.message || JSON.stringify(errorData) || 'Failed to create profile. Please try again.';
+    error.value = errorData?.error || errorData?.message || JSON.stringify(errorData) || err.message || 'Failed to create profile. Please try again.';
   } finally {
     loading.value = false;
   }
@@ -59,11 +65,8 @@ const handleSubmit = async (formData) => {
 <template>
   <div class="profile-create-container">
     <h1>Complete Your Profile</h1>
-    <p class="subtitle">
-      Please fill in your information to continue.
-    </p>
     
-    <div class="email-display">
+    <div class="info email">
       <strong>Email:</strong> {{ user?.email || 'Loading...' }}
     </div>
     
@@ -87,30 +90,20 @@ const handleSubmit = async (formData) => {
 
 <style scoped>
 .profile-create-container {
-  max-width: 800px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   padding: 2rem;
 }
 
 h1 {
-  text-align: center;
-  color: var(--accent-primary);
+  color: var(--text-default);
   margin-bottom: 0.5rem;
 }
 
-.subtitle {
-  text-align: center;
-  color: var(--text-subtle);
-  margin-bottom: 1.5rem;
-}
 
-.email-display {
-  background: #f3f4f6;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
+.info.email {
+  margin: 1.5rem 0;
   text-align: center;
-  color: #374151;
 }
 
 .email-display strong {

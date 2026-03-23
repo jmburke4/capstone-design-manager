@@ -214,26 +214,6 @@ strong {
     font-size: 1.1rem;
     line-height: 2rem;
 }
-.info {
-    border: 1px solid var(--accent-info);
-    background: var(--background-info);
-    color: var(--accent-info);
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-}
-.info.success {
-    border-color: var(--accent-positive);
-    background: var(--background-positive);
-    color: var(--text-positive);
-}
-.info.error {
-    border-color: var(--accent-negative);
-    background: var(--background-negative);
-    color: var(--text-negative);
-}
-.info p {
-    line-height: 0.75rem;
-}
 
 .countdown-card {
   display: flex;

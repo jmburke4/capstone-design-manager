@@ -41,9 +41,8 @@ const fields = computed(() => {
 });
 
 const formTitle = computed(() => {
-  const action = props.isEdit ? 'Edit' : 'Create';
-  const roleName = props.role === 'sponsor' ? 'Sponsor' : 'Student';
-  return `${action} ${roleName} Profile`;
+  const action = props.isEdit ? 'Make changes to your profile.' : 'Please fill in your information to continue.';
+  return `${action}`;
 });
 
 const handleSubmit = (formData) => {
@@ -53,7 +52,7 @@ const handleSubmit = (formData) => {
 
 <template>
   <div class="profile-form-container">
-    <h2>{{ formTitle }}</h2>
+    <p>{{ formTitle }}</p>
     
     <FormKit
       type="form"
@@ -89,7 +88,6 @@ const handleSubmit = (formData) => {
 
 <style scoped>
 .profile-form-container {
-  max-width: 600px;
   margin: 0 auto;
   padding: 2rem;
   background: white;
@@ -99,7 +97,7 @@ const handleSubmit = (formData) => {
 
 h2 {
   margin: 0 0 2rem 0;
-  color: var(--accent-primary);
+  color: var(--text-default);
 }
 
 .form-grid {
@@ -117,16 +115,16 @@ h2 {
 }
 
 .submit-btn {
-  width: 100%;
-  padding: 1rem;
-  background: var(--accent-primary);
-  color: white;
-  border: none;
   border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
   font-size: 1rem;
-  font-weight: 600;
+  font-family: inherit;
+  font-weight: bold;
+  background-color: var(--accent-primary);
+  color: white;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: border-color 0.25s;
 }
 
 .submit-btn:hover {

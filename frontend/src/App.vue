@@ -1,8 +1,9 @@
 <script setup>
 import Sidebar from './components/Sidebar.vue';
 import { useAuth0 } from '@auth0/auth0-vue';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import apiService from './services/api';
 
 const { isAuthenticated, isLoading, user, logout: auth0Logout } = useAuth0();
 const route = useRoute();
@@ -22,13 +23,11 @@ function getUserRole() {
   return null;
 }
 
-function getUserName() {
-  if (!user.value) return '';
-  return user.value.name || user.value.email || '';
-}
-
 const userRole = computed(() => getUserRole());
-const userName = computed(() => getUserName());
+const userName = computed(() => {
+  // return 'nickname', i.e. the user's email before the domain
+  return user.value.nickname || '';
+});
 
 const showSidebar = computed(() => {
   // Don't show sidebar on login page
@@ -49,6 +48,10 @@ const handleLogout = () => {
 const toggleDebug = () => {
   showDebug.value = !showDebug.value;
 };
+
+
+// userName: prefer backend, fallback to auth0 nickname
+
 </script>
 
 <template>
