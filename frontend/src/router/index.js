@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { auth0 } from '../main';
 import Login from '../components/Login.vue';
-import Projects from '../components/Projects.vue';
 import SponsorLanding from '../components/SponsorLanding.vue';
 import StudentLanding from '../components/StudentLanding.vue';
 import ProjectDescription from '../components/ProjectDescription.vue';
@@ -10,6 +9,8 @@ import StudentRankForm from '../components/StudentRankForm.vue';
 import ProfileCreate from '../components/ProfileCreate.vue';
 import ProfileEdit from '../components/ProfileEdit.vue';
 import apiService from '../services/api';
+import StudentAssignment from '../components/StudentAssignment.vue';
+import StudentProjectView from '../components/StudentProjectView.vue';
 
 const ROLE_KEY = 'https://backend-api-capstone/roles';
 
@@ -36,8 +37,9 @@ const routes = [
   { path: '/', name: 'Login', component: Login },
   { path: '/sponsor', name: 'Sponsor', component: SponsorLanding, meta: { roles: ['sponsor'], requiresProfile: true }},
   { path: '/student', name: 'Student', component: StudentLanding, meta: { roles: ['student'], requiresProfile: true }},
-  { path: '/student/projects', name: 'Projects', component: Projects, meta: { roles: ['student'], requiresProfile: true }},
+  { path: '/student/projects', name: 'StudentProjectView', component: StudentProjectView, meta: { roles: ['student'], requiresProfile: true }},
   { path: '/student/submit', name: 'StudentSubmit', component: StudentRankForm, meta: { roles: ['student'], requiresProfile: true }},
+  { path: '/student/assignment', name: 'StudentAssignment', component: StudentAssignment, meta: { roles: ['student'], requiresProfile: true }},
   { path: '/projects/:id', name: 'ProjectDescription', component: ProjectDescription, props: true},
   { path: '/sponsor/submit', name: 'SponsorSubmit', component: SponsorProjectForm, meta: { roles: ['sponsor'], requiresProfile: true }},
   { path: '/profile/create', name: 'ProfileCreate', component: ProfileCreate },

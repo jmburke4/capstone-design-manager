@@ -2,28 +2,94 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
+import apiService from '../services/api';
+import ConfirmationModal from './ConfirmationModal.vue';
+import { FormKit } from '@formkit/vue';
+
+const { getAccessTokenSilently } = useAuth0()
 
 const router = useRouter();
 
+const showConfirm = ref(false);
+
+const hasRanked = ref(false);
 const projects = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const isSubmitting = ref(false);
+const description = ref('');
 
-const fetchProjects = async () => {
-    try {
-        const { data } = await axios.get('/api/v1/projects/');
-        // Initialize each project with no selection
-        projects.value = data.map(p => ({ ...p, selection: null }));
-    } catch (err) {
-        error.value = "Failed to load projects. Is the backend running?";
-        console.error(err);
-    } finally {
-        loading.value = false;
+const studentProfile = ref(null);
+
+const existingPrefProjectIds = ref(new Set());
+
+const fetchProfileAndProjects = async () => {
+  try {
+    loading.value = true;
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
+
+    // load projects + profile in parallel
+    const [projectsRes, profileRes] = await Promise.all([
+      apiService.client.get('/projects/'),
+      apiService.getProfile()
+    ]);
+
+    projects.value = projectsRes.data.map(p => ({ ...p, selection: null }));
+    studentProfile.value = profileRes?.data ?? profileRes;
+    description.value = studentProfile.value?.description ?? '';
+
+    // if we have a student id, fetch preferences and apply them to the projects
+    const studentId = studentProfile.value?.id;
+    if (!studentId) {
+      hasRanked.value = false;
+      existingPrefProjectIds.value = new Set();
+      return;
     }
-};
 
-onMounted(fetchProjects);
+    const prefsRes = await apiService.client.get('/preferences/');
+    const prefs = Array.isArray(prefsRes.data) ? prefsRes.data : [];
+
+    // only keep this student's preferences
+    const studentPrefs = prefs.filter(pref => {
+      let prefStudent = pref.student;
+      if (prefStudent && typeof prefStudent === 'object') prefStudent = prefStudent.id;
+      return String(prefStudent) === String(studentId);
+    });
+
+    hasRanked.value = studentPrefs.length > 0;
+
+    const rankToSelection = { 1: 'high', 2: 'medium', 3: 'low' };
+
+    // apply existing preferences to the projects array
+    studentPrefs.forEach(pref => {
+      const prefProjectId = pref.project && typeof pref.project === 'object'
+        ? pref.project.id
+        : pref.project;
+
+      const project = projects.value.find(p => String(p.id) === String(prefProjectId));
+      if (project) {
+        project.selection = rankToSelection[pref.rank] ?? null;
+      }
+    });
+
+    // track which project IDs already have preferences for this student
+    existingPrefProjectIds.value = new Set(
+      studentPrefs.map(pref => {
+        const proj = pref.project && typeof pref.project === 'object' ? pref.project.id : pref.project;
+        return String(proj);
+      })
+    );
+  } catch (err) {
+    error.value = "Error: Could not obtain project data.";
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(fetchProfileAndProjects);
 
 const togglePreference = (index, rank) => {
     if (projects.value[index].selection === rank) {
@@ -57,30 +123,137 @@ const rankMap = {
 
 // Compute payload to match preference model fields
 const rankingPayload = computed(() => {
+    if (!studentProfile.value) return [];
+
     return projects.value
         .filter(p => p.selection !== null)
         .map(p => ({
-            student: 1, // TODO: replace with current student's ID from auth/store
+            // Matches the "1-2" format: studentID-projectID
+            id: `${studentProfile.value.id}-${p.id}`, 
+            student: studentProfile.value.id,
             project: p.id,
             rank: rankMap[p.selection]
         }));
 });
 
+const openConfirm = () => { showConfirm.value = true; };
+
+const onConfirm = async () => {
+  showConfirm.value = false;
+  await submitRankings();
+}
+
 
 const submitRankings = async () => {
-    if (!isFormValid.value) return;
+  if (!isFormValid.value) return;
+  isSubmitting.value = true;
+  try {
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
 
-    isSubmitting.value = true;
+    const payload = rankingPayload.value || [];
+    const studentId = studentProfile.value?.id;
+    const currentProjIds = payload.map(i => String(i.project));
+
+    // Ensure profile description is saved
     try {
-        // TODO: implement post of preferences
-        alert('Submission successful.');
-        router.push('/student');
-    } catch (err) {
-        console.error('One or more requests failed:', err.response?.data);
-        alert('Error: Submission failed.');
-    } finally {
-        isSubmitting.value = false;
+      if (studentProfile.value && studentProfile.value.id) {
+        // update existing profile (PUT)
+        await apiService.updateProfile({ ...studentProfile.value, description: description.value });
+      } else {
+        // create profile if none exists
+        const created = await apiService.createProfile({ description: description.value });
+        studentProfile.value = created;
+      }
+    } catch (profileErr) {
+      console.warn('Profile save failed, continuing with preferences:', profileErr.response?.data ?? profileErr);
+      // optionally: surface error and abort if you prefer
     }
+    // if update/create succeeded, refresh local copy
+    await fetchProfileAndProjects();
+
+    // Determine deletes: previously-existing project IDs that are no longer present
+    const toDeleteProjIds = [...existingPrefProjectIds.value].filter(id => !currentProjIds.includes(id));
+
+    // Issue deletes first (ignore 404s) and remove them from the local set
+    if (toDeleteProjIds.length && studentId) {
+      await Promise.all(toDeleteProjIds.map(async projId => {
+        const prefId = `${studentId}-${projId}`;
+        try {
+          await apiService.client.delete(`/preferences/${prefId}/`);
+        } catch (e) {
+          if (e.response?.status !== 404) throw e;
+        } finally {
+          existingPrefProjectIds.value.delete(projId);
+        }
+      }));
+    }
+
+    // Partition payload into updates (existing) and creates (new)
+    const toUpdate = [];
+    const toCreate = [];
+    for (const item of payload) {
+      const projId = String(item.project);
+      if (existingPrefProjectIds.value.has(projId)) toUpdate.push(item);
+      else toCreate.push(item);
+    }
+
+    // If user had no prefs at all, POST everything (preserves original behavior)
+    if (!hasRanked.value) {
+      for (const item of toCreate) {
+        await apiService.client.post('/preferences/', item);
+        existingPrefProjectIds.value.add(String(item.project));
+      }
+      if (toCreate.length) hasRanked.value = true;
+    } else {
+      // Update existing prefs (PATCH) in bulk if any
+      if (toUpdate.length) {
+        try {
+          await apiService.client.patch('/preferences/', toUpdate);
+        } catch (patchErr) {
+          console.warn('Bulk PATCH failed, continuing to create:', patchErr.response?.data ?? patchErr);
+          // continue to creation loop
+        }
+      }
+
+      // Create new prefs one-by-one for robustness; fallback to PATCH on duplicate
+      for (const item of toCreate) {
+        try {
+          await apiService.client.post('/preferences/', item);
+          existingPrefProjectIds.value.add(String(item.project));
+        } catch (e) {
+          const status = e.response?.status;
+          if (status === 400 || status === 409 || status === 400) {
+            // Try patching this item as a fallback
+            try {
+              await apiService.client.patch('/preferences/', item);
+              existingPrefProjectIds.value.add(String(item.project));
+            } catch (innerErr) {
+              throw innerErr;
+            }
+          } else {
+            throw e;
+          }
+        }
+      }
+    }
+
+    // Refresh local view so UI and tracking sets update
+    await fetchProfileAndProjects();
+
+    router.push({
+      path: '/student',
+      query: { flash: 'success', message: 'Your preferences have been saved.' }
+    });
+  } catch (err) {
+    console.error('Submission Error:', err.response?.data ?? err);
+    router.push({
+      path: '/student',
+      query: { flash: 'failure', message: `Error: Preferences may not have been saved.` }
+    });
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -138,14 +311,24 @@ const submitRankings = async () => {
           </div>
         </div>
 
+        <div class="comment-area">
+          <p>Provide any additional information. We will not be able to accommodate all requests.</p>
+          <FormKit
+            type="textarea"
+            name="comment"
+            v-model="description"
+            validation="length:0,2000"
+            />
+        </div>
+
         <button 
           class="submit-button" 
           :disabled="!isFormValid || isSubmitting"
-          @click="submitRankings"
+          @click="openConfirm"
         >
-          {{ isSubmitting ? 'Saving...' : 'Submit Project Rankings' }}
+          {{ isSubmitting ? 'Saving...' : (hasRanked ? 'Update Project Rankings' : 'Submit Project Rankings') }}
         </button>
-
+        <ConfirmationModal :show="showConfirm" title="Submit rankings?" message="These changes can be updated any amount of times before the deadline." @confirm="onConfirm" @cancel="() => showConfirm = false" />
         
       </footer>
     </div>
@@ -227,10 +410,13 @@ const submitRankings = async () => {
   color: var(--text-positive);
 }
 
+.comment-area {
+  width: 100%;
+}
+
 .submit-button {
   padding: 1rem 2rem;
   width: 100%;
-  font-weight: bold;
   color: white;
   cursor: pointer;
 }

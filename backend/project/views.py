@@ -1,6 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from user.authentication import Auth0Authentication
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Project, Assignment, Preference
@@ -18,6 +20,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 
 class PreferenceAPIView(APIView):
+    authentication_classes = [Auth0Authentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None, format=None):
         if pk:

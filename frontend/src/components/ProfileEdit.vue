@@ -62,15 +62,12 @@ const handleSubmit = async (formData) => {
 <template>
   <div class="profile-edit-container">
     <h1>Edit Profile</h1>
-    <p class="subtitle">
-      Update your profile information.
-    </p>
     
-    <div v-if="profileData.email" class="email-display">
+    <div v-if="profileData.email" class="info email">
       <strong>Email:</strong> {{ profileData.email }}
     </div>
     
-    <div v-if="error" class="error-message">
+    <div v-if="error" class="info error email">
       {{ error }}
     </div>
     
@@ -94,34 +91,24 @@ const handleSubmit = async (formData) => {
 
 <style scoped>
 .profile-edit-container {
-  max-width: 800px;
+  max-width: var(--max-content-width);
   margin: 0 auto;
   padding: 2rem;
 }
 
 h1 {
-  text-align: center;
-  color: var(--accent-primary);
+  color: var(--text-default);
   margin-bottom: 0.5rem;
 }
 
-.subtitle {
-  text-align: center;
-  color: var(--text-subtle);
-  margin-bottom: 1.5rem;
-}
 
-.email-display {
-  background: #f3f4f6;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
+.info.email {
+  margin: 1.5rem 0;
   text-align: center;
-  color: #374151;
 }
 
 .email-display strong {
-  color: #111827;
+  color: var(--text-default);
   margin-right: 0.5rem;
 }
 
