@@ -1,13 +1,41 @@
 <script setup>
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, watch, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 
-const { loginWithRedirect, isLoading, isAuthenticated } = useAuth0();
+const { loginWithRedirect, isLoading, isAuthenticated, user } = useAuth0();
 const route = useRoute();
 const router = useRouter();
 
+// Modal state for signup role selection
+const showSignupModal = ref(false);
+
 const error = computed(() => route.query.error || null);
+const errorDescription = computed(() => route.query.error_description || null);
+
+// Check if the error is specifically for unverified email
+const isUnverifiedEmail = computed(() => {
+  return error.value === 'access_denied' && 
+         errorDescription.value?.toLowerCase().includes('unverified_email');
+});
+
+// Extract the email from the error description (e.g., "Please verify user@example.com before...")
+const unverifiedEmailFromError = computed(() => {
+  if (!errorDescription.value) return null;
+  // Match email pattern in the error description
+  const emailMatch = errorDescription.value.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  return emailMatch ? emailMatch[0] : null;
+});
+
+// Get the user's email - prefer the one from error description, fallback to Auth0 user object
+const userEmail = computed(() => {
+  return unverifiedEmailFromError.value || user.value?.email || null;
+});
+
+// Clear the error and return to login view
+const clearError = () => {
+  router.replace({ path: '/', query: {} });
+};
 
 // Auto-redirect if already authenticated
 onMounted(() => {
@@ -25,21 +53,32 @@ watch(isAuthenticated, (newVal) => {
   }
 });
 
-const loginAsStudent = () => {
+// Modal controls
+const openSignupModal = () => {
+  showSignupModal.value = true;
+};
+
+const closeSignupModal = () => {
+  showSignupModal.value = false;
+};
+
+// Handle login - go directly to Auth0 login page
+const handleLogin = () => {
   loginWithRedirect({
     authorizationParams: {
-      role: 'student'
-    },
-    appState: { target: '/student' }
+      screen_hint: 'login'
+    }
   });
 };
 
-const loginAsSponsor = () => {
+// Handle signup with role selection
+const handleSignup = (role) => {
+  closeSignupModal();
   loginWithRedirect({
     authorizationParams: {
-      role: 'sponsor'
-    },
-    appState: { target: '/sponsor' }
+      role: role,
+      screen_hint: 'signup'
+    }
   });
 };
 </script>
@@ -48,22 +87,55 @@ const loginAsSponsor = () => {
   <div class="login-container">
     <div class="login-card">
       <h1>Capstone Project Manager</h1>
-      <p class="subtitle">Sign in to continue</p>
+      <p class="subtitle">Welcome to the platform</p>
       
       <div v-if="error === 'no_role'" class="error-message">
         <strong>Authentication Error</strong>
         <p>No role found in your account. Please contact your administrator to be assigned a role (Student or Sponsor).</p>
       </div>
-      
-      <div v-if="isLoading" class="loading">Loading...</div>
-      
-      <div v-else class="login-buttons">
-        <button @click="loginAsStudent" class="btn-student">
-          I am a Student
+
+      <!-- Email Verification Required -->
+      <div v-else-if="isUnverifiedEmail" class="verification-message">
+        <div class="verification-icon">✉️</div>
+        <h2>Verify Your Email</h2>
+        <p>Please verify your email address before logging in.</p>
+        <p v-if="userEmail" class="verification-email">
+          <strong>Email:</strong> {{ userEmail }}
+        </p>
+        <p class="verification-hint">Check your inbox for a verification link. Don't forget to check your spam folder!</p>
+        <button @click="clearError" class="btn-primary">
+          Back to Login
         </button>
-        <button @click="loginAsSponsor" class="btn-sponsor">
-          I am a Sponsor
+        <p class="verification-help">Once verified, click above to return to the login page.</p>
+      </div>
+      
+      <div v-else-if="isLoading" class="loading">Loading...</div>
+      
+      <!-- Main action buttons -->
+      <div v-else class="login-buttons main-actions">
+        <button @click="handleLogin" class="btn-login">
+          Login
         </button>
+        <button @click="openSignupModal" class="btn-signup">
+          Sign Up
+        </button>
+      </div>
+    </div>
+    
+    <!-- Role Selection Modal -->
+    <div v-if="showSignupModal" class="modal-backdrop" @click="closeSignupModal">
+      <div class="modal-content" @click.stop>
+        <button class="modal-close" @click="closeSignupModal">×</button>
+        <h3>Sign Up As</h3>
+        <p class="modal-subtitle">Select your role to continue</p>
+        <div class="role-buttons">
+          <button @click="handleSignup('student')" class="btn-student">
+            I am a Student
+          </button>
+          <button @click="handleSignup('sponsor')" class="btn-sponsor">
+            I am a Sponsor
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -168,5 +240,180 @@ button:hover {
 .loading {
   font-size: 1rem;
   color: var(--text-subtle);
+}
+
+/* Email Verification Styles */
+.verification-message {
+  background: var(--background-info);
+  border: 2px solid var(--accent-info);
+  color: var(--text-info);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.verification-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.verification-message h2 {
+  font-size: 1.75rem;
+  margin: 0 0 1rem 0;
+  color: var(--text-info);
+}
+
+.verification-message p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+}
+
+.verification-message .verification-hint {
+  font-size: 0.9rem;
+  color: var(--text-subtle);
+  margin-bottom: 1.5rem;
+}
+
+.verification-message .verification-email {
+  font-size: 1rem;
+  color: var(--text-default);
+  background: rgba(255, 255, 255, 0.5);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin: 0 0 1rem 0;
+  word-break: break-all;
+}
+
+.verification-message .verification-help {
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: white;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(0.9);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Main action buttons */
+.main-actions {
+  gap: 1.5rem;
+}
+
+.btn-login {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.btn-login:hover {
+  filter: brightness(0.9);
+}
+
+.btn-signup {
+  background-color: transparent;
+  color: var(--accent-primary);
+  border: 2px solid var(--accent-primary);
+}
+
+.btn-signup:hover {
+  background-color: var(--accent-primary);
+  color: white;
+  filter: brightness(0.9);
+}
+
+/* Modal Styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 450px;
+  width: 90%;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-subtle);
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+  color: var(--text-default);
+  transform: none;
+  box-shadow: none;
+}
+
+.modal-content h3 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-default);
+}
+
+.modal-subtitle {
+  color: var(--text-subtle);
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.role-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 </style>
