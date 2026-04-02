@@ -13,12 +13,23 @@ const loading = ref(true);
 const error = ref(null);
 const selectedProject = ref(null); // For sidebar details
 
+const sponsors = ref(new Map())
+
 // Fetch Logic
 const fetchData = async () => {
   try {
     loading.value = true; // Reset loading state if called again
-    const response = await axios.get('http://localhost:8000/api/v1/projects/?format=json');
-    posts.value = response.data; 
+    const [projectsRes, sponsorsRes] = await Promise.all([
+      axios.get('http://localhost:8000/api/v1/projects/?format=json'),
+      axios.get('http://localhost:8000/api/v1/sponsors/?format=json')
+    ]);
+    
+    // Map sponsor ID to sponsor object
+    sponsorsRes.data.forEach(sponsor => {
+      sponsors.value.set(sponsor.id, sponsor);
+    })
+
+    posts.value = projectsRes.data; 
   } catch (err) {
     error.value = err;
     console.error("Fetch Error:", err);
@@ -26,6 +37,12 @@ const fetchData = async () => {
     loading.value = false;
   }
 };
+
+const getSponsorDisplay = (project) => {
+  const sponsor = sponsors.value.get(project.sponsor);
+  if (!sponsor) return 'Unknown';
+  return sponsor.organization || `${sponsor.first_name} ${sponsor.last_name}`;
+}
 
 // Toggle sidebar
 const openDetails = (project) => {
@@ -55,6 +72,7 @@ onMounted(fetchData);
             v-for="project in posts" 
             :key="project.id" 
             :project="project"
+            :sponsorDisplay="getSponsorDisplay(project)"
             @click="openDetails(project)"
           />
         </div>
@@ -64,6 +82,7 @@ onMounted(fetchData);
         <aside v-if="selectedProject" class="card-details">
           <ProjectDetailsSidebar
             :project="selectedProject"
+            :sponsorDisplay="getSponsorDisplay(selectedProject)"
             @close="closeDetails"
           />
         </aside>
