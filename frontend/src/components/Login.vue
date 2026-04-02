@@ -3,11 +3,36 @@ import { computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 
-const { loginWithRedirect, isLoading, isAuthenticated } = useAuth0();
+const { loginWithRedirect, isLoading, isAuthenticated, user } = useAuth0();
 const route = useRoute();
 const router = useRouter();
 
 const error = computed(() => route.query.error || null);
+const errorDescription = computed(() => route.query.error_description || null);
+
+// Check if the error is specifically for unverified email
+const isUnverifiedEmail = computed(() => {
+  return error.value === 'access_denied' && 
+         errorDescription.value?.toLowerCase().includes('unverified_email');
+});
+
+// Extract the email from the error description (e.g., "Please verify user@example.com before...")
+const unverifiedEmailFromError = computed(() => {
+  if (!errorDescription.value) return null;
+  // Match email pattern in the error description
+  const emailMatch = errorDescription.value.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  return emailMatch ? emailMatch[0] : null;
+});
+
+// Get the user's email - prefer the one from error description, fallback to Auth0 user object
+const userEmail = computed(() => {
+  return unverifiedEmailFromError.value || user.value?.email || null;
+});
+
+// Clear the error and return to login view
+const clearError = () => {
+  router.replace({ path: '/', query: {} });
+};
 
 // Auto-redirect if already authenticated
 onMounted(() => {
@@ -54,8 +79,23 @@ const loginAsSponsor = () => {
         <strong>Authentication Error</strong>
         <p>No role found in your account. Please contact your administrator to be assigned a role (Student or Sponsor).</p>
       </div>
+
+      <!-- Email Verification Required -->
+      <div v-else-if="isUnverifiedEmail" class="verification-message">
+        <div class="verification-icon">✉️</div>
+        <h2>Verify Your Email</h2>
+        <p>Please verify your email address before logging in.</p>
+        <p v-if="userEmail" class="verification-email">
+          <strong>Email:</strong> {{ userEmail }}
+        </p>
+        <p class="verification-hint">Check your inbox for a verification link. Don't forget to check your spam folder!</p>
+        <button @click="clearError" class="btn-primary">
+          Back to Login
+        </button>
+        <p class="verification-help">Once verified, click above to return to the login page.</p>
+      </div>
       
-      <div v-if="isLoading" class="loading">Loading...</div>
+      <div v-else-if="isLoading" class="loading">Loading...</div>
       
       <div v-else class="login-buttons">
         <button @click="loginAsStudent" class="btn-student">
@@ -168,5 +208,74 @@ button:hover {
 .loading {
   font-size: 1rem;
   color: var(--text-subtle);
+}
+
+/* Email Verification Styles */
+.verification-message {
+  background: var(--background-info);
+  border: 2px solid var(--accent-info);
+  color: var(--text-info);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.verification-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.verification-message h2 {
+  font-size: 1.75rem;
+  margin: 0 0 1rem 0;
+  color: var(--text-info);
+}
+
+.verification-message p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+}
+
+.verification-message .verification-hint {
+  font-size: 0.9rem;
+  color: var(--text-subtle);
+  margin-bottom: 1.5rem;
+}
+
+.verification-message .verification-email {
+  font-size: 1rem;
+  color: var(--text-default);
+  background: rgba(255, 255, 255, 0.5);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin: 0 0 1rem 0;
+  word-break: break-all;
+}
+
+.verification-message .verification-help {
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: white;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(0.9);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>
