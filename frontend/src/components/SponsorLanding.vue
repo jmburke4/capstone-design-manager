@@ -7,12 +7,35 @@
 -->
 <script setup>
     import ProjectTable from './ProjectTable.vue'
+    import apiService from '../services/api';
+    import { ref, onMounted } from 'vue';
+
+    const currentSponsorId = ref(null); // will hold the sponsor ID
+    const error = ref(null);             // optional error handling
+
+    onMounted(async () => {
+        try{
+            const profileResponse = await apiService.getProfile();
+
+            if (profileResponse && profileResponse.data.id) {
+                currentSponsorId.value = String(profileResponse.data.id);
+            }
+            else {
+                console.warn('No ID found in profile response');
+                currentSponsorId.value = null;
+            }
+        } catch (err) {
+            console.error('Failed to fetch user profile:', err);
+            error.value = err;
+            currentSponsorId.value = null;
+        }
+    });
 </script>
 
 <template>
     <h1>Sponsor Page</h1>
     <div class="table-wrapper">
-        <ProjectTable />
+        <ProjectTable :sponsor-id="currentSponsorId" />
     </div>
 </template>
 
