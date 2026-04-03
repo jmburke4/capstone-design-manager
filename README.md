@@ -72,4 +72,10 @@ Instructions:
     AUTH0_CLIENT_ID=WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3
     AUTH0_AUDIENCE=https://backend-api-capstone/
 
+For the .env.dev.local in the frontend directory, you will need to add the prefix 'VITE_' to each of the variables like:
+    
+    VITE_AUTH0_DOMAIN=dev-qjyd077ykn3qqq7v.us.auth0.com
+    VITE_AUTH0_CLIENT_ID=WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3
+    VITE_AUTH0_AUDIENCE=https://backend-api-capstone/
+
 (These are front public variables and it is fine to include them in the readme and upload to repo. These values are subject to change.)
