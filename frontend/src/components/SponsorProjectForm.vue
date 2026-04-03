@@ -1,42 +1,29 @@
 <script setup>
 import { FormKit } from '@formkit/vue';
+import apiService from '../services/api';
+import axios from 'axios';
 
 async function handleSubmission(data) {
 
   try {
 
-    const sponsorPayload = {
-      first_name: "Sponsor",
-      last_name: "Contact",
-      organization: data.sponsor_info.company_name,
-      email: data.sponsor_info.contact_email
-    }
+    const profileResponse = await apiService.getProfile();
 
-    const sponsorResponse = await fetch(
-        "http://localhost:8000/api/v1/sponsors/", 
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(sponsorPayload)
-        }
-    )
-    
-    if (!sponsorResponse.ok) {
-        const text = await sponsorResponse.text() // read raw HTML/text
-        console.error("Sponsor API returned HTML/text:", text)
-        throw new Error("Sponsor creation failed")
-    }
+    const sponsorId = profileResponse.data.id;
+    const currentProjectsResponse = await axios.get(`http://localhost:8000/api/v1/projects/?sponsor=${sponsorId}`);
+    const currentProjects = currentProjectsResponse.data;
+    const projectCount = currentProjects.length;
+    const projectNumLimit = Number(profileResponse.data.projects_allowed);
 
-    const sponsor = await sponsorResponse.json()
+    if (projectCount >= projectNumLimit) {
+      throw new Error("You have reached the maximum number of allowed projects.");
+    }
 
     const projectPayload = {
       name: data.project_details.name,
       description: data.project_details.description,
       website: data.project_details.website || null,
-      sponsor: sponsor.id
+      sponsor: sponsorId
     }
 
     const projectResponse = await fetch(
@@ -61,7 +48,12 @@ async function handleSubmission(data) {
 
   } catch (error) {
     console.error("Submission failed:", error)
-    alert("Submission failed.")
+    if (error instanceof Error) {
+      alert(error.message); // e.g. "You have reached the maximum number of allowed projects."
+    } else {
+      // fallback for unexpected errors
+      alert("Submission failed.");
+    }
   }
 }
 

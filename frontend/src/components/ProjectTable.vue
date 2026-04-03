@@ -36,11 +36,11 @@ const props = defineProps({
 });
 
 const filteredPosts = computed(() => {
-  if(!props.sponsorId) {
-    return posts.value;
+  if (!props.sponsorId) {
+    return posts.value; // show all if no sponsorId
   }
   return posts.value.filter(
-    post => String(posts.sponsorId) === String(props.sponsorId)
+    post => String(post.sponsor) === String(props.sponsorId)
   );
 });
 
