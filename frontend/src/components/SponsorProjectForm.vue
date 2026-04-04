@@ -23,7 +23,8 @@ async function handleSubmission(data) {
       name: data.project_details.name,
       description: data.project_details.description,
       website: data.project_details.website || null,
-      sponsor: sponsorId
+      sponsor: sponsorId,
+      availability: data.sponsor_info.sponsor_availability
     }
 
     const projectResponse = await fetch(
@@ -113,11 +114,20 @@ async function handleSubmission(data) {
             label="Company/Organization"
             validation="required"
             />
+
             <FormKit
             type="email"
             name="contact_email"
             label="Primary Contact Email"
             validation="required|email"
+            />
+
+            <FormKit
+            type="textarea"
+            name="availability"
+            label="Sponsor Availability"
+            validation="required"
+            help="State days of the week and the respoective times of day you are available (Morining/Afternoon)"
             />
         </FormKit>
 
