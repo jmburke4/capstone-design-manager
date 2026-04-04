@@ -71,6 +71,40 @@ async function handleSubmission(data) {
         @submit="handleSubmission"
         >
 
+        <div class="form-intro">
+          <p>
+            Thank you for your interest in sponsoring a computer science capstone projects. Our students have 
+            spent 4 years aquiring skills. The opportunity to have a culminating experience that incorporates
+            everything they have learned is invaluable. your willingness to be a part of that experience 
+            appreciated. At the same time, we are honored to contribute to the university community.
+          </p>
+          <p>
+            When presenting your project, students will want to know the purpose of the system, who will be 
+            using it, and what users should be able to do. It is helpful to provide information on how the 
+            users will access the systems and how many users you expect.
+          </p>
+          <p><strong>External Sponsor/Student Agreement</strong></p>
+          <p>Project sponsors will: </p>
+          <ul>
+            <li>Provide students with a list of user interactions and functionality (what the software should do).</li>
+            <li>Meet with students weekly to prioritize feature implementation.</li>
+            <li>Provide frequent feedback on how well the software meets the business requirements.</li>
+            <li>Provide timely answers to questions.</li>
+          </ul>
+          <p>
+            Students will:
+          </p>
+          <ul>
+            <li>Choose tools, language and platforms that are appropriate for the requirements.</li>
+            <li>Use Agile Software Development Practices.</li>
+            <li>Document non-functional requirements.</li>
+            <li>Incorporate feedback from project sponsors.</li>
+            <li>Keep accurate records of all meetings and interactions.</li>
+        </ul>
+        </div>
+
+        <hr />
+
         <FormKit type="group" name="sponsor_info">
             <h3>Contact Information</h3>
             <FormKit
