@@ -24,6 +24,9 @@ class Project(models.Model):
     )
     """[Required] FK to a Sponsor (on_delete=PROTECT)"""
 
+    sponsor_availability = models.TextField(blank=True, null=True)
+    """[Optional] A text field for the sponsor of the project to describe when they are available to meet with the design team"""
+
     # TODO Convert to a read only field that is based on whether it is assigned during a semester or not
     class StatusChoices(models.TextChoices):
         IN_PROGRESS = 'IP', _('In Progress')
