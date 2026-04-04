@@ -1,6 +1,7 @@
 <script setup>
 defineProps({
-  project: { type: Object, default: null }
+  project: { type: Object, default: null },
+  sponsorDisplay: { type: String, default: 'Unknown' }
 });
 defineEmits(['close']);
 </script>
@@ -10,13 +11,14 @@ defineEmits(['close']);
     <header class="sidebar-header">
       <button class="close-btn" @click="$emit('close')">✕</button>
       <div class="sponsor-brand">
-        <h2>Sponsor: {{ typeof project.sponsor === 'string' ? project.sponsor : 'ID ' + project.sponsor }}</h2>
+        <h2>{{ sponsorDisplay }}</h2>
       </div>
       <hr />
     </header>
 
     <div class="sidebar-body">
-      <span class="status-tag">{{ project.status }}</span>
+      <!-- Hide status tag for now -->
+      <!-- <span class="status-tag">{{ project.status }}</span> -->
       <h1 class="project-name">{{ project.name }}</h1>
       
       <section class="info-section">
@@ -57,7 +59,7 @@ li {
 }
 
 .sidebar-header {
-  padding: 2rem;
+  padding: 1rem 2rem;
   /* border-bottom: 1px solid var(--border-subtle); */
 }
 

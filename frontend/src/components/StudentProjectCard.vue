@@ -1,10 +1,15 @@
 <script setup>
 defineProps({
-project: {
-    type: Object,
+  project: {
+      type: Object,
+      required: true
+  },
+  sponsorDisplay: {
+    type: String,
     required: true
-}
+  }
 });
+
 // Helper to keep descriptions from breaking the card height
 const truncate = (text) => {
   return text && text.length > 120 ? text.substring(0, 120) + '...' : text;
@@ -19,13 +24,14 @@ const formatDate = (dateStr) => {
     <div class="card">
         <div class="card-header">
             <div class="sponsor-info">
-                <!-- logo -- when sponsors are stringified: project.sponsor?.charAt(0) -->
-                <div class="sponsor-logo">{{ project.sponsor }}</div> 
-                <span class="sponsor-name">{{ project.sponsor }}</span>
+                <div class="sponsor-logo">{{ sponsorDisplay.charAt(0).toUpperCase() }}</div> 
+                <span class="sponsor-name">{{ sponsorDisplay }}</span>
             </div>
-            <span class="status-badge" :class="project.status?.toLowerCase()">
+
+            <!-- hide status-badge for now, not necessary -->
+            <!-- <span class="status-badge" :class="project.status?.toLowerCase()">
                 {{ project.status }}
-            </span>
+            </span> -->
         </div>
 
         <div class="card-body">
@@ -66,7 +72,12 @@ const formatDate = (dateStr) => {
   place-items: center;
   font-weight: bold;
 }
-
+.sponsor-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .sponsor-info {
   display: flex;
   align-items: center;
@@ -74,6 +85,7 @@ const formatDate = (dateStr) => {
 }
 
 .project-title {
+  color: var(--text-default);
   margin: 0;
   font-size: 1.5rem;
   line-height: 2rem;
