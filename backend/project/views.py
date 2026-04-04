@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from user.authentication import Auth0Authentication
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Project, Assignment, Preference
-from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer
+from .models import Project, Assignment, Preference, Semester, Feedback
+from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -115,3 +115,13 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     serializer_class = AssignmentSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['project', 'semester']
+
+
+class SemesterViewSet(viewsets.ModelViewSet):
+    queryset = Semester.objects.all()
+    serializer_class = SemesterSerializer
+
+
+class FeedbackViewset(viewsets.ModelViewSet):
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer

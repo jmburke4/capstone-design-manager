@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.http import urlencode
 from import_export.admin import ImportExportModelAdmin
-from project.models import Project, Semester, Preference, Assignment
+from project.models import Project, Semester, Preference, Assignment, Feedback
 from project.resources import ProjectResource, SemesterResource, PreferenceResource, AssignmentResource
 
 
@@ -69,3 +69,8 @@ class PreferenceAdmin(ImportExportModelAdmin):
 @admin.register(Assignment)
 class AssignmentAdmin(ImportExportModelAdmin):
     resource_classes = [AssignmentResource]
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(ImportExportModelAdmin):
+    pass
