@@ -11,6 +11,7 @@ import ProfileEdit from '../components/ProfileEdit.vue';
 import apiService from '../services/api';
 import StudentAssignment from '../components/StudentAssignment.vue';
 import StudentProjectView from '../components/StudentProjectView.vue';
+import SponsorFeedbackForm from '../components/SponsorFeedbackForm.vue';
 
 const ROLE_KEY = 'https://backend-api-capstone/roles';
 
@@ -42,6 +43,7 @@ const routes = [
   { path: '/student/assignment', name: 'StudentAssignment', component: StudentAssignment, meta: { roles: ['student'], requiresProfile: true }},
   { path: '/projects/:id', name: 'ProjectDescription', component: ProjectDescription, props: true},
   { path: '/sponsor/submit', name: 'SponsorSubmit', component: SponsorProjectForm, meta: { roles: ['sponsor'], requiresProfile: true }},
+  { path: '/sponsor/feedback', name: 'SponsorFeedback', component: SponsorFeedbackForm, meta:{roles: ['sponsor'], requiresProfile: true}},
   { path: '/profile/create', name: 'ProfileCreate', component: ProfileCreate },
   { path: '/profile/edit', name: 'ProfileEdit', component: ProfileEdit }
 ];
