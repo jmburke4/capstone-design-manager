@@ -193,3 +193,31 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f'{self.student} ({self.semester})'
+
+
+class Feedback(models.Model):
+    """Model representing a note of feedback from a sponsor"""
+
+    sponsor = models.ForeignKey(
+        Sponsor,
+        on_delete=models.CASCADE
+    )
+    """[Required] The sponsor that submitted the feedback"""
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE
+    )
+    """[Required] The project the sponsor is providing feedback on"""
+
+    text = models.TextField()
+    """[Required] The feedback"""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    """[Default] Tracks when the record was created"""
+
+    updated_at = models.DateTimeField(auto_now=True)
+    """[Default] Tracks when the record was last updated"""
+
+    class Meta:
+        verbose_name_plural = 'Feedback'

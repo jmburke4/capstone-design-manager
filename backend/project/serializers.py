@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer, CharField, ListSerializer, ValidationError
-from .models import Semester, Preference, Project, Assignment
+from .models import Semester, Preference, Project, Assignment, Feedback
 import logging
 
 logger = logging.getLogger(__name__)
@@ -63,4 +63,10 @@ class PreferenceSerializer(ModelSerializer):
 class AssignmentSerializer(ModelSerializer):
     class Meta:
         model = Assignment
+        fields = '__all__'
+
+
+class FeedbackSerializer(ModelSerializer):
+    class Meta:
+        model = Feedback
         fields = '__all__'
