@@ -53,7 +53,7 @@ onMounted(() => {
       { title: "ID", field: "id", width: 50 },
       { title: "Name", field: "name" },
       { title: "Description", field: "description" },
-      { title: "Sponsor", field: "sponsor" },
+      { title: "Availability", field: "sponsor_availability" },
       { title: "Website", field: "website" },
       { title: "Created", field: "created_at" },
       { title: "Status", field: "status" },
