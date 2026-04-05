@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import StudentProjectCard from './StudentProjectCard.vue';
 import ProjectDetailsSidebar from './ProjectDetailsSidebar.vue';
+import { useProjectsStore } from '../stores/projectsStore';
 
 const router = useRouter();
 
@@ -53,8 +53,9 @@ const closeDetails = () => {
   selectedProject.value = null;
 }
 
-// Trigger the fetch on mount
-onMounted(fetchData);
+onMounted(() => {
+  projectsStore.fetchProjects().catch(err => console.error('Failed to fetch projects', err));
+});
 </script>
 
 <template>
@@ -94,7 +95,6 @@ onMounted(fetchData);
 <style scoped>
 .project-grid {
   display: grid;
-  /* Creates a responsive grid that fits as many 350px cards as possible */
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
 }
