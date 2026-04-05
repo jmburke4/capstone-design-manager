@@ -1,14 +1,10 @@
-<!-- Student Landing Page -->
-<!-- Roles:
-        Submit project ranking
-        View project descriptions
--->
-
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 import apiService from '../services/api';
+import { useStudentStore } from '../stores/studentStore';
+import { useProjectsStore } from '../stores/projectsStore';
 
 const route = useRoute();
 const router = useRouter();
@@ -17,8 +13,19 @@ const flash = ref(null);
 const { getAccessTokenSilently } = useAuth0();
 
 const topPreferences = ref([]);
-const hasRanked = ref(false);
 const loading = ref(true);
+const studentStore = useStudentStore();
+const projectsStore = useProjectsStore();
+const hasRanked = computed(() => studentStore.hasRanked);
+const isAssigned = computed(() => studentStore.isAssigned);
+const assignedProjectTitle = computed(() => {
+  const assignment = studentStore.assignment
+  if (!assignment) return null
+  const projId = assignment.project && typeof assignment.project === 'object' ? assignment.project.id : assignment.project
+  if (!projId) return null
+  const proj = (projectsStore.projects || []).find(p => String(p.id) === String(projId))
+  return proj ? proj.name : null
+})
 
 // set the deadline (example): prefer reading from API
 // e.g. const deadline = new Date(import.meta.env.VITE_RANKING_DEADLINE);
@@ -76,35 +83,20 @@ onMounted(async () => {
     const token = await getAccessTokenSilently();
     apiService.setToken(token);
 
-    const profileRes = await apiService.getProfile();
-    const profile = profileRes?.data ?? profileRes;
-    const studentId = profile?.id;
-    if (!studentId){
-        loading.value = false;
-        return;
+    await Promise.all([
+      projectsStore.fetchProjects(),
+      studentStore.fetchProfileAndPrefs()
+    ]);
+
+    const studentPrefs = studentStore.preferences || [];
+    if (!studentPrefs.length) {
+      loading.value = false;
+      return;
     }
 
-    const prefsRes = await apiService.client.get('/preferences/');
-    const prefs = Array.isArray(prefsRes.data) ? prefsRes.data : [];
+    // build project map from projects store
+    const projectById = Object.fromEntries((projectsStore.projects || []).map(p => [String(p.id), p]));
 
-    const studentPrefs = prefs.filter(pref => {
-      let prefStudent = pref.student;
-      if (prefStudent && typeof prefStudent === 'object') prefStudent = prefStudent.id;
-      return String(prefStudent) === String(studentId);
-    });
-
-    if (!studentPrefs.length) {
-        loading.value = false;
-        return;
-    } 
-
-    hasRanked.value = true;
-
-    // Ensure we have project names: fetch all projects once and map by id
-    const projectsRes = await apiService.client.get('/projects/');
-    const projectById = Object.fromEntries(projectsRes.data.map(p => [String(p.id), p]));
-
-    // sort by rank (ascending) and take top 5
     studentPrefs.sort((a, b) => (a.rank || 999) - (b.rank || 999));
     topPreferences.value = studentPrefs.slice(0, 5).map(pref => {
       const projId = pref.project && typeof pref.project === 'object' ? pref.project.id : pref.project;
@@ -140,25 +132,25 @@ onUnmounted(() => {
         <h2>Submission Deadline Countdown</h2>
         <hr />
         <div class="timer">
-            <div class="time-segment">
+          <div class="time-segment">
             <div class="time-value">{{ days }}</div>
             <div class="time-label">Days</div>
-            </div>
-            <div class="time-separator">:</div>
-            <div class="time-segment">
+          </div>
+          <div class="time-separator">:</div>
+          <div class="time-segment">
             <div class="time-value">{{ hours }}</div>
             <div class="time-label">Hours</div>
-            </div>
-            <div class="time-separator">:</div>
-            <div class="time-segment">
+          </div>
+          <div class="time-separator">:</div>
+          <div class="time-segment">
             <div class="time-value">{{ minutes }}</div>
             <div class="time-label">Minutes</div>
-            </div>
-            <div class="time-separator">:</div>
-            <div class="time-segment">
+          </div>
+          <div class="time-separator">:</div>
+          <div class="time-segment">
             <div class="time-value">{{ seconds }}</div>
             <div class="time-label">Seconds</div>
-            </div>
+          </div>
         </div>
     </div>
     <div class="card">
@@ -179,9 +171,15 @@ onUnmounted(() => {
     </div>
     
     <div class="card">
-        <h2>Project Assignment</h2>
-        <hr />
-        <span>Due date has not passed yet.</span>
+      <h2>Project Assignment</h2>
+      <hr />
+      <div v-if="isAssigned">
+        <h3>{{ assignedProjectTitle }}</h3>
+        <span><router-link class="redirect" to="/student/assignment">View assignment →</router-link></span>
+      </div>
+      <div v-else>
+        <span>No assignment has been made yet.</span>
+      </div>
     </div>
 </div>
 </template>
@@ -192,9 +190,7 @@ hr {
     /* display: none; */
 }
 h2 {
-    margin-top: 0rem;
-    margin-bottom: 0.5rem;
-    font-size: 2rem;
+    margin-top: 0.5rem;
 }
 .redirect {
     color: var(--text-link)
@@ -204,7 +200,7 @@ h2 {
     max-width: var(--max-content-width);
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 button {
     width: 100%;

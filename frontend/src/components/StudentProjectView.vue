@@ -1,33 +1,19 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import StudentProjectCard from './StudentProjectCard.vue';
 import ProjectDetailsSidebar from './ProjectDetailsSidebar.vue';
+import { useProjectsStore } from '../stores/projectsStore';
 
 const router = useRouter();
 
-// Reactive State
-const posts = ref([]); // Initialize as empty array to avoid v-for errors
-const loading = ref(true);
-const error = ref(null);
-const selectedProject = ref(null); // For sidebar details
+const projectsStore = useProjectsStore();
 
-// Fetch Logic
-const fetchData = async () => {
-  try {
-    loading.value = true; // Reset loading state if called again
-    const response = await axios.get('http://localhost:8000/api/v1/projects/?format=json');
-    posts.value = response.data; 
-  } catch (err) {
-    error.value = err;
-    console.error("Fetch Error:", err);
-  } finally {
-    loading.value = false;
-  }
-};
+const posts = computed(() => projectsStore.projects);
+const loading = computed(() => projectsStore.loading);
+const error = computed(() => projectsStore.error);
+const selectedProject = ref(null);
 
-// Toggle sidebar
 const openDetails = (project) => {
   selectedProject.value = project;
 }
@@ -36,8 +22,9 @@ const closeDetails = () => {
   selectedProject.value = null;
 }
 
-// Trigger the fetch on mount
-onMounted(fetchData);
+onMounted(() => {
+  projectsStore.fetchProjects().catch(err => console.error('Failed to fetch projects', err));
+});
 </script>
 
 <template>
@@ -75,7 +62,6 @@ onMounted(fetchData);
 <style scoped>
 .project-grid {
   display: grid;
-  /* Creates a responsive grid that fits as many 350px cards as possible */
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
 }
