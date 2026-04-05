@@ -23,6 +23,8 @@ class Sponsor(models.Model):
 
     phone_number = models.CharField(
         max_length=18,
+        blank=True,
+        null=True,
         validators=[
             RegexValidator(
                 regex=r'^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$',
@@ -30,7 +32,7 @@ class Sponsor(models.Model):
             )
         ]
     )
-    """[Required] A phone number for the sponsor"""
+    """[Optional] A phone number for the sponsor"""
 
     projects_allowed = models.SmallIntegerField(default=3)
     """[Default] The number of projects a sponsor is allowed to sponsor"""
