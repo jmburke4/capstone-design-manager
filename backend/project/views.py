@@ -8,6 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Project, Assignment, Preference, Semester, Feedback
 from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer
 import logging
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['sponsor']  # allows ?sponsor=<id>
+
+    def list(self, request, *args, **kwargs):
+        """Override list method to filter projects by current semester."""
+        semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
+            datetime.datetime.now()), year=datetime.datetime.now().year).first()
+        queryset = self.filter_queryset(self.get_queryset().filter(semester=semester))
+        serializer = ProjectSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class PreferenceAPIView(APIView):
@@ -117,11 +126,25 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     filterset_fields = ['project', 'semester']
 
 
-class SemesterViewSet(viewsets.ModelViewSet):
-    queryset = Semester.objects.all()
-    serializer_class = SemesterSerializer
+class SemesterAPIView(APIView):
+    authentication_classes = [Auth0Authentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk=None, format=None):
+        if pk:
+            semester = get_object_or_404(Semester, pk=pk)
+            serializer = SemesterSerializer(semester)
+            return Response(serializer.data)
+        else:
+            semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
+                datetime.datetime.now()), year=datetime.datetime.now().year).first()
+            serializer = SemesterSerializer(semester)
+            return Response(serializer.data)
 
 
 class FeedbackViewset(viewsets.ModelViewSet):
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
+
+    authentication_classes = [Auth0Authentication]
+    permission_classes = [IsAuthenticated]

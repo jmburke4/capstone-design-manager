@@ -88,6 +88,14 @@ class Semester(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     """[Default] Tracks when the record was last updated"""
 
+    def get_semester_by_date(date):
+        if date.month in [1, 2, 3, 4, 5]:
+            return Semester.Semester.SPRING
+        elif date.month in [6, 7]:
+            return Semester.Semester.SUMMER
+        else:
+            return Semester.Semester.FALL
+
     def __str__(self):
         return f'{self.semester} {self.year}'
 

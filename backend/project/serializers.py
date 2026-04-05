@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer, CharField, ListSerializer, ValidationError
+from rest_framework.serializers import ModelSerializer, CharField, ListSerializer, ValidationError, DateTimeField
 from .models import Semester, Preference, Project, Assignment, Feedback
 import logging
 
@@ -14,6 +14,9 @@ class ProjectSerializer(ModelSerializer):
 
 
 class SemesterSerializer(ModelSerializer):
+    # Keep Browsable API form rendering stable when no value is supplied on create forms.
+    assignment_date = DateTimeField(style={'input_type': 'text'})
+
     class Meta:
         model = Semester
         fields = '__all__'
