@@ -83,7 +83,7 @@ const handleLogout = () => emit('logout');
             </div>
         </nav>
         
-        <div class="profile-section">
+        <div class="profile-section" v-if="userRole === 'sponsor'">
             <div
                 class="nav-item"
                 :class="{ active: isActive('/profile/edit') }"

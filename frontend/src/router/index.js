@@ -128,6 +128,16 @@ router.beforeEach(async (to, from, next) => {
       next({ path: '/' });
       return;
     }
+    
+    // Block students from editing profiles
+    if (to.path === '/profile/edit') {
+      const userRole = getUserRole(user.value);
+      if (userRole === 'student') {
+        next({ path: '/student' }); // Redirect to student dashboard
+        return;
+      }
+    }
+    
     next();
     return;
   }
