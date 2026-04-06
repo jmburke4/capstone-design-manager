@@ -1,26 +1,27 @@
 from django.db import models
 from django.core.validators import RegexValidator
 
-# Models are orded by chronological appearance
-# Fields are ordered by importance descending
+# The user app will handle the user related tables:
 
 
 class Sponsor(models.Model):
-    """Model representing a project sponsor"""
+    # [Default] Tracks when the Sponsor record was created
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    first_name = models.CharField(max_length=30)
-    """[Required] The sponsors first name"""
-
-    last_name = models.CharField(max_length=30)
-    """[Required] The sponsors last name"""
-
+    # [Required] The email address for the sponsor
     email = models.EmailField()
-    """[Required] The email address for the sponsor"""
 
+    # [Required] The sponsors last name
+    first_name = models.CharField(max_length=30)
+
+    # [Required] The sponsors last name
+    last_name = models.CharField(max_length=30)
+
+    # [Optional] A company, school, or other organization the sponsor may be attached to
     # TODO Add an Organization model, and make this field an FK to an Organization record
     organization = models.TextField(max_length=50, blank=True, null=True)
-    """[Optional] A company, school, or other organization the sponsor may be attached to"""
 
+    # [Optional] A phone number for the sponsor
     phone_number = models.CharField(
         max_length=18,
         blank=True,
@@ -32,28 +33,22 @@ class Sponsor(models.Model):
             )
         ]
     )
-    """[Optional] A phone number for the sponsor"""
-
-    projects_allowed = models.SmallIntegerField(default=3)
-    """[Default] The number of projects a sponsor is allowed to sponsor"""
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    """[Default] Tracks when the record was created"""
-
-    updated_at = models.DateTimeField(auto_now=True)
-    """[Default] Tracks when the record was last updated"""
-
-    def name(self):
-        """Returns first and last name"""
-        return f'{self.first_name} {self.last_name}'
 
     def __str__(self):
-        return self.name()
+        return f"{self.first_name} {self.last_name}"
 
 
 class Student(models.Model):
-    """Model representing a student to be assigned to a project"""
+    # [Default] Tracks when the Student record was created
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    # [Optional] Student class code - not sure what the values are
+    class_code = models.CharField(max_length=9, blank=True, null=True)
+
+    # [Optional] Major code (CYS/CS?)
+    major_code = models.CharField(max_length=3, blank=True, null=True)
+
+    # [Required] Student's CWID
     cwid = models.CharField(
         max_length=8,
         unique=True,
@@ -65,48 +60,24 @@ class Student(models.Model):
             )
         ]
     )
-    """[Required] The student's CWID"""
 
-    first_name = models.CharField(max_length=30)
-    """[Required] The student's first name"""
-
-    middle_name = models.CharField(max_length=30, blank=True, null=True)
-    """[Optional] The student's middle name"""
-
-    last_name = models.CharField(max_length=30)
-    """[Required] The student's last name"""
-
-    preferred_name = models.CharField(max_length=30, blank=True, null=True)
-    """[Optional] A students preferred name"""
-
+    # [Required] The email address for the student
     email = models.EmailField()
-    """[Required] The student's email address"""
 
-    description = models.TextField(blank=True, null=True)
-    """[Optional] Attributes or skills of the student"""
+    # [Required] The Student first name
+    first_name = models.CharField(max_length=30)
 
-    class Class(models.TextChoices):
-        FRESHMAN = "FR", "Freshman"
-        SOPHOMORE = "SO", "Sophomore"
-        JUNIOR = "JR", "Junior"
-        SENIOR = "SR", "Senior"
-        GRADUATE = "GR", "Graduate"
+    # [Optional] The Student middle name
+    middle_name = models.CharField(max_length=30, blank=True, null=True)
 
-    class_code = models.CharField(max_length=9, blank=True, null=True, choices=Class.choices, verbose_name='class')
-    """[Optional] The student's year/class code"""
+    # [Required] The Student last name
+    last_name = models.CharField(max_length=30)
 
-    major_code = models.CharField(max_length=3, blank=True, null=True, verbose_name='major')
-    """[Optional] The student's major code, such as CS for Computer Science, CYS for Cybersecurity"""
+    # [Optional] A students preferred name
+    preferred_name = models.CharField(max_length=30, blank=True, null=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    """[Default] Tracks when the record was created"""
-
-    updated_at = models.DateTimeField(auto_now=True)
-    """[Default] Tracks when the record was last updated"""
-
-    def name(self):
-        """Returns first and last name"""
-        return f'{self.first_name} {self.last_name}'
+    # Organization would be redundant? Since everyone is through UA....
+    # I think we will forgo phone numbers for students for now...
 
     def __str__(self):
-        return self.name()
+        return f"{self.first_name} {self.last_name}"

@@ -1,10 +1,9 @@
+__pycache__/
+db.sqlite3
 .env
+env
 .env.*
 env.*
-!env.*.example
 !.env.example
-.DS_Store
-.lsp/
-docs/
-node_modules/
-
+!.env.example.db
+!.env.example.minio

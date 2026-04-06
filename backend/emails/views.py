@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.http import HttpResponse
 from emails.utils import email_client
 from emails.serializers import EmailSerializer
 
@@ -35,7 +36,7 @@ def send_email(request):
         )
 
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 def send_sponsor_outreach(request):
     recipients = request.data.get('recipients')
     semester = request.data.get('semester', 'spring')
@@ -101,3 +102,34 @@ def send_project_presentation(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['GET'])
+def export_sponsor_outreach(request):
+    semester = request.query_params.get('semester', 'spring')
+    collection_date = request.query_params.get('collection_date', 'TBD')
+    
+    html_content = email_client.render_sponsor_outreach_html(semester, collection_date)
+    
+    response = HttpResponse(html_content, content_type='text/html')
+    response['Content-Disposition'] = 'attachment; filename="sponsor_outreach_email.html"'
+    return response
+
+
+@api_view(['GET'])
+def export_project_presentation(request):
+    context = {
+        'date': request.query_params.get('date', 'TBD'),
+        'time': request.query_params.get('time', 'TBD'),
+        'project_name': request.query_params.get('project_name', 'TBD'),
+        'project_description': request.query_params.get('project_description', 'TBD'),
+        'contact_name': request.query_params.get('contact_name', 'TBD'),
+        'contact_email': request.query_params.get('contact_email', 'TBD'),
+        'zoom_details': request.query_params.get('zoom_details', 'TBD'),
+    }
+    
+    html_content = email_client.render_project_presentation_html(**context)
+    
+    response = HttpResponse(html_content, content_type='text/html')
+    response['Content-Disposition'] = 'attachment; filename="project_presentation_email.html"'
+    return response

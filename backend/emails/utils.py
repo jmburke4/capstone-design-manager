@@ -120,5 +120,26 @@ class EmailClient:
             smtp_password=smtp_password,
         )
 
+    def render_sponsor_outreach_html(self, semester='spring', collection_date='TBD'):
+        context = {
+            'semester': semester.lower(),
+            'collection_date': collection_date,
+        }
+        return render_to_string('emails/sponsor_outreach.html', context)
+
+    def render_project_presentation_html(self, date='TBD', time='TBD', project_name='TBD', 
+                                         project_description='TBD', contact_name='TBD', 
+                                         contact_email='TBD', zoom_details='TBD'):
+        context = {
+            'date': date,
+            'time': time,
+            'project_name': project_name,
+            'project_description': project_description,
+            'contact_name': contact_name,
+            'contact_email': contact_email,
+            'zoom_details': zoom_details,
+        }
+        return render_to_string('emails/project_presentation.html', context)
+
 
 email_client = EmailClient()

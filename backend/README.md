@@ -32,13 +32,15 @@ Use the Python files in the ```backend/project/``` directory to see the ```Proje
 
 5. Register a route for the new model in ```backend/<module>/urls.py```
 
-6. Spin up the containers and run migrations
+6. Register an entry in ```backend/<module>/admin.py```
+
+7. Spin up the containers and run migrations
 
     1. ```docker-compose -f <compose script> exec backend python manage.py makemigrations```
 
     2. ```docker-compose -f <compose script> exec backend python manage.py migrate```
 
-7. Test CRUD operations at ```http://localhost:8000/api/v1/<your new object>/```
+8. Test CRUD operations at ```http://localhost:8000/api/v1/<your new object>/```
 
 ## Tables to be added
 
