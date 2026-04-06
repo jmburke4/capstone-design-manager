@@ -20,3 +20,8 @@ class PreferenceResource(resources.ModelResource):
 class AssignmentResource(resources.ModelResource):
     class Meta:
         model = models.Assignment
+
+
+class FeedbackResource(resources.ModelResource):
+    class Meta:
+        model = models.Feedback

@@ -4,27 +4,28 @@ from django.utils.html import format_html
 from django.utils.http import urlencode
 from import_export.admin import ImportExportModelAdmin
 from project.models import Project, Semester, Preference, Assignment, Feedback
-from project.resources import ProjectResource, SemesterResource, PreferenceResource, AssignmentResource
-
-
-class SemesterFilter(admin.SimpleListFilter):
-    title = 'Semester'
-    parameter_name = 'semester'
-
-    def lookups(self, request, model_admin):
-        # Get unique semesters
-        semesters = Semester.objects.distinct()
-        return [(semester.id, semester) for semester in semesters]
-
-    def queryset(self, request, queryset):
-        # Filter projects by the selected semester
-        if self.value():
-            return Semester.objects.filter(id=self.value()).first().projects.all()
-        return queryset
+from project.resources import ProjectResource, SemesterResource, PreferenceResource, AssignmentResource, FeedbackResource
 
 
 @admin.register(Project)
 class ProjectAdmin(ImportExportModelAdmin):
+    class SemesterFilter(admin.SimpleListFilter):
+        """This filter class is needed because the of the MtM relationship between semesters and projects"""
+
+        title = 'Semester'
+        parameter_name = 'semester'
+
+        def lookups(self, request, model_admin):
+            # Get unique semesters
+            semesters = Semester.objects.distinct()
+            return [(semester.id, semester) for semester in semesters]
+
+        def queryset(self, request, queryset):
+            # Filter projects by the selected semester
+            if self.value():
+                return Semester.objects.filter(id=self.value()).first().projects.all()
+            return queryset
+
     resource_classes = [ProjectResource]
 
     list_display = ['name', 'sponsor_link', 'status']
@@ -73,4 +74,7 @@ class AssignmentAdmin(ImportExportModelAdmin):
 
 @admin.register(Feedback)
 class FeedbackAdmin(ImportExportModelAdmin):
-    pass
+    resource_classes = [FeedbackResource]
+
+    list_display = search_fields = ordering = ['id', 'sponsor', 'project']
+    list_filter = ['sponsor', 'project', 'semester']

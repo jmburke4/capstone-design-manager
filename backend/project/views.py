@@ -16,9 +16,14 @@ logger = logging.getLogger(__name__)
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['sponsor']  # allows ?sponsor=<id>
 
+    authentication_classes = [Auth0Authentication]
+    permission_classes = [IsAuthenticated]
+
+    # TODO Add error handling if a semester DNE for the current date
     def list(self, request, *args, **kwargs):
         """Override list method to filter projects by current semester."""
         semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
@@ -26,6 +31,22 @@ class ProjectViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset().filter(semester=semester))
         serializer = ProjectSerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class SemesterAPIView(APIView):
+    authentication_classes = [Auth0Authentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk=None, format=None):
+        if pk:
+            semester = get_object_or_404(Semester, pk=pk)
+            serializer = SemesterSerializer(semester)
+            return Response(serializer.data)
+        else:
+            semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
+                datetime.datetime.now()), year=datetime.datetime.now().year).first()
+            serializer = SemesterSerializer(semester)
+            return Response(serializer.data)
 
 
 class PreferenceAPIView(APIView):
@@ -122,27 +143,15 @@ class PreferenceAPIView(APIView):
 class AssignmentViewSet(viewsets.ModelViewSet):
     queryset = Assignment.objects.all()
     serializer_class = AssignmentSerializer
+
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['project', 'semester']
 
-
-class SemesterAPIView(APIView):
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, pk=None, format=None):
-        if pk:
-            semester = get_object_or_404(Semester, pk=pk)
-            serializer = SemesterSerializer(semester)
-            return Response(serializer.data)
-        else:
-            semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
-                datetime.datetime.now()), year=datetime.datetime.now().year).first()
-            serializer = SemesterSerializer(semester)
-            return Response(serializer.data)
 
-
-class FeedbackViewset(viewsets.ModelViewSet):
+class FeedbackViewSet(viewsets.ModelViewSet):
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
 
