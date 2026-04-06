@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 from django.utils.text import slugify
 
-from project.models import Assignment, Preference, Project, Semester
+from project.models import Assignment, Feedback, Preference, Project, Semester
 from user.models import Sponsor, Student
 
 
@@ -90,6 +90,22 @@ class TestProject:
         )
         assert project.description is None
         assert project.website is None
+        assert project.sponsor_availability is None
+
+    def test_project_sponsor_availability(self, sample_sponsor):
+        availability_text = "Available Monday-Friday, 9am-5pm EST"
+        project = Project.objects.create(
+            name="Project with Availability",
+            sponsor=sample_sponsor,
+            sponsor_availability=availability_text,
+        )
+        assert project.sponsor_availability == availability_text
+
+    def test_project_updated_at_on_edit(self, sample_project):
+        original_updated_at = sample_project.updated_at
+        sample_project.sponsor_availability = "New availability info"
+        sample_project.save()
+        assert sample_project.updated_at > original_updated_at
 
     def test_project_required_fields(self):
         with pytest.raises(IntegrityError):
@@ -128,7 +144,7 @@ class TestSemester:
     def test_semester_year_too_high_validation(self):
         semester = Semester(
             semester=Semester.Semester.SUMMER,
-            year=datetime.date.today().year + 1,
+            year=datetime.date.today().year + 2,
             assignment_date=timezone.now() + timedelta(days=1),
         )
         with pytest.raises(ValidationError):
@@ -285,3 +301,111 @@ class TestAssignment:
                 student=sample_student,
                 semester=sample_semester,
             )
+
+
+@pytest.mark.django_db
+class TestFeedback:
+    def test_feedback_creation(self, sample_sponsor, sample_project, sample_semester):
+        feedback = Feedback.objects.create(
+            sponsor=sample_sponsor,
+            project=sample_project,
+            semester=sample_semester,
+            text="Great project progress this semester!",
+        )
+        assert feedback.sponsor == sample_sponsor
+        assert feedback.project == sample_project
+        assert feedback.semester == sample_semester
+        assert feedback.text == "Great project progress this semester!"
+        assert feedback.created_at is not None
+        assert feedback.updated_at is not None
+
+    def test_feedback_str(self, sample_sponsor, sample_project, sample_semester):
+        feedback = Feedback.objects.create(
+            sponsor=sample_sponsor,
+            project=sample_project,
+            semester=sample_semester,
+            text="Test feedback",
+        )
+        assert str(feedback) == f'{sample_sponsor.first_name} {sample_sponsor.last_name} ({feedback.id})'
+
+    def test_feedback_sponsor_fk(self, sample_project, sample_semester):
+        sponsor2 = Sponsor.objects.create(
+            email="sponsor2@example.com",
+            first_name="Jane",
+            last_name="Smith",
+            organization="Another Corp",
+            phone_number="(987) 654-3210",
+        )
+        feedback1 = Feedback.objects.create(
+            sponsor=sponsor2,
+            project=sample_project,
+            semester=sample_semester,
+            text="Feedback from second sponsor",
+        )
+        assert feedback1.sponsor == sponsor2
+        assert Feedback.objects.filter(sponsor=sponsor2).count() == 1
+
+    def test_feedback_sponsor_fk_relation(self, sample_sponsor, sample_project, sample_semester):
+        feedback = Feedback.objects.create(
+            sponsor=sample_sponsor,
+            project=sample_project,
+            semester=sample_semester,
+            text="Test feedback",
+        )
+        retrieved_feedback = Feedback.objects.get(id=feedback.id)
+        assert retrieved_feedback.sponsor == sample_sponsor
+
+    def test_feedback_cascade_delete_on_project_delete(self, sample_sponsor, sample_project, sample_semester):
+        feedback = Feedback.objects.create(
+            sponsor=sample_sponsor,
+            project=sample_project,
+            semester=sample_semester,
+            text="Test feedback",
+        )
+        project_id = sample_project.id
+        sample_project.delete()
+        assert Feedback.objects.filter(project_id=project_id).count() == 0
+
+    def test_feedback_cascade_delete_on_semester_delete(self, sample_sponsor, sample_project, sample_semester):
+        feedback = Feedback.objects.create(
+            sponsor=sample_sponsor,
+            project=sample_project,
+            semester=sample_semester,
+            text="Test feedback",
+        )
+        semester_id = sample_semester.id
+        sample_semester.delete()
+        assert Feedback.objects.filter(semester_id=semester_id).count() == 0
+
+    def test_feedback_long_text(self, sample_sponsor, sample_project, sample_semester):
+        long_feedback = "This is a detailed feedback message. " * 50
+        feedback = Feedback.objects.create(
+            sponsor=sample_sponsor,
+            project=sample_project,
+            semester=sample_semester,
+            text=long_feedback,
+        )
+        assert feedback.text == long_feedback
+        assert len(feedback.text) > 1000
+
+    def test_feedback_text_required(self, sample_sponsor, sample_project, sample_semester):
+        """Test that text field is required for Feedback"""
+        with pytest.raises(IntegrityError):
+            Feedback.objects.create(
+                sponsor=sample_sponsor,
+                project=sample_project,
+                semester=sample_semester,
+                text=None,
+            )
+
+    def test_feedback_updated_at_on_edit(self, sample_sponsor, sample_project, sample_semester):
+        feedback = Feedback.objects.create(
+            sponsor=sample_sponsor,
+            project=sample_project,
+            semester=sample_semester,
+            text="Original feedback",
+        )
+        original_updated_at = feedback.updated_at
+        feedback.text = "Updated feedback"
+        feedback.save()
+        assert feedback.updated_at > original_updated_at

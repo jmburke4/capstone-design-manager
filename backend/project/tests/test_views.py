@@ -1,19 +1,30 @@
 from datetime import timedelta
 
 import pytest
+from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from project.models import Assignment, Preference, Project, Semester
+from project.models import Assignment, Feedback, Preference, Project, Semester
 from user.models import Sponsor, Student
 
 
 @pytest.fixture
-def api_client():
-    return APIClient()
+def api_client(db):
+    """Create an authenticated API client for testing."""
+    client = APIClient()
+    # Create a test user for authentication
+    user = User.objects.create_user(
+        username='testuser',
+        email='testuser@example.com',
+        password='testpass123'
+    )
+    # Force authenticate the client with the test user
+    client.force_authenticate(user=user)
+    return client
 
 
 @pytest.fixture
@@ -85,6 +96,16 @@ def sample_assignment(db, sample_student, sample_semester, sample_project):
         student=sample_student,
         semester=sample_semester,
         project=sample_project,
+    )
+
+
+@pytest.fixture
+def sample_feedback(db, sample_sponsor, sample_project, sample_semester):
+    return Feedback.objects.create(
+        sponsor=sample_sponsor,
+        project=sample_project,
+        semester=sample_semester,
+        text="Great work on this project!",
     )
 
 
@@ -395,3 +416,108 @@ class TestAssignmentViewSet:
         assert len(response.data) == 2
         returned_ids = {item["id"] for item in response.data}
         assert returned_ids == {sample_assignment.id, matching_assignment.id}
+
+
+@pytest.mark.django_db
+class TestFeedbackViewSet:
+    def test_list_feedback(self, api_client, sample_feedback):
+        url = reverse("project:feedback-list")
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]["id"] == sample_feedback.id
+
+    def test_create_feedback(self, api_client, sample_sponsor, sample_project, sample_semester):
+        url = reverse("project:feedback-list")
+        payload = {
+            "sponsor": sample_sponsor.id,
+            "project": sample_project.id,
+            "semester": sample_semester.id,
+            "text": "Excellent progress on the design.",
+        }
+
+        response = api_client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Feedback.objects.filter(text="Excellent progress on the design.").exists()
+        assert response.data["text"] == "Excellent progress on the design."
+
+    def test_retrieve_feedback(self, api_client, sample_feedback):
+        url = reverse("project:feedback-detail", kwargs={"pk": sample_feedback.id})
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == sample_feedback.id
+        assert response.data["text"] == "Great work on this project!"
+
+    def test_update_feedback(self, api_client, sample_feedback):
+        url = reverse("project:feedback-detail", kwargs={"pk": sample_feedback.id})
+        payload = {"text": "Updated feedback text"}
+
+        response = api_client.patch(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        sample_feedback.refresh_from_db()
+        assert sample_feedback.text == "Updated feedback text"
+
+    def test_delete_feedback(self, api_client, sample_feedback):
+        feedback_id = sample_feedback.id
+        url = reverse("project:feedback-detail", kwargs={"pk": feedback_id})
+        response = api_client.delete(url)
+
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_204_NO_CONTENT]
+        assert not Feedback.objects.filter(pk=feedback_id).exists()
+
+    def test_create_multiple_feedback_for_same_project(self, api_client, sample_sponsor, sample_project, sample_semester):
+        url = reverse("project:feedback-list")
+        payload1 = {
+            "sponsor": sample_sponsor.id,
+            "project": sample_project.id,
+            "semester": sample_semester.id,
+            "text": "First feedback",
+        }
+
+        response1 = api_client.post(url, payload1, format="json")
+        assert response1.status_code == status.HTTP_201_CREATED
+
+        second_sponsor = Sponsor.objects.create(
+            email="second.feedback.sponsor@example.com",
+            first_name="Bob",
+            last_name="Builder",
+            organization="BuildCorp",
+            phone_number="(555) 123-4567",
+        )
+        payload2 = {
+            "sponsor": second_sponsor.id,
+            "project": sample_project.id,
+            "semester": sample_semester.id,
+            "text": "Second feedback",
+        }
+
+        response2 = api_client.post(url, payload2, format="json")
+        assert response2.status_code == status.HTTP_201_CREATED
+
+        # Verify both feedbacks exist
+        assert Feedback.objects.filter(project=sample_project).count() == 2
+
+    def test_feedback_preserves_sponsor_relation(self, api_client, sample_feedback, sample_sponsor):
+        url = reverse("project:feedback-detail", kwargs={"pk": sample_feedback.id})
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["sponsor"] == sample_sponsor.id
+
+    def test_feedback_preserves_project_relation(self, api_client, sample_feedback, sample_project):
+        url = reverse("project:feedback-detail", kwargs={"pk": sample_feedback.id})
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["project"] == sample_project.id
+
+    def test_feedback_preserves_semester_relation(self, api_client, sample_feedback, sample_semester):
+        url = reverse("project:feedback-detail", kwargs={"pk": sample_feedback.id})
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["semester"] == sample_semester.id
