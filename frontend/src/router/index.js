@@ -11,6 +11,7 @@ import ProfileEdit from '../components/ProfileEdit.vue';
 import apiService from '../services/api';
 import StudentAssignment from '../components/StudentAssignment.vue';
 import StudentProjectView from '../components/StudentProjectView.vue';
+import StudentNotRegistered from '../components/StudentNotRegistered.vue';
 
 const ROLE_KEY = 'https://backend-api-capstone/roles';
 
@@ -35,6 +36,7 @@ function getDefaultRoute(user) {
 
 const routes = [
   { path: '/', name: 'Login', component: Login },
+  { path: '/error/student-not-registered', name: 'StudentNotRegistered', component: StudentNotRegistered },
   { path: '/sponsor', name: 'Sponsor', component: SponsorLanding, meta: { roles: ['sponsor'], requiresProfile: true }},
   { path: '/student', name: 'Student', component: StudentLanding, meta: { roles: ['student'], requiresProfile: true }},
   { path: '/student/projects', name: 'StudentProjectView', component: StudentProjectView, meta: { roles: ['student'], requiresProfile: true }},
@@ -53,18 +55,33 @@ const router = createRouter({
 
 async function checkProfileAndRedirect(next) {
   const { user, getAccessTokenSilently } = auth0;
+  const userRole = getUserRole(user.value);
   
   try {
     const token = await getAccessTokenSilently();
     apiService.setToken(token);
     const profileResponse = await apiService.getProfile();
     
+    // If student role but no profile found = not in database
+    if (!profileResponse.type && userRole === 'student') {
+      next({ path: '/error/student-not-registered' });
+      return true;
+    }
+    
+    // No profile for sponsor = allow profile creation
     if (!profileResponse.type) {
-      next({ path: `/profile/create?role=${getUserRole(user.value)}` });
+      next({ path: `/profile/create?role=${userRole}` });
       return true;
     }
   } catch (err) {
-    next({ path: `/profile/create?role=${getUserRole(user.value)}` });
+    // If student and any error = assume not in database
+    if (userRole === 'student') {
+      next({ path: '/error/student-not-registered' });
+      return true;
+    }
+    
+    // Sponsor errors = allow profile creation attempt
+    next({ path: `/profile/create?role=${userRole}` });
     return true;
   }
   
@@ -91,6 +108,16 @@ router.beforeEach(async (to, from, next) => {
       return;
     }
     
+    next();
+    return;
+  }
+
+  // Allow error page (must be authenticated to see it)
+  if (to.path === '/error/student-not-registered') {
+    if (!isAuthenticated.value) {
+      next({ path: '/' });
+      return;
+    }
     next();
     return;
   }
