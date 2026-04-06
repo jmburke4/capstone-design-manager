@@ -40,6 +40,7 @@ def send_sponsor_outreach(request):
     recipients = request.data.get('recipients')
     semester = request.data.get('semester', 'spring')
     collection_date = request.data.get('collection_date', 'Spring 2025 (1/14/25)')
+    from_email = request.data.get('from_email')
 
     if not recipients:
         return Response(
@@ -51,7 +52,12 @@ def send_sponsor_outreach(request):
         recipients = [r.strip() for r in recipients.split(',') if r.strip()]
 
     try:
-        email_client.send_sponsor_outreach(recipients, semester, collection_date)
+        email_client.send_sponsor_outreach(
+            recipient_list=recipients,
+            semester=semester,
+            collection_date=collection_date,
+            from_email=from_email
+        )
         return Response({'status': 'sponsor outreach email sent successfully'})
     except Exception as e:
         return Response(
@@ -75,6 +81,8 @@ def send_project_presentation(request):
     if isinstance(recipients, str):
         recipients = [r.strip() for r in recipients.split(',') if r.strip()]
 
+    from_email = request.data.get('from_email')
+
     try:
         email_client.send_project_presentation(
             recipient_list=recipients,
@@ -85,6 +93,7 @@ def send_project_presentation(request):
             contact_name=request.data.get('contact_name'),
             contact_email=request.data.get('contact_email'),
             zoom_details=request.data.get('zoom_details'),
+            from_email=from_email,
         )
         return Response({'status': 'project presentation email sent successfully'})
     except Exception as e:
