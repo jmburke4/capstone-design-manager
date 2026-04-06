@@ -24,6 +24,7 @@ admin.site.site_header = 'Projects Portal'
 admin.site.site_title = 'UA Computer Science Senior Design'
 
 urlpatterns = [
+    path('admin/action-forms/', include('django_admin_action_forms.urls')),
     path('admin/', admin.site.urls),
 
     # Mount app URLConfs
