@@ -9,6 +9,7 @@ const projectDescription = ref('');
 const contactName = ref('');
 const contactEmail = ref('');
 const zoomDetails = ref('');
+const fromEmail = ref('');
 const status = ref('');
 const error = ref('');
 
@@ -21,20 +22,26 @@ const sendProjectPresentation = async () => {
   status.value = 'Sending...';
   error.value = '';
 
+  const payload = {
+    recipients: recipients.value,
+    date: date.value,
+    time: time.value,
+    project_name: projectName.value,
+    project_description: projectDescription.value,
+    contact_name: contactName.value,
+    contact_email: contactEmail.value,
+    zoom_details: zoomDetails.value
+  };
+
+  if (fromEmail.value.trim()) {
+    payload.from_email = fromEmail.value.trim();
+  }
+
   try {
     const response = await fetch('http://localhost:8000/api/v1/emails/project-presentation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipients: recipients.value,
-        date: date.value,
-        time: time.value,
-        project_name: projectName.value,
-        project_description: projectDescription.value,
-        contact_name: contactName.value,
-        contact_email: contactEmail.value,
-        zoom_details: zoomDetails.value
-      })
+      body: JSON.stringify(payload)
     });
 
     const contentType = response.headers.get('content-type');
@@ -124,6 +131,11 @@ const clearForm = () => {
       <label>
         Zoom Details
         <textarea v-model="zoomDetails" placeholder="Zoom meeting link and details"></textarea>
+      </label>
+
+      <label>
+        From Email (optional)
+        <input v-model="fromEmail" type="email" placeholder="sender@example.com" />
       </label>
 
       <button type="submit">Send Presentation Email</button>

@@ -4,6 +4,7 @@ import { ref } from 'vue';
 const recipients = ref('');
 const semester = ref('spring');
 const collectionDate = ref('Spring 2025 (1/14/25)');
+const fromEmail = ref('');
 const status = ref('');
 const error = ref('');
 
@@ -16,15 +17,21 @@ const sendSponsorOutreach = async () => {
   status.value = 'Sending...';
   error.value = '';
 
+  const payload = {
+    recipients: recipients.value,
+    semester: semester.value,
+    collection_date: collectionDate.value
+  };
+
+  if (fromEmail.value.trim()) {
+    payload.from_email = fromEmail.value.trim();
+  }
+
   try {
     const response = await fetch('http://localhost:8000/api/v1/emails/sponsor-outreach', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipients: recipients.value,
-        semester: semester.value,
-        collection_date: collectionDate.value
-      })
+      body: JSON.stringify(payload)
     });
 
     const contentType = response.headers.get('content-type');
@@ -81,6 +88,11 @@ const sendSponsorOutreach = async () => {
       <label>
         Collection Date
         <input v-model="collectionDate" type="text" placeholder="Spring 2025 (1/14/25)" />
+      </label>
+
+      <label>
+        From Email (optional)
+        <input v-model="fromEmail" type="email" placeholder="sender@example.com" />
       </label>
 
       <button type="submit">Send Outreach Email</button>
