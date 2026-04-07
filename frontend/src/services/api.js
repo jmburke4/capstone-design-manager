@@ -9,6 +9,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true,  // Required for session cookies
     });
   }
 
@@ -88,6 +89,16 @@ class ApiService {
     const map = {};
     unique.forEach((id, idx) => { map[String(id)] = results[idx]; });
     return map;
+  }
+  // Admin authorization methods
+  async checkAdminAccess() {
+    const response = await this.client.get('/admin/check/');
+    return response.data;
+  }
+
+  async authorizeAdmin() {
+    const response = await this.client.post('/admin/authorize/');
+    return response.data;
   }
 }
 

@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from user.admin_views import admin_authorize, admin_check
 
 API_PREFIX = 'api/v1/'
 
@@ -27,6 +28,10 @@ admin.site.site_title = 'UA Computer Science Senior Design'
 urlpatterns = [
     path('admin/action-forms/', include('django_admin_action_forms.urls')),
     path('admin/', admin.site.urls),
+
+    # Admin authorization endpoints
+    path(f'{API_PREFIX}admin/authorize/', admin_authorize, name='admin_authorize'),
+    path(f'{API_PREFIX}admin/check/', admin_check, name='admin_check'),
 
     # Mount app URLConfs
     path(f'{API_PREFIX}', include(('project.urls', 'project'), namespace='project')),

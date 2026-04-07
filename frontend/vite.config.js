@@ -17,6 +17,13 @@ export default defineConfig({
       usePolling: true
     },
     proxy: {
+      // forward any request starting with /admin to the backend container
+      '/admin': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // support WebSocket connections
+      },
       // forward any request starting with /api to the backend container
       '/api': {
         target: 'http://backend:8000',

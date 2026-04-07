@@ -58,6 +58,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'user.admin_middleware.Auth0AdminMiddleware',  # Auth0 admin protection
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -123,9 +124,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-SESSION_COOKIE_AGE = 1200
+SESSION_COOKIE_AGE = 1200  # 20 minutes for Django admin session
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_SAMESITE = 'Lax'  # Required for cross-origin session cookies
+SESSION_COOKIE_HTTPONLY = True  # Security: prevents JavaScript access
+SESSION_COOKIE_SECURE = False  # False for localhost, True for production HTTPS
 
 
 # Internationalization
@@ -173,6 +177,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 ]
+CORS_ALLOW_CREDENTIALS = True  # Required for session cookies
+
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
