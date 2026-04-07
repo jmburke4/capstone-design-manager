@@ -32,6 +32,7 @@ class SponsorAdmin(ImportExportModelAdmin):
 @admin.register(Student)
 class StudentAdmin(ImportExportModelAdmin):
     resource_classes = [StudentResource]
+    readonly_fields = ['id']
 
     list_display = ['cwid', 'name', 'email', 'major_code', 'class_code']
     list_display_links = ['cwid', 'name']
