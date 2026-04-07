@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     replaces = [('project', '0005_attachement'), ('project', '0006_rename_attachement_attachment'), ('project', '0007_alter_attachment_file'), ('project', '0008_remove_attachment_type'), ('project', '0009_alter_attachment_file')]
 
     dependencies = [
-        ('project', '0004_merge_0002_assignment_0003_preference'),
+        ('project', '0001_initial'),
     ]
 
     operations = [
