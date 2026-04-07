@@ -135,6 +135,14 @@ class Preference(models.Model):
     )
     """[Required] Number rank of student's preference toward project, 1 being the first choice"""
 
+    semester = models.ForeignKey(
+        Semester,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    """[Default] Set using the get_semester function"""
+
     created_at = models.DateTimeField(auto_now_add=True)
     """[Default] Tracks when the record was created"""
 
@@ -148,6 +156,7 @@ class Preference(models.Model):
     def save(self, *args, **kwargs):
         if not self.id:
             self.id = self.generate_id()
+        self.semester = self.get_semester()
         super().save(*args, **kwargs)
 
     def generate_id(self, student_id=None, project_id=None):
@@ -156,6 +165,11 @@ class Preference(models.Model):
             student_id = self.student.id
             project_id = self.project.id
         return slugify(f'{student_id}-{project_id}')
+
+    # TODO Add error handling for when a semester object is not found
+    def get_semester(self):
+        """Return a semester object based on the updated date"""
+        return Semester.objects.filter(semester=Semester.get_semester_by_date(self.updated_at), year=self.updated_at.year).first()
 
 
 class Assignment(models.Model):
@@ -189,7 +203,7 @@ class Assignment(models.Model):
     """[Default] Tracks when the record was last updated"""
 
     def __str__(self):
-        return f'{self.student} ({self.semester})'
+        return f'{self.project} -> {self.student} ({self.semester})'
 
     # Override the model save method to compute the slug from the fields on saving to DB
     def save(self, *args, **kwargs):
