@@ -70,7 +70,7 @@
 
 {% block content %}
 <div class="email-form">
-    <h1>Export Project Presentation as HTML</h1>
+    <h1>Export Project Presentation as EML</h1>
     
     <div class="selected-count">
         {{ queryset|length }} sponsor(s) selected
@@ -109,7 +109,7 @@
         {% for obj in queryset %}
         <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
         {% endfor %}
-        <input type="hidden" name="action" value="export_project_presentation_html">
+        <input type="hidden" name="action" value="export_project_presentation_eml">
         
         <div class="form-row">
             <label for="date">Date:</label>
