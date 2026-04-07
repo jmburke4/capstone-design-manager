@@ -7,6 +7,11 @@ class ProjectResource(resources.ModelResource):
         model = models.Project
 
 
+class AttachmentResource(resources.ModelResource):
+    class Meta:
+        model = models.Attachment
+
+
 class SemesterResource(resources.ModelResource):
     class Meta:
         model = models.Semester

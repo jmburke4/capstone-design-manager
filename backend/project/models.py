@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from user.models import Sponsor, Student
+from project.storage import S3MediaStorage
 
 # Models are orded by chronological appearance
 # Fields are ordered by importance descending
@@ -54,6 +55,28 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+
+def attachment_upload_path(instance, filename):
+    return f'{instance.project.id}/{filename}'
+
+
+class Attachment(models.Model):
+    # [Required] FK to a project
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE
+    )
+
+    # [Required] A reference to where the file is stored
+    file = models.FileField(
+        upload_to=attachment_upload_path, storage=S3MediaStorage())
+
+    # [Default] Tracks when the record was created
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.project}{self.file.name[self.file.name.find('/'):]}"
 
 
 class Semester(models.Model):

@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer, CharField, ListSerializer, ValidationError, DateTimeField
-from .models import Semester, Preference, Project, Assignment, Feedback
+from .models import Attachment, Semester, Preference, Project, Assignment, Feedback
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,6 +10,12 @@ class ProjectSerializer(ModelSerializer):
 
     class Meta:
         model = Project
+        fields = '__all__'
+
+
+class AttachmentSerializer(ModelSerializer):
+    class Meta:
+        model = Attachment
         fields = '__all__'
 
 

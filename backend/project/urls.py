@@ -1,6 +1,6 @@
 from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
-from .views import ProjectViewSet, AssignmentViewSet, PreferenceAPIView, SemesterAPIView, FeedbackViewSet
+from .views import AttachmentViewSet, ProjectViewSet, AssignmentViewSet, PreferenceAPIView, SemesterAPIView, FeedbackViewSet
 
 app_name = 'project'
 
@@ -8,6 +8,7 @@ router = DefaultRouter()
 
 # For viewsets
 router.register(r'projects', ProjectViewSet, basename='project')
+router.register(r'attachments', AttachmentViewSet, basename='attachment')
 router.register(r'assignments', AssignmentViewSet, basename='assignment')
 router.register(r'feedback', FeedbackViewSet, basename='feedback')
 

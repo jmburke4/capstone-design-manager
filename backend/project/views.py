@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from user.authentication import Auth0Authentication
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Project, Assignment, Preference, Semester, Feedback
-from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer
+from .models import Project, Assignment, Preference, Semester, Feedback, Attachment
+from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer, AttachmentSerializer
 import logging
 import datetime
 
@@ -31,6 +31,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset().filter(semester=semester))
         serializer = ProjectSerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class AttachmentViewSet(viewsets.ModelViewSet):
+    queryset = Attachment.objects.all()
+    serializer_class = AttachmentSerializer
+
+    # authentication_classes = [Auth0Authentication]
+    # permission_classes = [IsAuthenticated]
 
 
 class SemesterAPIView(APIView):
