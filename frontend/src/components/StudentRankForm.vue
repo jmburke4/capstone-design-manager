@@ -14,6 +14,7 @@ const router = useRouter();
 
 const projectsStore = useProjectsStore();
 const studentStore = useStudentStore();
+const isDeadlinePast = computed(() => studentStore.isDeadlinePast);
 
 const showConfirm = ref(false);
 
@@ -33,6 +34,13 @@ const fetchProfileAndProjects = async () => {
     loading.value = true;
     const token = await getAccessTokenSilently();
     apiService.setToken(token);
+
+    // hydrate student store first so assignment_date/deadline is available
+    try {
+      await studentStore.fetchProfileAndPrefs();
+    } catch (e) {
+      console.warn('Failed to refresh student store before ranking form init', e);
+    }
 
     // load projects via projects store + profile
     await projectsStore.fetchProjects();
@@ -96,6 +104,7 @@ const fetchProfileAndProjects = async () => {
 onMounted(fetchProfileAndProjects);
 
 const togglePreference = (index, rank) => {
+  if (isDeadlinePast.value) return;
     if (projects.value[index].selection === rank) {
         projects.value[index].selection = null; // Deselect if clicking the same button
     } else {
@@ -149,6 +158,7 @@ const onConfirm = async () => {
 
 
 const submitRankings = async () => {
+  if (isDeadlinePast.value) return;
   if (!isFormValid.value) return;
   isSubmitting.value = true;
   try {
@@ -271,8 +281,12 @@ const submitRankings = async () => {
 <div class="ranking-container">
     <h1>Project Preference Rankings</h1>
 
+    <div v-if="isDeadlinePast" class="info error">
+      <p>The ranking deadline has passed. Submissions are closed.</p>
+    </div>
+
     <div class="card">
-    <p>Select exactly 5 projects for each priority level.</p>
+    <p v-if="isDeadlinePast">Select exactly 5 projects for each priority level.</p>
 
     <div v-if="loading" class="status-msg">Loading projects...</div>
     <div v-else-if="error" class="status-msg error">{{ error }}</div>
@@ -295,6 +309,7 @@ const submitRankings = async () => {
               <button 
                 type="button"
                 :class="['rank-btn', rank, { active: project.selection === rank }]"
+                :disabled="isDeadlinePast"
                 @click="togglePreference(index, rank)"
               >
                 <!-- {{ rank.charAt(0).toUpperCase() }} -->
@@ -303,10 +318,6 @@ const submitRankings = async () => {
           </tr>
         </tbody>
       </table>
-
-      <!-- <p v-if="!isFormValid" class="helper-text">
-        You must select exactly 5 of each before submitting.
-      </p> -->
 
       <footer class="submission-area">
         <div class="counters">
@@ -327,18 +338,19 @@ const submitRankings = async () => {
             type="textarea"
             name="comment"
             v-model="description"
+            :disabled="isDeadlinePast"
             validation="length:0,2000"
             />
         </div>
 
         <button 
           class="submit-button" 
-          :disabled="!isFormValid || isSubmitting"
+          :disabled="!isFormValid || isSubmitting || isDeadlinePast"
           @click="openConfirm"
         >
           {{ isSubmitting ? 'Saving...' : (hasRanked ? 'Update Project Rankings' : 'Submit Project Rankings') }}
         </button>
-        <ConfirmationModal :show="showConfirm" title="Submit rankings?" message="These changes can be updated any amount of times before the deadline." @confirm="onConfirm" @cancel="() => showConfirm = false" />
+        <ConfirmationModal :show="showConfirm" title="Submit rankings?" message="These changes can be updated before the deadline." @confirm="onConfirm" @cancel="() => showConfirm = false" />
         
       </footer>
     </div>
@@ -351,6 +363,10 @@ const submitRankings = async () => {
   max-width: var(--max-content-width);
   margin: 0 auto;
   /* font-family: sans-serif; */
+}
+
+.ranking-container .info {
+  margin-bottom: 1.5rem;
 }
 
 .ranking-grid {
@@ -379,6 +395,10 @@ const submitRankings = async () => {
   background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.rank-btn:disabled {
+  cursor: not-allowed;
 }
 
 .rank-btn.high.active { background: var(--accent-primary); border-color: var(--accent-dark); color: white; }

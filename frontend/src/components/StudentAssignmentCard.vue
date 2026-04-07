@@ -87,7 +87,7 @@ onMounted(async () => {
         <div class="card">
             <h2>{{ assignedProject.name }}</h2>
             <div class="person-info">
-                <div class="person-logo sponsor">{{ sponsorName?.charAt(0) }}</div>
+                <div class="person-logo">{{ sponsorName?.charAt(0) }}</div>
                 <h4>{{ sponsorName || (assignedProject.sponsor || 'Sponsor') }}</h4>
             </div>
             <hr style="margin-top: 1.5rem"/>
@@ -107,7 +107,7 @@ onMounted(async () => {
                 <div v-for="a in otherAssignments" :key="a.id">
                     <div v-if="a.student && typeof a.student === 'object'" class="person-info">
                         <div class="person-logo">{{ a.student.first_name.charAt(0) }}</div>
-                        <span>{{ a.student.first_name }} {{ a.student.last_name }}</span>
+                        <span class="team-member-name">{{ a.student.first_name }} {{ a.student.last_name }}</span>
                     </div>
                     <span v-else>Unknown</span>
                 </div>
@@ -139,14 +139,11 @@ h4 {
   height: 32px;
   background: var(--accent-primary);
   color: white;
+  flex: 0 0 32px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-weight: bold;
-}
-.person.logo.sponsor {
-    width: 42px;
-    height: 42px;
 }
 .person-info {
   display: flex;
@@ -155,8 +152,16 @@ h4 {
 }
 .team-info {
     display: flex;
-    flex-direction: row;
-    justify-content: space-around;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    gap: 1rem;
+    align-items: flex-start;
+}
+.team-member-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .student-info ul { list-style: none; padding: 0; }
 </style>

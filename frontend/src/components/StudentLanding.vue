@@ -1,3 +1,9 @@
+<!-- Student Landing Page -->
+<!-- Roles:
+        Submit project ranking
+        View project descriptions
+-->
+
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -26,10 +32,12 @@ const assignedProjectTitle = computed(() => {
   const proj = (projectsStore.projects || []).find(p => String(p.id) === String(projId))
   return proj ? proj.name : null
 })
-
-// set the deadline (example): prefer reading from API
-// e.g. const deadline = new Date(import.meta.env.VITE_RANKING_DEADLINE);
-const deadline = new Date('2026-04-02T23:59:59Z');
+const deadlineDate = computed(() => {
+  const value = studentStore.assignmentDate;
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+})
 
 const days = ref('00');
 const hours = ref('00');
@@ -40,6 +48,15 @@ let _timer = null;
 const pad = (n) => String(n).padStart(2, '0');
 
 const updateCountdown = () => {
+  const deadline = deadlineDate.value;
+  if (!deadline) {
+    days.value = '00';
+    hours.value = '00';
+    minutes.value = '00';
+    seconds.value = '00';
+    return;
+  }
+
   const now = new Date();
   let diff = Math.max(0, deadline - now); // ms
   if (diff <= 0) {
@@ -119,10 +136,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-
-<!-- TODO: implement logic for deadline countdown, assignment -->
-<div class="inside-wrapper">
-    <h1>Student Dashboard</h1>
+<div class="outside-wrapper">
+  <h1>Student Dashboard</h1>
+  <div class="inside-wrapper">
     <div v-if="flash" :class="['info', flash.type === 'success' ? 'success' : 'error']">
         <strong v-if="flash.type === 'success'">Success</strong>
         <strong v-else>Notice</strong>
@@ -131,7 +147,7 @@ onUnmounted(() => {
     <div class="card">
         <h2>Submission Deadline Countdown</h2>
         <hr />
-        <div class="timer">
+        <div v-if="deadlineDate" class="timer">
           <div class="time-segment">
             <div class="time-value">{{ days }}</div>
             <div class="time-label">Days</div>
@@ -152,6 +168,7 @@ onUnmounted(() => {
             <div class="time-label">Seconds</div>
           </div>
         </div>
+        <span v-else>No submission deadline set.</span>
     </div>
     <div class="card">
         <h2>Top 5 Rankings</h2>
@@ -163,7 +180,7 @@ onUnmounted(() => {
                 <p>{{ p.name }}</p>
                 </li>
             </ul>
-            <span><router-link class="redirect" to="/student/submit">Edit your preferences →</router-link></span>
+            <span v-if="!studentStore.isDeadlinePast"><router-link class="redirect" to="/student/submit">Edit your preferences →</router-link></span>
         </div>
         <div v-else>
             <span>You don't have any rankings yet. <router-link class="redirect" to="/student/submit">Submit rankings now →</router-link></span>
@@ -174,13 +191,14 @@ onUnmounted(() => {
       <h2>Project Assignment</h2>
       <hr />
       <div v-if="isAssigned">
-        <h3>{{ assignedProjectTitle }}</h3>
+        <p>Assigned project: <strong>{{ assignedProjectTitle || 'Assigned project' }}</strong></p>
         <span><router-link class="redirect" to="/student/assignment">View assignment →</router-link></span>
       </div>
       <div v-else>
-        <span>No assignment has been made yet.</span>
+        <span>{{ studentStore.isDeadlinePast ? 'No assignment has been made yet.' : 'Due date has not passed yet.' }}</span>
       </div>
     </div>
+  </div>
 </div>
 </template>
 
@@ -190,14 +208,20 @@ hr {
     /* display: none; */
 }
 h2 {
-    margin-top: 0.5rem;
+    margin-top: 0rem;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
 }
 .redirect {
     color: var(--text-link)
 }
+.outside-wrapper {
+  margin: 0 auto;
+  max-width: var(--max-content-width);
+  display: flex;
+  flex-direction: column;
+}
 .inside-wrapper {
-    margin: 0 auto;
-    max-width: var(--max-content-width);
     display: flex;
     flex-direction: column;
     gap: 1.5rem;

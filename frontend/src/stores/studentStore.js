@@ -8,6 +8,8 @@ export const useStudentStore = defineStore('student', {
     hasRanked: false,
     isAssigned: false,
     assignment: null,
+    currentSemester: null,
+    assignmentDate: null,
     loading: false,
     error: null
   }),
@@ -21,6 +23,12 @@ export const useStudentStore = defineStore('student', {
       if (!state.assignment) return null
       const proj = state.assignment.project
       return proj && typeof proj === 'object' ? String(proj.id) : String(proj)
+    },
+    isDeadlinePast: (state) => {
+      if (!state.assignmentDate) return false
+      const deadlineTs = new Date(state.assignmentDate).getTime()
+      if (Number.isNaN(deadlineTs)) return false
+      return Date.now() > deadlineTs
     }
   },
   actions: {
@@ -37,6 +45,8 @@ export const useStudentStore = defineStore('student', {
           this.hasRanked = false
           this.isAssigned = false
           this.assignment = null
+          this.currentSemester = null
+          this.assignmentDate = null
           return
         }
 
@@ -74,6 +84,18 @@ export const useStudentStore = defineStore('student', {
           this.assignment = null
           this.isAssigned = false
         }
+
+        // Fetch current semester and assignment deadline (best-effort).
+        try {
+          const semResp = await apiService.client.get('/semesters/')
+          const sem = semResp?.data ?? null
+          this.currentSemester = sem
+          this.assignmentDate = sem?.assignment_date ?? null
+        } catch (semErr) {
+          console.warn('studentStore: failed to fetch semester', semErr)
+          this.currentSemester = null
+          this.assignmentDate = null
+        }
       } catch (e) {
         this.error = e
         console.error('studentStore.fetchProfileAndPrefs error', e)
@@ -95,6 +117,8 @@ export const useStudentStore = defineStore('student', {
       this.hasRanked = false
       this.isAssigned = false
       this.assignment = null
+      this.currentSemester = null
+      this.assignmentDate = null
       this.loading = false
       this.error = null
     }

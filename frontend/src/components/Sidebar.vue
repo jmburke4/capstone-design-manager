@@ -16,7 +16,7 @@ const route = useRoute();
 
 const { getAccessTokenSilently } = useAuth0();
 const studentStore = useStudentStore();
-const isDeadlinePast = false;
+const isDeadlinePast = computed(() => studentStore.isDeadlinePast);
 
 onMounted(async () => {
     if (props.userRole !== 'student') return;
@@ -36,13 +36,13 @@ const menuItems = computed(() => {
     items.push({ name: 'Dashboard', path: '/student' });
     items.push({ name: 'Project Gallery', path: '/student/projects' });
 
-    if (!isDeadlinePast) {
+        if (!isDeadlinePast.value) {
             const rankLabel = studentStore.hasRanked ? 'Edit Rankings' : 'Submit Rankings';
       items.push({ name: rankLabel, path: '/student/submit' });
     }
-    if (isDeadlinePast && studentStore.isAssigned) {
-        items.push({ name: 'View Assignment', path: '/student/assignment' });
-    }
+        if (isDeadlinePast.value && studentStore.isAssigned) {
+            items.push({ name: 'View Assignment', path: '/student/assignment' });
+        }
   } else if (props.userRole === 'sponsor') {
     items.push({ name: 'Dashboard', path: '/sponsor' });
     items.push({ name: 'Submit Project', path: '/sponsor/submit' });
