@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from user.authentication import Auth0Authentication
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Project, Assignment, Preference, Semester, Feedback, Attachment
@@ -37,8 +38,25 @@ class AttachmentViewSet(viewsets.ModelViewSet):
     queryset = Attachment.objects.all()
     serializer_class = AttachmentSerializer
 
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['project']
+
+    authentication_classes = [Auth0Authentication]
+    permission_classes = [IsAuthenticated]
+
+
+class AttachmentDownloadAPIView(APIView):
     # authentication_classes = [Auth0Authentication]
     # permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk, format=None):
+        attachment = get_object_or_404(Attachment, pk=pk)
+        if not attachment.file:
+            return Response({'error': 'This attachment does not have a file.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_handle = attachment.file.open('rb')
+        filename = attachment.file.name.rsplit('/', 1)[-1]
+        return FileResponse(file_handle, as_attachment=False, filename=filename)
 
 
 class SemesterAPIView(APIView):

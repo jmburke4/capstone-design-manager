@@ -156,7 +156,8 @@ AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
 MINIO_ACCESS_URL = os.getenv("MINIO_ACCESS_URL")
 
 # Keep files private by default
-AWS_DEFAULT_ACL = "private"
+AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = True
 
 # Use S3 v4 signature (required by MinIO)
 AWS_S3_SIGNATURE_VERSION = "s3v4"

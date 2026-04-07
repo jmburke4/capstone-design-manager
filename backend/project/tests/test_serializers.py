@@ -1,11 +1,22 @@
 from datetime import timedelta
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import RequestFactory
 from django.utils import timezone
 from django.utils.text import slugify
 
-from project.models import Assignment, Feedback, Preference, Project, Semester
+from project.models import (
+    MAX_ATTACHMENT_FILE_SIZE,
+    Attachment,
+    Assignment,
+    Feedback,
+    Preference,
+    Project,
+    Semester,
+)
 from project.serializers import (
+    AttachmentSerializer,
     AssignmentSerializer,
     FeedbackSerializer,
     PreferenceSerializer,
@@ -158,6 +169,69 @@ class TestSemesterSerializer:
             sample_project.id,
             second_project.id,
         }
+
+
+@pytest.mark.django_db
+class TestAttachmentSerializer:
+    def test_attachment_serializer_exposes_download_url(self, sample_project):
+        attachment = Attachment(id=1, project=sample_project)
+        attachment.file.name = "attachments/project-spec.pdf"
+
+        request = RequestFactory().get("/api/v1/attachments/1/")
+        serializer = AttachmentSerializer(instance=attachment, context={"request": request})
+
+        assert serializer.data["url"].endswith("/api/v1/attachments/1/download/")
+        assert serializer.data["file"] == "attachments/project-spec.pdf"
+
+    def test_attachment_serializer_creates_link_attachment(self, sample_project):
+        serializer = AttachmentSerializer(
+            data={
+                "project": sample_project.id,
+                "link": "https://example.com/spec",
+            }
+        )
+
+        assert serializer.is_valid(), serializer.errors
+        attachment = serializer.save()
+
+        assert attachment.link == "https://example.com/spec"
+        assert not attachment.file
+        assert serializer.data["url"] == "https://example.com/spec"
+
+    def test_attachment_serializer_rejects_invalid_extension(self, sample_project):
+        uploaded_file = SimpleUploadedFile(
+            "spec.txt",
+            b"plain text",
+            content_type="text/plain",
+        )
+
+        serializer = AttachmentSerializer(
+            data={
+                "project": sample_project.id,
+                "file": uploaded_file,
+            }
+        )
+
+        assert not serializer.is_valid()
+        assert "file" in serializer.errors
+
+    def test_attachment_serializer_rejects_oversized_file(self, sample_project):
+        uploaded_file = SimpleUploadedFile(
+            "spec.pdf",
+            b"tiny file",
+            content_type="application/pdf",
+        )
+        uploaded_file.size = MAX_ATTACHMENT_FILE_SIZE + 1
+
+        serializer = AttachmentSerializer(
+            data={
+                "project": sample_project.id,
+                "file": uploaded_file,
+            }
+        )
+
+        assert not serializer.is_valid()
+        assert "file" in serializer.errors
 
 
 @pytest.mark.django_db

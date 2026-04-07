@@ -104,10 +104,21 @@ class ProjectAdmin(ImportExportModelAdmin):
 class AttachmentAdmin(ImportExportModelAdmin):
     resource_classes = [AttachmentResource]
 
-    list_display = ['id', 'project', 'file']
+    list_display = ['id', 'project', 'target_link']
     list_filter = ['project']
-    search_fields = ['project__name', 'file']
+    search_fields = ['project__name', 'file', 'link']
     ordering = ['id']
+
+    @admin.display(description='Attachment')
+    def target_link(self, obj):
+        if obj.link:
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.link, obj.link)
+
+        if obj.file:
+            url = reverse('project:attachment-download', args=[obj.pk])
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', url, obj.file.name)
+
+        return '-'
 
 
 @admin.register(Semester)

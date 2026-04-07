@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 from django.utils.text import slugify
 
-from project.models import Assignment, Feedback, Preference, Project, Semester
+from project.models import Assignment, Attachment, Feedback, Preference, Project, Semester
 from user.models import Sponsor, Student
 
 
@@ -397,6 +397,89 @@ class TestFeedback:
                 semester=sample_semester,
                 text=None,
             )
+
+
+@pytest.mark.django_db
+class TestAttachment:
+    def test_attachment_link_creation(self, sample_project):
+        attachment = Attachment.objects.create(
+            project=sample_project,
+            link="https://example.com/document",
+        )
+        assert attachment.link == "https://example.com/document"
+        assert not attachment.file
+        assert attachment.created_at is not None
+
+    def test_attachment_link_only_validation(self, sample_project):
+        """Test that attachment rejects both file and link at the same time"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.core.exceptions import ValidationError
+
+        uploaded_file = SimpleUploadedFile(
+            "test.pdf",
+            b"test content",
+            content_type="application/pdf",
+        )
+
+        attachment = Attachment(
+            project=sample_project,
+            file=uploaded_file,
+            link="https://example.com",
+        )
+        with pytest.raises(ValidationError):
+            attachment.full_clean()
+
+    def test_attachment_str_with_link(self, sample_project):
+        attachment = Attachment.objects.create(
+            project=sample_project,
+            link="https://example.com/doc",
+        )
+        assert str(attachment) == f"{sample_project} (link)"
+
+    def test_attachment_delete_removes_file(self, sample_project, monkeypatch):
+        """Test that deleting an attachment cleans up the MinIO file"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        uploaded_file = SimpleUploadedFile(
+            "test.pdf",
+            b"test content",
+            content_type="application/pdf",
+        )
+
+        attachment = Attachment.objects.create(
+            project=sample_project,
+            file=uploaded_file,
+        )
+
+        file_path = attachment.file.name
+        assert attachment.file
+
+        # Mock the storage delete method to verify it gets called
+        delete_called = []
+
+        def mock_delete(name):
+            delete_called.append(name)
+
+        original_delete = attachment.file.storage.delete
+        monkeypatch.setattr(attachment.file.storage, "delete", mock_delete)
+
+        attachment.delete()
+
+        # Verify the file delete was called
+        assert file_path in delete_called
+        assert Attachment.objects.filter(id=attachment.id).count() == 0
+
+    def test_attachment_delete_link_only(self, sample_project):
+        """Test that deleting a link-only attachment works without file cleanup"""
+        attachment = Attachment.objects.create(
+            project=sample_project,
+            link="https://example.com/doc",
+        )
+        attachment_id = attachment.id
+
+        attachment.delete()
+
+        assert Attachment.objects.filter(id=attachment_id).count() == 0
 
     def test_feedback_updated_at_on_edit(self, sample_sponsor, sample_project, sample_semester):
         feedback = Feedback.objects.create(
