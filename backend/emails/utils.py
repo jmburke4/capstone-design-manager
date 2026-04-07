@@ -94,9 +94,10 @@ class EmailClient:
         contact_name,
         contact_email,
         zoom_details,
+        projects=None,
         from_email=None,
         smtp_host=None,
-        smtp_port=None,
+        smtp_port=None, 
         smtp_username=None,
         smtp_password=None,
     ):
@@ -111,6 +112,37 @@ class EmailClient:
                 'project_description': project_description,
                 'contact_name': contact_name,
                 'contact_email': contact_email,
+                'zoom_details': zoom_details,
+                'projects': projects or [],
+            },
+            from_email=from_email,
+            smtp_host=smtp_host,
+            smtp_port=smtp_port,
+            smtp_username=smtp_username,
+            smtp_password=smtp_password,
+        )
+
+    def send_project_presentation_for_project(
+        self,
+        recipient_list,
+        date,
+        time,
+        project,
+        zoom_details,
+        from_email=None,
+        smtp_host=None,
+        smtp_port=None, 
+        smtp_username=None,
+        smtp_password=None,
+    ):
+        return self.send_templated_email(
+            subject=f"Project Presentation: {project.name}",
+            recipient_list=recipient_list,
+            template_name="project_presentation_single",
+            context={
+                'date': date,
+                'time': time,
+                'project': project,
                 'zoom_details': zoom_details,
             },
             from_email=from_email,
@@ -129,7 +161,7 @@ class EmailClient:
 
     def render_project_presentation_html(self, date='TBD', time='TBD', project_name='TBD', 
                                          project_description='TBD', contact_name='TBD', 
-                                         contact_email='TBD', zoom_details='TBD'):
+                                         contact_email='TBD', zoom_details='TBD', projects=None):
         context = {
             'date': date,
             'time': time,
@@ -138,8 +170,43 @@ class EmailClient:
             'contact_name': contact_name,
             'contact_email': contact_email,
             'zoom_details': zoom_details,
+            'projects': projects or [],
         }
         return render_to_string('emails/project_presentation.html', context)
+
+    def render_project_presentation_single_html(self, date='TBD', time='TBD', project=None, zoom_details='TBD'):
+        context = {
+            'date': date,
+            'time': time,
+            'project': project,
+            'zoom_details': zoom_details,
+        }
+        return render_to_string('emails/project_presentation_single.html', context)
+
+    def convert_html_to_mhtml(self, html_content, title='Email'):
+        mhtml_header = f"""MIME-Version: 1.0
+Content-Type: multipart/related; boundary="----=_Part_0_12345678.12345678"
+
+------=_Part_0_12345678.12345678
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+"""
+        mhtml_footer = """
+
+------=_Part_0_12345678.12345678--
+"""
+        return mhtml_header + html_content + mhtml_footer
+
+    def convert_html_to_eml(self, html_content, subject='Project Presentation', to_email=''):
+        eml_content = f"""Subject: {subject}
+To: {to_email}
+X-Unsent: 1
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+{html_content}"""
+        return eml_content
 
 
 email_client = EmailClient()

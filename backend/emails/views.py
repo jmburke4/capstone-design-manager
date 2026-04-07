@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 from emails.utils import email_client
 from emails.serializers import EmailSerializer
+from project.models import Attachment
 
 
 @api_view(['GET', 'POST'])
@@ -111,9 +112,17 @@ def export_sponsor_outreach(request):
     
     html_content = email_client.render_sponsor_outreach_html(semester, collection_date)
     
-    response = HttpResponse(html_content, content_type='text/html')
-    response['Content-Disposition'] = 'attachment; filename="sponsor_outreach_email.html"'
-    return response
+    attachment = Attachment.objects.create(
+        title=f"Sponsor Outreach Email - {semester.capitalize()} {collection_date}",
+        content=html_content
+    )
+    
+    return Response({
+        'id': attachment.id,
+        'title': attachment.title,
+        'content': html_content,
+        'download_url': f'/api/v1/projects/attachments/{attachment.id}/download/'
+    })
 
 
 @api_view(['GET'])
@@ -130,6 +139,14 @@ def export_project_presentation(request):
     
     html_content = email_client.render_project_presentation_html(**context)
     
-    response = HttpResponse(html_content, content_type='text/html')
-    response['Content-Disposition'] = 'attachment; filename="project_presentation_email.html"'
-    return response
+    attachment = Attachment.objects.create(
+        title=f"Project Presentation Email - {context['project_name']}",
+        content=html_content
+    )
+    
+    return Response({
+        'id': attachment.id,
+        'title': attachment.title,
+        'content': html_content,
+        'download_url': f'/api/v1/projects/attachments/{attachment.id}/download/'
+    })

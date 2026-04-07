@@ -123,18 +123,33 @@ def attachment_upload_path(instance, filename):
 
 
 class Attachment(models.Model):
-    # [Required] FK to a project
+    # [Optional] FK to a project
     project = models.ForeignKey(
         Project,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True
     )
 
-    # [Required] A reference to where the file is stored
+    # [Optional] A reference to where the file is stored
     file = models.FileField(
-        upload_to=attachment_upload_path, storage=S3MediaStorage())
+        upload_to=attachment_upload_path, storage=S3MediaStorage(),
+        blank=True,
+        null=True
+    )
+
+    # [Optional] HTML content for email exports
+    content = models.TextField(blank=True, null=True)
+
+    # [Optional] Title for the attachment
+    title = models.CharField(max_length=255, blank=True, null=True)
 
     # [Default] Tracks when the record was created
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.project}{self.file.name[self.file.name.find('/'):]}"
+        if self.title:
+            return self.title
+        if self.file:
+            return f"{self.project}{self.file.name[self.file.name.find('/'):]}"
+        return f"Attachment {self.id}"
