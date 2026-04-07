@@ -110,20 +110,14 @@ def profile_view(request):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         elif role == 'student':
-            student = Student.objects.filter(email=email).first()
-            if not student:
-                return Response(
-                    {'error': 'Profile does not exist'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            serializer = StudentSerializer(student, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({
-                    'type': 'student',
-                    'data': serializer.data
-                })
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Students cannot edit their profiles - they are pre-registered by admin
+            return Response(
+                {
+                    'error': 'students_cannot_edit',
+                    'message': 'Student profiles cannot be edited. Contact your professor if you need to update your information.'
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
         
         return Response(
             {'error': 'No role assigned'},
