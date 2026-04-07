@@ -142,11 +142,27 @@ class PreferenceAdmin(ImportExportModelAdmin):
         parameter_name = 'project'
 
         def lookups(self, request, model_admin):
-            semester_id = request.GET.get('semester')
+            semester_id = request.GET.get('semester__id__exact')
             if semester_id:
+                # If a semester filter is applied, only show projects for that semester with the count of assigned students in parentheses
+
                 semester = Semester.objects.filter(id=semester_id).first()
                 projects = semester.projects.all() if semester else Project.objects.none()
+
+                assigned_count_qs = Assignment.objects.filter(
+                    semester_id=semester_id,
+                    project_id=OuterRef('pk')
+                ).values('project_id').annotate(count=Count('*')).values('count')
+
+                projects = projects.annotate(
+                    num_assigned=Coalesce(
+                        Subquery(assigned_count_qs, output_field=IntegerField()),
+                        0,
+                    )
+                )
+                return [(project.id, f'{project.name} ({project.num_assigned})') for project in projects.order_by('name')]
             else:
+                # else return all projects without counts since we don't know the semester context
                 projects = Project.objects.all()
 
             return [(project.id, project.name) for project in projects.order_by('name')]
@@ -156,70 +172,22 @@ class PreferenceAdmin(ImportExportModelAdmin):
                 return queryset.filter(project_id=self.value())
             return queryset
 
-    class NumAssignedToProjectFilter(admin.SimpleListFilter):
-        title = 'Number Assigned to Project'
-        parameter_name = 'num_assigned_to_project'
-
-        def lookups(self, request, model_admin):
-            return [
-                (f'lt:{number}', f'Less than {number}')
-                for number in range(3, 6)
-            ] + [
-                (f'gt:{number}', f'More than {number}')
-                for number in range(3, 5)
-            ]
-
-        def queryset(self, request, queryset):
-            assignment_count_qs = Assignment.objects.filter(
-                project=OuterRef('project'),
-                semester=OuterRef('semester')
-            ).values('project').annotate(count=Count('*')).values('count')
-
-            queryset = queryset.annotate(
-                num_assigned_to_project=Coalesce(
-                    Subquery(assignment_count_qs, output_field=IntegerField()),
-                    0,
-                )
-            )
-
-            value = self.value()
-            if not value:
-                return queryset
-
-            operator, _, number = value.partition(':')
-            try:
-                threshold = int(number)
-            except ValueError:
-                return queryset
-
-            if operator == 'lt':
-                return queryset.filter(num_assigned_to_project__lt=threshold)
-            if operator == 'gt':
-                return queryset.filter(num_assigned_to_project__gt=threshold)
-            return queryset
-
     resource_classes = [PreferenceResource]
     readonly_fields = ['student', 'project', 'semester']
 
-    list_display = ['student', 'project', 'rank', 'semester', 'is_assigned', 'num_assigned_to_project']
+    list_display = ['student', 'project', 'rank', 'semester', 'is_assigned', 'assigned_to_project']
     ordering = ['created_at']
-    list_filter = ['semester', IsAssignedFilter, NumAssignedToProjectFilter, 'rank', ProjectFilter]
+    list_filter = ['semester', IsAssignedFilter, 'rank', ProjectFilter]
 
     # TODO Search fields by semester, project, student
     search_fields = ['student', 'project']
 
     class AssignStudentToProject(AdminActionForm):
         project = forms.ModelChoiceField(
-            queryset=Project.objects.all(),  # TODO add filter to only include projects on current semester (can grab from preference records)
-            required=True
+            queryset=Project.objects.all(),
+            required=True,
+            empty_label='Select project',
         )
-
-        def __init__(self, modeladmin, action, request, queryset, *args, **kwargs):
-            super().__init__(modeladmin, action, request, queryset, *args, **kwargs)
-
-            project_ids = list(queryset.values_list('project_id', flat=True).distinct())
-            if len(project_ids) == 1:
-                self.fields['project'].initial = Project.objects.filter(id=project_ids[0]).first()
 
     @action_with_form(AssignStudentToProject, description='Assign to project')
     def assign_to_project(self, request, queryset, data):
@@ -283,7 +251,7 @@ class PreferenceAdmin(ImportExportModelAdmin):
             logger.error(f'Student {obj.student} has multiple assignments ({count}) for semester {obj.semester}')
             return None
 
-    def num_assigned_to_project(self, obj):
+    def assigned_to_project(self, obj):
         return Assignment.objects.filter(project=obj.project, semester=obj.semester).count()
 
 
