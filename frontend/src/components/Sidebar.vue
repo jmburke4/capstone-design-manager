@@ -15,18 +15,40 @@ const router = useRouter();
 const route = useRoute();
 
 const { getAccessTokenSilently } = useAuth0();
-const studentStore = useStudentStore();
-const isDeadlinePast = computed(() => studentStore.isDeadlinePast);
+const hasRanked = ref(false);
+const isDeadlinePast = false;
+const isAssigned = false;
+const isAdmin = ref(false);
 
 onMounted(async () => {
-    if (props.userRole !== 'student') return;
+  try {
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
+
+    // Check if user has admin role
     try {
-        const token = await getAccessTokenSilently();
-        apiService.setToken(token);
-        await studentStore.fetchProfileAndPrefs();
+      const adminCheck = await apiService.checkAdminAccess();
+      isAdmin.value = adminCheck.isAdmin || false;
     } catch (e) {
-        console.error('Sidebar: failed to initialize student store', e);
+      console.error('Sidebar: failed to check admin access', e);
+      isAdmin.value = false;
     }
+
+    // Student-specific checks
+    if (props.userRole === 'student') {
+      // profile endpoint returns { type, data } — normalize to the inner data
+      const profileResp = await apiService.getProfile();
+      const profile = profileResp?.data ?? profileResp;
+      const studentId = profile?.id;
+
+      if (!studentId) return;
+
+      const prefsResp = await apiService.client.get('/preferences/');
+      hasRanked.value = Array.isArray(prefsResp.data) && prefsResp.data.some(p => p.student === studentId);
+    }
+  } catch (e) {
+    console.error('Sidebar: failed to initialize', e);
+  }
 });
 
 const menuItems = computed(() => {
@@ -55,6 +77,22 @@ const menuItems = computed(() => {
 
 const isActive = (path) => route.path === path;
 const handleLogout = () => emit('logout');
+
+const handleAdminClick = async () => {
+  try {
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
+    
+    // Create 5-minute authorization session
+    await apiService.authorizeAdmin();
+    
+    // Navigate to admin panel
+    window.location.href = '/admin/';
+  } catch (error) {
+    console.error('Admin authorization failed:', error);
+    alert('Failed to access admin panel. Please ensure you have admin privileges.');
+  }
+};
 </script>
 
 <template>
@@ -74,6 +112,15 @@ const handleLogout = () => emit('logout');
                 <span class="nav-text">{{ item.name }}</span>
             </div>
         </nav>
+        
+        <div class="admin-section" v-if="isAdmin">
+            <div
+                class="nav-item"
+                @click="handleAdminClick"
+            >
+                <span class="nav-text">Admin Panel</span>
+            </div>
+        </div>
         
         <div class="profile-section" v-if="userRole === 'sponsor'">
             <div
@@ -113,6 +160,12 @@ const handleLogout = () => emit('logout');
     flex-direction: column;
     gap: 0.5rem;
     flex: 1;
+}
+
+.admin-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 .profile-section {
