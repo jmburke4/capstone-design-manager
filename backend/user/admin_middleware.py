@@ -25,11 +25,14 @@ class Auth0AdminMiddleware:
         self.get_response = get_response
     
     def __call__(self, request):
+        # Allow static files to pass through without authentication
+        if request.path.startswith('/static/'):
+            return self.get_response(request)
+        
         # Check if this is an admin route
         if request.path.startswith('/admin'):
-            # Skip protection for static files and i18n
-            if request.path.startswith('/admin/static/') or \
-               request.path.startswith('/admin/jsi18n/'):
+            # Skip protection for i18n files
+            if request.path.startswith('/admin/jsi18n/'):
                 return self.get_response(request)
             
             # Allow if user is already logged into Django admin

@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from user.admin_views import admin_authorize, admin_check
 
 API_PREFIX = 'api/v1/'
@@ -38,3 +39,6 @@ urlpatterns = [
     path(f'{API_PREFIX}', include(('user.urls', 'user'), namespace='user')),
     path(f'{API_PREFIX}', include(('emails.urls', 'emails'), namespace='emails')),
 ]
+
+# Serve static files in DEBUG mode (development)
+urlpatterns += staticfiles_urlpatterns()
