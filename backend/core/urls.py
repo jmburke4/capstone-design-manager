@@ -15,9 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from user.admin_views import admin_authorize, admin_check
+from .health import health_check
+from .spa import SPAView
 
 API_PREFIX = 'api/v1/'
 
@@ -29,6 +31,9 @@ admin.site.site_title = 'UA Computer Science Senior Design'
 urlpatterns = [
     path('admin/action-forms/', include('django_admin_action_forms.urls')),
     path('admin/', admin.site.urls),
+
+    # Health check endpoint (for Cloud Run)
+    path(f'{API_PREFIX}health/', health_check, name='health_check'),
 
     # Admin authorization endpoints
     path(f'{API_PREFIX}admin/authorize/', admin_authorize, name='admin_authorize'),
@@ -42,3 +47,9 @@ urlpatterns = [
 
 # Serve static files in DEBUG mode (development)
 urlpatterns += staticfiles_urlpatterns()
+
+# Catch-all route for Vue.js SPA (must be last)
+# This allows Vue Router to handle all frontend routes
+urlpatterns += [
+    re_path(r'^(?!api|admin|static).*$', SPAView.as_view(), name='spa'),
+]

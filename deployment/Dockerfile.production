@@ -1,0 +1,95 @@
+#############################################################################
+# STAGE 1: Build Frontend (Vue.js)
+#############################################################################
+FROM node:24-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+# Copy frontend package files
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build for production
+RUN npm run build
+# Output: /frontend/dist/
+
+#############################################################################
+# STAGE 2: Build Backend Dependencies
+#############################################################################
+FROM python:3.11-slim AS backend-builder
+
+WORKDIR /build
+
+# Install system dependencies needed for building Python packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn google-cloud-secret-manager whitenoise
+
+#############################################################################
+# STAGE 3: Final Production Image
+#############################################################################
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8080 \
+    DJANGO_SETTINGS_MODULE=core.settings_production
+
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libpq5 \
+        netcat-openbsd \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root user and group
+RUN groupadd -r -g 1000 appgroup && \
+    useradd -r -u 1000 -g appgroup -s /bin/bash -m appuser && \
+    mkdir -p /app/staticfiles /app/frontend-dist && \
+    chown -R appuser:appgroup /app
+
+# Copy Python packages from builder
+COPY --from=backend-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=backend-builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
+
+# Copy frontend build output
+COPY --from=frontend-builder --chown=appuser:appgroup /frontend/dist /app/frontend-dist
+
+# Copy backend code
+COPY --chown=appuser:appgroup backend/ /app/
+
+# Copy deployment configs
+COPY --chown=appuser:appgroup deployment/gunicorn.conf.py /app/
+COPY --chown=appuser:appgroup deployment/entrypoint-production.sh /app/
+RUN chmod +x /app/entrypoint-production.sh
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/api/v1/health/ || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# Run application
+ENTRYPOINT ["/app/entrypoint-production.sh"]
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "core.wsgi:application"]

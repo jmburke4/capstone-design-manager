@@ -13,3 +13,9 @@ pytest-cov
 pytest-django
 python-jose[cryptography]
 requests
+
+# Production dependencies
+gunicorn
+whitenoise
+google-cloud-secret-manager
+python-json-logger
