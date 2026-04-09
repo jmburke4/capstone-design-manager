@@ -165,6 +165,8 @@ AWS_QUERYSTRING_AUTH = True
 
 # Use S3 v4 signature (required by MinIO)
 AWS_S3_SIGNATURE_VERSION = "s3v4"
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Where collectstatic will put files
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [

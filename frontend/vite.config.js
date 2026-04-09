@@ -19,6 +19,12 @@ export default defineConfig({
         secure: false,
         ws: true, // support WebSocket connections
       },
+      // forward static files (CSS, JS) to the backend container
+      '/static': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
       // forward any request starting with /api to the backend container
       '/api': {
         target: 'http://backend:8000',
