@@ -71,8 +71,8 @@ class Semester(models.Model):
     """[Required] Fall, Spring, or Summer"""
 
     year = models.PositiveIntegerField(
-        validators=[MinValueValidator(1900), MaxValueValidator(datetime.date.today().year)],
-        help_text='Enter a four-digit year between 1900 and the current year'
+        validators=[MinValueValidator(1900), MaxValueValidator(datetime.date.today().year + 1)],
+        help_text='Enter a four-digit year between 1900 and the current or next year'
     )
     """[Required] The year of the semester"""
 
@@ -88,21 +88,23 @@ class Semester(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     """[Default] Tracks when the record was last updated"""
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['semester', 'year'], name='unique_semester_year')
+        ]
+
+    def __str__(self):
+        return f'{self.semester} {self.year}'
+
+    # TODO Add an overload of this method to return a Semester instance rather than the enumerable?
     def get_semester_by_date(date):
+        """Helper function to determine the semester given a date"""
         if date.month in [1, 2, 3, 4, 5]:
             return Semester.Semester.SPRING
         elif date.month in [6, 7]:
             return Semester.Semester.SUMMER
         else:
             return Semester.Semester.FALL
-
-    def __str__(self):
-        return f'{self.semester} {self.year}'
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['semester', 'year'], name='unique_semester_year')
-        ]
 
 
 class Preference(models.Model):
@@ -133,11 +135,29 @@ class Preference(models.Model):
     )
     """[Required] Number rank of student's preference toward project, 1 being the first choice"""
 
+    semester = models.ForeignKey(
+        Semester,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    """[Default] Set using the get_semester function"""
+
     created_at = models.DateTimeField(auto_now_add=True)
     """[Default] Tracks when the record was created"""
 
     updated_at = models.DateTimeField(auto_now=True)
     """[Default] Tracks when the record was last updated"""
+
+    def __str__(self):
+        return f'{self.student} ({self.project})'
+
+    # Override the model save method to compute the slug from the fields on saving to DB
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = self.generate_id()
+        self.semester = self.get_semester()
+        super().save(*args, **kwargs)
 
     def generate_id(self, student_id=None, project_id=None):
         """Generates a slug from the student and project FKs, this is used as the PK for the model"""
@@ -146,14 +166,10 @@ class Preference(models.Model):
             project_id = self.project.id
         return slugify(f'{student_id}-{project_id}')
 
-    # Override the model save method to compute the slug from the fields on saving to DB
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = self.generate_id()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f'{self.student} ({self.project})'
+    # TODO Add error handling for when a semester object is not found
+    def get_semester(self):
+        """Return a semester object based on the updated date"""
+        return Semester.objects.filter(semester=Semester.get_semester_by_date(self.updated_at), year=self.updated_at.year).first()
 
 
 class Assignment(models.Model):
@@ -162,17 +178,17 @@ class Assignment(models.Model):
     id = models.SlugField(max_length=64, primary_key=True, editable=False)
     """[Calculated] A slug field that serves as the PK for the model, this is generated from the student and semester FKs"""
 
-    student = models.ForeignKey(
-        Student,
-        on_delete=models.PROTECT
-    )
-    """[Required] Foreign key to a student"""
-
     semester = models.ForeignKey(
         Semester,
         on_delete=models.CASCADE
     )
     """[Required] Foreign key to a semester"""
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE
+    )
+    """[Required] Foreign key to a student"""
 
     project = models.ForeignKey(
         Project,
@@ -186,12 +202,8 @@ class Assignment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     """[Default] Tracks when the record was last updated"""
 
-    def generate_id(self, student_id=None, semester_id=None):
-        """Generates a slug from the student and semester FKs, this is used as the PK for the model"""
-        if (not student_id or not semester_id) and self:
-            student_id = self.student.id
-            semester_id = self.semester.id
-        return slugify(f'{student_id}-{semester_id}')
+    def __str__(self):
+        return f'{self.project} -> {self.student} ({self.semester})'
 
     # Override the model save method to compute the slug from the fields on saving to DB
     def save(self, *args, **kwargs):
@@ -199,8 +211,12 @@ class Assignment(models.Model):
             self.id = self.generate_id()
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return f'{self.student} ({self.semester})'
+    def generate_id(self, student_id=None, semester_id=None):
+        """Generates a slug from the student and semester FKs, this is used as the PK for the model"""
+        if (not student_id or not semester_id) and self:
+            student_id = self.student.id
+            semester_id = self.semester.id
+        return slugify(f'{student_id}-{semester_id}')
 
 
 class Feedback(models.Model):
@@ -218,6 +234,12 @@ class Feedback(models.Model):
     )
     """[Required] The project the sponsor is providing feedback on"""
 
+    semester = models.ForeignKey(
+        Semester,
+        on_delete=models.CASCADE
+    )
+    """[Required] The semester the sponsor is providing feedback on"""
+
     text = models.TextField()
     """[Required] The feedback"""
 
@@ -229,3 +251,6 @@ class Feedback(models.Model):
 
     class Meta:
         verbose_name_plural = 'Feedback'
+
+    def __str__(self):
+        return f'{self.sponsor.name()} ({self.id})'

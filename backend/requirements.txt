@@ -1,5 +1,6 @@
 # TODO Pick package versions to use [#3]
 django
+django-admin-action-forms
 django-cors-headers
 django-filter
 django-import-export

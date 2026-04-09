@@ -72,4 +72,44 @@ Instructions:
     AUTH0_CLIENT_ID=WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3
     AUTH0_AUDIENCE=https://backend-api-capstone/
 
-(These are front public variables and it is fine to include them in the readme and upload to repo. These values are subject to change.)
+For the .env.dev.local in the frontend directory, you will need to add the prefix 'VITE_' to each of the variables like:
+    
+    VITE_AUTH0_DOMAIN=dev-qjyd077ykn3qqq7v.us.auth0.com
+    VITE_AUTH0_CLIENT_ID=WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3
+    VITE_AUTH0_AUDIENCE=https://backend-api-capstone/
+
+(These are front public variables, and it is fine to include them in the readme and upload to the repo. These values are subject to change.)
+
+
+## Creating App Users
+
+Once the project is built and deployed with Auth0 correctly configured, a user will need to create an account to access the app.
+
+Assuming the user has navigated to the landing page of the app, they will see two options: 
+
+- **Log In**
+- **Sign Up**
+
+A first-time user must select "Sign Up." They will then be prompted with two options:
+
+- **I am a Student**
+- **I am a Sponsor**
+
+If the user is a student in the capstone class, they should select "I am a Student." Upon doing so, they will be navigated to the Auth0 signup page, where the following restrictions will be applied:
+
+- **The user will only be able to sign up using an email with the @crimson.ua.edu domain**
+- **The user will only be able to use the 'email-password' sign-in option, as they are restricted to Crimson emails and MySSO has yet to be configured.**
+- **Upon signing up, Auth0 will send a verification email to the email used when signing up. Only after verifying their email will the user be able to log in to the app with their new account.**
+- **If the user signs up with a Crimson email that does not exist in the student table in the PostgreSQL database, they will not be fed an error message and will only be able to log out. This is to prevent students who are not in the capstone class from using the app.**
+
+If the user is a sponsor, they should select "I am a Sponsor." Doing so will navigate them to the Auth0 signup page. For sponsors, social logins (such as Google SSO) will be available. If the sponsor signs up with the 'email-password' option, they must complete the email verification before being granted access to the app. Currently, there is no option to resend the verification email, and Auth0 Email Authentication links expire after 7 days. In future development, an option to resend the verification link would be a valuable feature.
+
+The sign-up process is fragile, and there will be ways to confuse the role-assignment operation that occurs when a user navigates from the app sign-up page to the Auth0 client. Effectively, the intended designed flow goes as follows:
+
+- **User selects sign up as either sponsor or student"**
+- **User is redirected to the Auth0 signup page, and their role is passed as a hint**
+- **The Auth0 action scripts trigger and handle the user based on their role, erroring if their role is obfuscated**
+- **When creating a user, Auth0 uses the hint and assigns role metadata to the new account according to it**
+- **Upon subsequent logins with the new account, the metadata will be referenced and passed to the App in order to direct the user to their correct landing page**
+
+It is highly likely that the current implementation is vulnerable to role spoofing/privilege escalation. However, given the current nature of the app, this does not pose a severe threat but only a potentially severe annoyance for the admin.
