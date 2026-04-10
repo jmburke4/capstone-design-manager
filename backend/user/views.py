@@ -23,9 +23,9 @@ class SponsorViewSet(viewsets.ModelViewSet):
         if pk is None:
             return Response({'error': 'Sponsor ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if request.query_params.get('semester_id'):
-            semester_id = request.query_params['semester_id']
-            projects = Semester.objects.filter(id=semester_id).first().projects.filter(sponsor_id=pk)
+        qpid = request.query_params.get('semester_id')
+        if qpid and str.isdigit(qpid):
+            projects = Semester.objects.filter(id=qpid).first().projects.filter(sponsor_id=pk)
         else:
             projects = Project.objects.filter(sponsor_id=pk)
 
