@@ -9,6 +9,8 @@ from .models import Project, Assignment, Preference, Semester, Feedback
 from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer
 import logging
 import datetime
+from rest_framework.decorators import action
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,20 +35,19 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class SemesterAPIView(APIView):
+class SemesterViewSet(viewsets.ModelViewSet):
+    queryset = Semester.objects.all()
+    serializer_class = SemesterSerializer
+
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, pk=None, format=None):
-        if pk:
-            semester = get_object_or_404(Semester, pk=pk)
-            serializer = SemesterSerializer(semester)
-            return Response(serializer.data)
-        else:
-            semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
-                datetime.datetime.now()), year=datetime.datetime.now().year).first()
-            serializer = SemesterSerializer(semester)
-            return Response(serializer.data)
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
+            datetime.datetime.now()), year=datetime.datetime.now().year).first()
+        serializer = SemesterSerializer(semester)
+        return Response(serializer.data)
 
 
 class PreferenceAPIView(APIView):
