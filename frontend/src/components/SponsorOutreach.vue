@@ -1,3 +1,5 @@
+<!-- migrated to django admin portal; no longer in use -->
+
 <script setup>
 import { ref } from 'vue';
 

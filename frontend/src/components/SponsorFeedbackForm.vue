@@ -2,19 +2,33 @@
 import { FormKit } from '@formkit/vue';
 import apiService from '../services/api';
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { useAuth0 } from '@auth0/auth0-vue';
+
+const { getAccessTokenSilently } = useAuth0()
 
 const projectOptions = ref([]);
 const sponsorId = ref(null);
+const semesterId = ref(null);
 
 onMounted(async () => {
   try {
-    const profileResponse = await apiService.getProfile();
-    sponsorId.value = profileResponse.data.id;
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
 
-    const sponsorsProjectsResponse = await axios.get(`http://localhost:8000/api/v1/projects/?sponsor=${sponsorId.value}`);
+    const profile = await apiService.getProfile();
+    sponsorId.value = profile?.data?.id ?? null;
 
-    projectOptions.value = sponsorsProjectsResponse.data.map(project => ({
+    const semester = await apiService.getCurrentSemester();
+    semesterId.value = semester?.id ?? null;
+
+    if (!sponsorId.value || !semesterId.value) {
+      projectOptions.value = [];
+      return;
+    }
+
+    const sponsorProjects = await apiService.getProjectsBySponsor(sponsorId.value);
+
+    projectOptions.value = sponsorProjects.map(project => ({
       label: project.name,
       value: project.id
     }));
@@ -27,45 +41,29 @@ onMounted(async () => {
 async function handleSubmission(data) {
 
   try {
-
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
+    
     const feedbackPayload = {
       text: data.sponsor_info.feedback,
       sponsor: sponsorId.value,
-      project: data.project
+      project: data.project,
+      semester: semesterId.value
     }
 
-    const feedbackResponse = await fetch(
-      "http://localhost:8000/api/v1/feedback/",
-      {
-        method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json" 
-        },
-        body: JSON.stringify(feedbackPayload)
-      }
-    )
-    
-    if (!feedbackResponse.ok) {
-        let errorText;
-        try {
-            const json = await feedbackResponse.json(); // parse JSON if the server sent it
-            errorText = JSON.stringify(json, null, 2);
-        } catch {
-            errorText = await feedbackResponse.text(); // fallback for plain text/HTML
-        }
-        console.error("Feedback API returned:", errorText);
-        throw new Error("Feedback submission failed");
-    }
+    await apiService.createFeedback(feedbackPayload);
 
     alert("Feedback submitted successfully!")
 
   } catch (error) {
     console.error("Submission failed:", error)
+    const errorMessage = error?.response?.data
+      ? JSON.stringify(error.response.data)
+      : (error?.message || "Submission failed.");
+
     if (error instanceof Error) {
-      alert(error.message); // e.g. "You have reached the maximum number of allowed projects."
+      alert(errorMessage);
     } else {
-      // fallback for unexpected errors
       alert("Submission failed.");
     }
   }
@@ -75,7 +73,7 @@ async function handleSubmission(data) {
 
 <template>
     <div class="container">
-    <h1>Sponsor Feedback</h1>
+    <h1>Feedback Submission</h1>
     <div class="card">
     <div class="form-container">
         <FormKit 

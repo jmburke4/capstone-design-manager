@@ -34,6 +34,26 @@ class ApiService {
     const response = await this.client.put('/profile/', data);
     return response.data;
   }
+
+  async getProjectsBySponsor(sponsorId) {
+    const response = await this.client.get(`/sponsors/${sponsorId}/projects/`);
+    return response.data;
+  }
+
+  async createProject(data) {
+    const response = await this.client.post('/projects/', data);
+    return response.data;
+  }
+
+  async getCurrentSemester() {
+    const response = await this.client.get('/semesters/');
+    return response.data;
+  }
+
+  async createFeedback(data) {
+    const response = await this.client.post('/feedback/', data);
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

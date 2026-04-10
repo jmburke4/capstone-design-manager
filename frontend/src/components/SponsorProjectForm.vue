@@ -1,17 +1,20 @@
 <script setup>
 import { FormKit } from '@formkit/vue';
 import apiService from '../services/api';
-import axios from 'axios';
+import { useAuth0 } from '@auth0/auth0-vue';
+
+const { getAccessTokenSilently } = useAuth0();
 
 async function handleSubmission(data) {
 
   try {
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
 
     const profileResponse = await apiService.getProfile();
 
     const sponsorId = profileResponse.data.id;
-    const currentProjectsResponse = await axios.get(`http://localhost:8000/api/v1/projects/?sponsor=${sponsorId}`);
-    const currentProjects = currentProjectsResponse.data;
+    const currentProjects = await apiService.getProjectsBySponsor(sponsorId);
     const projectCount = currentProjects.length;
     const projectNumLimit = Number(profileResponse.data.projects_allowed);
 
@@ -24,26 +27,10 @@ async function handleSubmission(data) {
       description: data.project_details.description,
       website: data.project_details.website || null,
       sponsor: sponsorId,
-      availability: data.sponsor_info.sponsor_availability
+      sponsor_availability: data.sponsor_info.availability
     }
 
-    const projectResponse = await fetch(
-      "http://localhost:8000/api/v1/projects/",
-      {
-        method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json" 
-        },
-        body: JSON.stringify(projectPayload)
-      }
-    )
-    
-    if (!projectResponse.ok) {
-    const text = await projectResponse.text()
-    console.error("Project API returned HTML/text:", text)
-    throw new Error("Project creation failed")
-    }
+    await apiService.createProject(projectPayload);
 
     alert("Project submitted successfully!")
 
@@ -62,7 +49,7 @@ async function handleSubmission(data) {
 
 <template>
     <div class="container">
-    <h1>Sponsor Project Submission</h1>
+    <h1>Project Submission</h1>
     <div class="card">
     <div class="form-container">
         <FormKit 
@@ -127,7 +114,7 @@ async function handleSubmission(data) {
             name="availability"
             label="Sponsor Availability"
             validation="required"
-            help="State days of the week and the respoective times of day you are available (Morining/Afternoon)"
+            help="State days of the week and the respective times of day you are available (Morning/Afternoon)"
             />
         </FormKit>
 
@@ -155,7 +142,6 @@ async function handleSubmission(data) {
             name="description"
             label="Project Description"
             validation="required|length:20,2000"
-            help="Describe the premise of the project and expected outcomes alongside any technical details."
             />
         </FormKit>
         </FormKit>
