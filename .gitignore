@@ -8,3 +8,8 @@ env.*
 docs/
 node_modules/
 
+
+# Production environment files
+.env.production
+.env.production.db
+frontend/.env.production
