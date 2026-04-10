@@ -42,22 +42,46 @@ VM_IP=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJE
 echo "  VM IP: $VM_IP"
 echo "  Checking DNS for $DOMAIN..."
 
-# Check if DNS is configured
-DOMAIN_IP=$(dig +short $DOMAIN | tail -n1)
+# Check if DNS is configured (try multiple times for propagation)
+MAX_ATTEMPTS=5
+ATTEMPT=0
+DOMAIN_IP=""
+
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    DOMAIN_IP=$(dig +short $DOMAIN @8.8.8.8 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+    
+    if [ -n "$DOMAIN_IP" ]; then
+        break
+    fi
+    
+    ATTEMPT=$((ATTEMPT + 1))
+    if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+        echo "  DNS not resolved yet, retrying... (attempt $ATTEMPT/$MAX_ATTEMPTS)"
+        sleep 5
+    fi
+done
 
 if [ -z "$DOMAIN_IP" ]; then
     echo ""
     echo "  ✗ ERROR: DNS not configured for $DOMAIN"
     echo ""
-    echo "Please configure DNS first:"
-    echo "  1. Go to your domain registrar (e.g., Google Domains)"
-    echo "  2. Add A record:"
-    echo "     Type: A"
-    echo "     Name: @ (or subdomain)"
-    echo "     Value: $VM_IP"
-    echo "     TTL: 3600"
-    echo "  3. Wait for DNS propagation (10-60 minutes)"
-    echo "  4. Run this script again"
+    echo "Please configure DNS A record in Cloud DNS:"
+    echo ""
+    echo "Option 1 - Via Console:"
+    echo "  1. Go to: https://console.cloud.google.com/net-services/dns/zones"
+    echo "  2. Click on your zone for $DOMAIN"
+    echo "  3. Click 'Add Record Set'"
+    echo "  4. DNS Name: Leave blank (for root)"
+    echo "  5. Resource Record Type: A"
+    echo "  6. IPv4 Address: $VM_IP"
+    echo "  7. TTL: 300"
+    echo "  8. Click 'Create'"
+    echo ""
+    echo "Option 2 - Via Command:"
+    echo "  ZONE_NAME=\$(gcloud dns managed-zones list --filter='dnsName:$DOMAIN' --format='value(name)')"
+    echo "  gcloud dns record-sets create $DOMAIN. --rrdatas=$VM_IP --ttl=300 --type=A --zone=\$ZONE_NAME"
+    echo ""
+    echo "Then wait 5-10 minutes for propagation and run this script again."
     echo ""
     exit 1
 fi
