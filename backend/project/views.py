@@ -20,7 +20,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
 
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['sponsor']  # allows ?sponsor=<id>
+    filterset_fields = ['name', 'sponsor', 'status']
 
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
@@ -39,11 +39,15 @@ class SemesterViewSet(viewsets.ModelViewSet):
     queryset = Semester.objects.all()
     serializer_class = SemesterSerializer
 
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['semester', 'year']
+
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['get'])
     def current(self, request):
+        """Returns a semester based on the current date"""
         semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
             datetime.datetime.now()), year=datetime.datetime.now().year).first()
         serializer = SemesterSerializer(semester)
@@ -146,7 +150,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     serializer_class = AssignmentSerializer
 
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['project', 'semester']
+    filterset_fields = ['semester', 'student', 'project']
 
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
@@ -155,6 +159,9 @@ class AssignmentViewSet(viewsets.ModelViewSet):
 class FeedbackViewSet(viewsets.ModelViewSet):
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['sponsor', 'project', 'semester']
 
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]

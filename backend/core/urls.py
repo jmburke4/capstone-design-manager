@@ -19,6 +19,7 @@ from django.urls import include, path
 
 API_PREFIX = 'api/v1/'
 
+# FIXME Update site_url for production
 admin.site.site_url = 'http://127.0.0.1:5173'
 admin.site.site_header = 'Projects Portal'
 admin.site.site_title = 'UA Computer Science Senior Design'
