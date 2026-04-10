@@ -1,5 +1,7 @@
-from rest_framework.serializers import ModelSerializer, CharField, ListSerializer, ValidationError, DateTimeField
-from .models import Semester, Preference, Project, Assignment, Feedback
+from django.core.validators import FileExtensionValidator
+from django.urls import reverse
+from rest_framework.serializers import FileField, ModelSerializer, CharField, ListSerializer, ValidationError, DateTimeField, SerializerMethodField
+from .models import Attachment, Semester, Preference, Project, Assignment, Feedback, ALLOWED_ATTACHMENT_FILE_EXTENSIONS, validate_attachment_file_size
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,6 +12,43 @@ class ProjectSerializer(ModelSerializer):
 
     class Meta:
         model = Project
+        fields = '__all__'
+
+
+class AttachmentSerializer(ModelSerializer):
+    file = FileField(
+        required=False,
+        allow_null=True,
+        use_url=False,
+        validators=[
+            FileExtensionValidator(allowed_extensions=ALLOWED_ATTACHMENT_FILE_EXTENSIONS),
+            validate_attachment_file_size,
+        ],
+    )
+    url = SerializerMethodField()
+
+    def get_url(self, obj):
+        if obj.link:
+            return obj.link
+
+        request = self.context.get('request')
+        url = reverse('project:attachment-download', args=[obj.pk])
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
+
+    def validate(self, attrs):
+        instance = getattr(self, 'instance', None)
+        file_obj = attrs.get('file', getattr(instance, 'file', None))
+        link = attrs.get('link', getattr(instance, 'link', None))
+
+        if bool(file_obj) == bool(link):
+            raise ValidationError('Provide either a file or a link, but not both.')
+
+        return attrs
+
+    class Meta:
+        model = Attachment
         fields = '__all__'
 
 

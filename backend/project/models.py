@@ -1,9 +1,23 @@
 import datetime
+import logging
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator, MaxValueValidator
+from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from user.models import Sponsor, Student
+from project.storage import S3MediaStorage
+
+logger = logging.getLogger(__name__)
+
+MAX_ATTACHMENT_FILE_SIZE = 25 * 1024 * 1024
+ALLOWED_ATTACHMENT_FILE_EXTENSIONS = ['pdf', 'docx', 'pptx', 'png', 'jpeg', 'jpg', 'zip']
+
+
+def validate_attachment_file_size(file_obj):
+    if file_obj and file_obj.size > MAX_ATTACHMENT_FILE_SIZE:
+        raise ValidationError(f'File size must be {MAX_ATTACHMENT_FILE_SIZE // (1024 * 1024)} MB or less.')
 
 # Models are orded by chronological appearance
 # Fields are ordered by importance descending
@@ -59,6 +73,65 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+
+def attachment_upload_path(instance, filename):
+    return f'{instance.project.id}/{filename}'
+
+
+class Attachment(models.Model):
+    # [Required] FK to a project
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE
+    )
+
+    # [Optional] Stored file attachment. Leave blank when storing a link instead.
+    file = models.FileField(
+        upload_to=attachment_upload_path,
+        storage=S3MediaStorage(),
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=ALLOWED_ATTACHMENT_FILE_EXTENSIONS),
+            validate_attachment_file_size,
+        ],
+    )
+
+    # [Optional] Stored hyperlink attachment. Leave blank when uploading a file instead.
+    link = models.URLField(blank=True, null=True)
+
+    # [Default] Tracks when the record was created
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        super().clean()
+
+        if bool(self.file) == bool(self.link):
+            raise ValidationError('Provide either a file or a link, but not both.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete the file from storage before deleting the record
+        if self.file:
+            try:
+                file_name = self.file.name
+                logger.info(f'Deleting attachment file: {file_name}')
+                self.file.delete(save=False)
+                logger.info(f'Successfully deleted attachment file: {file_name}')
+            except Exception as e:
+                logger.error(f'Error deleting attachment file {self.file.name}: {str(e)}', exc_info=True)
+        super().delete(*args, **kwargs)
+
+    def __str__(self):
+        if self.link:
+            return f'{self.project} (link)'
+        if self.file:
+            return f'{self.project}{self.file.name[self.file.name.find("/"):]}'
+        return str(self.project)
 
 
 class Semester(models.Model):
@@ -172,9 +245,10 @@ class Preference(models.Model):
         return slugify(f'{student_id}-{project_id}')
 
     # TODO Add error handling for when a semester object is not found
-    def get_semester(self):
+    def get_semester(self, date=None):
         """Return a semester object based on the updated date"""
-        return Semester.objects.filter(semester=Semester.get_semester_by_date(self.updated_at), year=self.updated_at.year).first()
+        date = date or self.updated_at or timezone.now()
+        return Semester.objects.filter(semester=Semester.get_semester_by_date(date), year=date.year).first()
 
 
 class Assignment(models.Model):

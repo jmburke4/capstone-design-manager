@@ -7,8 +7,8 @@ from django.utils.html import format_html
 from django.utils.http import urlencode
 from django_admin_action_forms import AdminActionForm, action_with_form
 from import_export.admin import ImportExportModelAdmin
-from project.models import Project, Semester, Preference, Assignment, Feedback
-from project.resources import ProjectResource, SemesterResource, PreferenceResource, AssignmentResource, FeedbackResource
+from project.models import Project, Semester, Preference, Assignment, Feedback, Attachment
+from project.resources import ProjectResource, SemesterResource, PreferenceResource, AssignmentResource, FeedbackResource, AttachmentResource
 import logging
 
 logger = logging.getLogger(__name__)
@@ -98,6 +98,27 @@ class ProjectAdmin(ImportExportModelAdmin):
         return Semester.objects.filter(projects=obj).count()
 
     actions = [change_project_status_action, assign_project_to_semester, remove_project_from_semester]
+
+
+@admin.register(Attachment)
+class AttachmentAdmin(ImportExportModelAdmin):
+    resource_classes = [AttachmentResource]
+
+    list_display = ['id', 'project', 'target_link']
+    list_filter = ['project']
+    search_fields = ['project__name', 'file', 'link']
+    ordering = ['id']
+
+    @admin.display(description='Attachment')
+    def target_link(self, obj):
+        if obj.link:
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.link, obj.link)
+
+        if obj.file:
+            url = reverse('project:attachment-download', args=[obj.pk])
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', url, obj.file.name)
+
+        return '-'
 
 
 @admin.register(Semester)

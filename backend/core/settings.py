@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'import_export',
     'django_admin_action_forms',
+    'storages',
     'project',
     'user',
     'emails',
@@ -139,7 +140,27 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_LOCATION = 'static'
+STATICFILES_STORAGE = "project.storage.StaticS3Boto3Storage"
+
+MEDIA_URL = '/media/'
+DEFAULT_FILE_STORAGE = "project.storage.S3MediaStorage"
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+
+# Critical: enable MinIO endpoint
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
+MINIO_ACCESS_URL = os.getenv("MINIO_ACCESS_URL")
+
+# Keep files private by default
+AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = True
+
+# Use S3 v4 signature (required by MinIO)
+AWS_S3_SIGNATURE_VERSION = "s3v4"
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
