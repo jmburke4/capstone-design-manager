@@ -1,0 +1,121 @@
+# HTTPS configuration template
+# This file will be renamed to https.conf after SSL certificate is obtained
+# Replace DOMAIN_NAME with your actual domain
+
+upstream frontend {
+    server frontend:3000;
+}
+
+upstream backend {
+    server backend:8000;
+}
+
+# HTTP -> HTTPS redirect
+# Rootless Docker: Listen on 8080 instead of 80
+# iptables redirects port 80 -> 8080 on the VM
+server {
+    listen 8080;
+    server_name DOMAIN_NAME www.DOMAIN_NAME;
+
+    # Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS Server
+# Rootless Docker: Listen on 8443 instead of 443
+# iptables redirects port 443 -> 8443 on the VM
+server {
+    listen 8443 ssl http2;
+    server_name DOMAIN_NAME www.DOMAIN_NAME;
+
+    # SSL Certificate (Let's Encrypt)
+    ssl_certificate /etc/letsencrypt/live/DOMAIN_NAME/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/DOMAIN_NAME/privkey.pem;
+
+    # SSL Configuration (modern, secure)
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # OCSP Stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    ssl_trusted_certificate /etc/letsencrypt/live/DOMAIN_NAME/chain.pem;
+
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Client body size (for file uploads)
+    client_max_body_size 5M;
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Django static files (admin CSS/JS)
+    location /static/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_redirect off;
+    }
+
+    # Django admin panel
+    location /admin/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_redirect off;
+        
+        # Increase timeouts for admin operations
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+
+    # Django API endpoints
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Authorization $http_authorization;
+        proxy_pass_header Authorization;
+        proxy_redirect off;
+    }
+
+    # Vue.js SPA - all other routes
+    location / {
+        proxy_pass http://frontend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_redirect off;
+
+        # WebSocket support (for future features)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

@@ -1,0 +1,119 @@
+services:
+  # Nginx - Reverse proxy with SSL termination
+  # Note: Rootless Docker can't bind to ports < 1024
+  # Using 8080/8443, iptables redirects 80->8080 and 443->8443
+  nginx:
+    build: ./nginx
+    container_name: capstone-nginx
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Frontend - Vue.js production build served by Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: capstone-frontend
+    env_file:
+      - frontend/.env.production
+    restart: unless-stopped
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backend - Django with Gunicorn
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: capstone-backend
+    command: gunicorn --config gunicorn.conf.py core.wsgi:application
+    user: "appuser"
+    env_file:
+      - .env.production
+    depends_on:
+      - db
+    volumes:
+      - static-files:/app/staticfiles
+    restart: unless-stopped
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database
+  db:
+    image: postgres:17
+    container_name: capstone-db
+    env_file:
+      - .env.production.db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backups:/backups
+    restart: unless-stopped
+    networks:
+      - app-network
+    shm_size: 128mb
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Certbot - Let's Encrypt SSL certificate renewal
+  certbot:
+    image: certbot/certbot
+    container_name: capstone-certbot
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    driver: local
+  static-files:
+    driver: local
+  letsencrypt:
+    driver: local
+  certbot-webroot:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
