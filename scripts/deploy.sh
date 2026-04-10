@@ -54,14 +54,9 @@ print_header "Step 2: Setup VM"
 # Step 3: Generate secrets
 print_header "Step 3: Generate Secrets"
 ./scripts/generate-secrets.sh
-
-# Pause for user to edit .env files
 echo ""
-echo -e "${YELLOW}⚠ ACTION REQUIRED${NC}"
+echo "✓ Secrets generated with VM IP automatically configured"
 echo ""
-echo "Edit .env.production and update DJANGO_ALLOWED_HOSTS with your VM IP or domain"
-echo ""
-read -p "Press Enter after you've edited .env.production..."
 
 # Step 4: Deploy application
 print_header "Step 4: Deploy Application"
