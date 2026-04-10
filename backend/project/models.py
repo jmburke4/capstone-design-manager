@@ -52,6 +52,11 @@ class Project(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     """[Default] Tracks when the record was last updated"""
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'sponsor'], name='unique_name_sponsor')
+        ]
+
     def __str__(self):
         return self.name
 

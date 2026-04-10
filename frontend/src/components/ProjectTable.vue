@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
@@ -27,6 +27,23 @@ const fetchData = async () => {
   }
 };
 
+const props = defineProps({
+  sponsorId: {
+    type: String,
+    required: false,
+    default: null
+  }
+});
+
+const filteredPosts = computed(() => {
+  if (!props.sponsorId) {
+    return posts.value; // show all if no sponsorId
+  }
+  return posts.value.filter(
+    post => String(post.sponsor) === String(props.sponsorId)
+  );
+});
+
 onMounted(() => {
   // Initialize Tabulator
   tabulator = new Tabulator(tableContainer.value, {
@@ -36,7 +53,7 @@ onMounted(() => {
       { title: "ID", field: "id", width: 50 },
       { title: "Name", field: "name" },
       { title: "Description", field: "description" },
-      { title: "Sponsor", field: "sponsor" },
+      { title: "Availability", field: "sponsor_availability" },
       { title: "Website", field: "website" },
       { title: "Created", field: "created_at" },
       { title: "Status", field: "status" },
@@ -56,7 +73,7 @@ watch(
 );
 
 // Update table when posts change
-watch(posts, (newData) => {
+watch(filteredPosts, (newData) => {
   if (tabulator) tabulator.setData(newData);
 }, { deep: true });
 </script>
