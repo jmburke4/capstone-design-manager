@@ -1,11 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { useAuth0 } from '@auth0/auth0-vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import StudentProjectCard from './StudentProjectCard.vue';
+import apiService from '../services/api';
 import ProjectDetailsSidebar from './ProjectDetailsSidebar.vue';
+import StudentProjectCard from './StudentProjectCard.vue';
 
 const router = useRouter();
+const { getAccessTokenSilently } = useAuth0();
 
 // Reactive State
 const posts = ref([]); // Initialize as empty array to avoid v-for errors
@@ -19,9 +21,11 @@ const sponsors = ref(new Map())
 const fetchData = async () => {
   try {
     loading.value = true; // Reset loading state if called again
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
     const [projectsRes, sponsorsRes] = await Promise.all([
-      axios.get('http://localhost:8000/api/v1/projects/?format=json'),
-      axios.get('http://localhost:8000/api/v1/sponsors/?format=json')
+      apiService.client.get('/projects/?format=json'),
+      apiService.client.get('/sponsors/?format=json')
     ]);
     
     // Map sponsor ID to sponsor object

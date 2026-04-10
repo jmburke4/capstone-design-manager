@@ -1,67 +1,47 @@
 <script setup>
 import { FormKit } from '@formkit/vue';
+import apiService from '../services/api';
+import { useAuth0 } from '@auth0/auth0-vue';
+
+const { getAccessTokenSilently } = useAuth0();
 
 async function handleSubmission(data) {
 
   try {
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
 
-    const sponsorPayload = {
-      first_name: "Sponsor",
-      last_name: "Contact",
-      organization: data.sponsor_info.company_name,
-      email: data.sponsor_info.contact_email
+    const profileResponse = await apiService.getProfile();
+
+    const sponsorId = profileResponse.data.id;
+    const currentProjects = await apiService.getProjectsBySponsor(sponsorId);
+    const projectCount = currentProjects.length;
+    const projectNumLimit = Number(profileResponse.data.projects_allowed);
+
+    if (projectCount >= projectNumLimit) {
+      throw new Error("You have reached the maximum number of allowed projects.");
     }
-
-    const sponsorResponse = await fetch(
-        "http://localhost:8000/api/v1/sponsors/", 
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(sponsorPayload)
-        }
-    )
-    
-    if (!sponsorResponse.ok) {
-        const text = await sponsorResponse.text() // read raw HTML/text
-        console.error("Sponsor API returned HTML/text:", text)
-        throw new Error("Sponsor creation failed")
-    }
-
-    const sponsor = await sponsorResponse.json()
 
     const projectPayload = {
       name: data.project_details.name,
       description: data.project_details.description,
       website: data.project_details.website || null,
-      sponsor: sponsor.id
+      sponsor: sponsorId,
+      sponsor_availability: data.sponsor_info.availability
     }
 
-    const projectResponse = await fetch(
-      "http://localhost:8000/api/v1/projects/",
-      {
-        method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json" 
-        },
-        body: JSON.stringify(projectPayload)
-      }
-    )
-    
-    if (!projectResponse.ok) {
-    const text = await projectResponse.text()
-    console.error("Project API returned HTML/text:", text)
-    throw new Error("Project creation failed")
-    }
+    await apiService.createProject(projectPayload);
 
     alert("Project submitted successfully!")
 
   } catch (error) {
     console.error("Submission failed:", error)
-    alert("Submission failed.")
+    if (error instanceof Error) {
+      alert(error.message); // e.g. "You have reached the maximum number of allowed projects."
+    } else {
+      // fallback for unexpected errors
+      alert("Submission failed.");
+    }
   }
 }
 
@@ -69,7 +49,7 @@ async function handleSubmission(data) {
 
 <template>
     <div class="container">
-    <h1>Sponsor Project Submission</h1>
+    <h1>Project Submission</h1>
     <div class="card">
     <div class="form-container">
         <FormKit 
@@ -79,6 +59,40 @@ async function handleSubmission(data) {
         @submit="handleSubmission"
         >
 
+        <div class="form-intro">
+          <p>
+            Thank you for your interest in sponsoring a computer science capstone projects. Our students have 
+            spent 4 years aquiring skills. The opportunity to have a culminating experience that incorporates
+            everything they have learned is invaluable. your willingness to be a part of that experience 
+            appreciated. At the same time, we are honored to contribute to the university community.
+          </p>
+          <p>
+            When presenting your project, students will want to know the purpose of the system, who will be 
+            using it, and what users should be able to do. It is helpful to provide information on how the 
+            users will access the systems and how many users you expect.
+          </p>
+          <p><strong>External Sponsor/Student Agreement</strong></p>
+          <p>Project sponsors will: </p>
+          <ul>
+            <li>Provide students with a list of user interactions and functionality (what the software should do).</li>
+            <li>Meet with students weekly to prioritize feature implementation.</li>
+            <li>Provide frequent feedback on how well the software meets the business requirements.</li>
+            <li>Provide timely answers to questions.</li>
+          </ul>
+          <p>
+            Students will:
+          </p>
+          <ul>
+            <li>Choose tools, language and platforms that are appropriate for the requirements.</li>
+            <li>Use Agile Software Development Practices.</li>
+            <li>Document non-functional requirements.</li>
+            <li>Incorporate feedback from project sponsors.</li>
+            <li>Keep accurate records of all meetings and interactions.</li>
+        </ul>
+        </div>
+
+        <hr />
+
         <FormKit type="group" name="sponsor_info">
             <h3>Contact Information</h3>
             <FormKit
@@ -87,11 +101,20 @@ async function handleSubmission(data) {
             label="Company/Organization"
             validation="required"
             />
+
             <FormKit
             type="email"
             name="contact_email"
             label="Primary Contact Email"
             validation="required|email"
+            />
+
+            <FormKit
+            type="textarea"
+            name="availability"
+            label="Sponsor Availability"
+            validation="required"
+            help="State days of the week and the respective times of day you are available (Morning/Afternoon)"
             />
         </FormKit>
 
@@ -119,7 +142,6 @@ async function handleSubmission(data) {
             name="description"
             label="Project Description"
             validation="required|length:20,2000"
-            help="Describe the premise of the project and expected outcomes alongside any technical details."
             />
         </FormKit>
         </FormKit>

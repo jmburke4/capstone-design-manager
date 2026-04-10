@@ -68,11 +68,11 @@
 
 
 a {
-  color: var(--ua_color-text--link);
+  color: var(--text-link);
 }
 
 a:hover {
-  color: var(--ua_color-text--link-hover);
+  color: var(--text-link-hover);
 }
 
 body {
@@ -84,8 +84,8 @@ body {
 }
 
 h1 {
-  font-size: 4rem;
-  line-height: 4rem;
+  font-size: 3.75rem;
+  line-height: 3.75rem;
 }
 
 h2 {
@@ -110,7 +110,7 @@ h5 {
 
 p,
 span, li {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   line-height: 2rem;
 }
 
