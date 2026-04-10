@@ -35,8 +35,12 @@ class ApiService {
     return response.data;
   }
 
-  async getProjectsBySponsor(sponsorId) {
-    const response = await this.client.get(`/sponsors/${sponsorId}/projects/`);
+  async getProjectsBySponsor(sponsorId, semesterId = null) {
+    let url = `/sponsors/${sponsorId}/projects/`;
+    if (semesterId) {
+      url += `?semester_id=${semesterId}`;
+    }
+    const response = await this.client.get(url);
     return response.data;
   }
 
@@ -46,6 +50,11 @@ class ApiService {
   }
 
   async getCurrentSemester() {
+    const response = await this.client.get('/semesters/current');
+    return response.data;
+  }
+
+  async getSemesters() {
     const response = await this.client.get('/semesters/');
     return response.data;
   }

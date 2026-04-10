@@ -1,14 +1,17 @@
 <script setup>
 import { FormKit } from '@formkit/vue';
 import apiService from '../services/api';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useAuth0 } from '@auth0/auth0-vue';
 
 const { getAccessTokenSilently } = useAuth0()
 
 const projectOptions = ref([]);
 const sponsorId = ref(null);
-const semesterId = ref(null);
+const selectedSemesterId = ref(null);
+const semesters = ref([]);
+const sponsorProjects = ref([]);
+const selectedProjectId = ref(null);
 
 onMounted(async () => {
   try {
@@ -18,24 +21,38 @@ onMounted(async () => {
     const profile = await apiService.getProfile();
     sponsorId.value = profile?.data?.id ?? null;
 
-    const semester = await apiService.getCurrentSemester();
-    semesterId.value = semester?.id ?? null;
-
-    if (!sponsorId.value || !semesterId.value) {
-      projectOptions.value = [];
-      return;
-    }
-
-    const sponsorProjects = await apiService.getProjectsBySponsor(sponsorId.value);
-
-    projectOptions.value = sponsorProjects.map(project => ({
-      label: project.name,
-      value: project.id
+    const currentSemester = await apiService.getCurrentSemester();
+    const allSemesters = await apiService.getSemesters();
+    semesters.value = allSemesters.map(s => ({
+      label: `${s.semester} ${s.year}`,
+      value: s.id
     }));
+    selectedSemesterId.value = currentSemester?.id ?? allSemesters?.[1]?.id ?? null;
 
+    if (sponsorId.value && selectedSemesterId.value) {
+      sponsorProjects.value = await apiService.getProjectsBySponsor(sponsorId.value, selectedSemesterId.value);
+      projectOptions.value = sponsorProjects.value.map(project => ({
+        label: project.name,
+        value: project.id
+      }));
+    }
   } catch (error) {
     console.error("Error loading projects:", error);
   }
+});
+
+watch(selectedSemesterId, async (newId) => {
+  if (!newId || !sponsorId.value) return;
+
+  sponsorProjects.value = await apiService.getProjectsBySponsor(
+    sponsorId.value,
+    newId
+  );
+
+  projectOptions.value = sponsorProjects.value.map(project => ({
+    label: project.name,
+    value: project.id
+  }));
 });
 
 async function handleSubmission(data) {
@@ -48,7 +65,7 @@ async function handleSubmission(data) {
       text: data.sponsor_info.feedback,
       sponsor: sponsorId.value,
       project: data.project,
-      semester: semesterId.value
+      semester: selectedSemesterId.value
     }
 
     await apiService.createFeedback(feedbackPayload);
@@ -83,16 +100,25 @@ async function handleSubmission(data) {
         @submit="handleSubmission"
         >
 
+        <!-- Semester Selection Dropdown -->
+         <FormKit
+            type="select"
+            name="semester"
+            label="Select Semester"
+            v-model="selectedSemesterId"
+            :options="semesters"
+         />
+         <hr />
+
         <!-- Project Selection -->
         <FormKit
             type="radio"
             name="project"
             label="Select a Project"
+            v-model="selectedProjectId"
             :options="projectOptions"
             validation="required"
             outer-class="bubble-group"
-            input-class="hidden-radio"
-            option-class="bubble-option"
             />
 
         <FormKit type="group" name="sponsor_info">
@@ -110,49 +136,74 @@ async function handleSubmission(data) {
 
 <style scoped>
 hr {
-    margin-top: 2rem;
+  margin-top: 2rem;
 }
+
 .container {
   text-align: left;
   max-width: var(--max-content-width);
   margin: 0 auto;
 }
 
-/* Layout for the options */
-.bubble-group .formkit-options {
+.card {
+  padding: 1.5rem;
+}
+
+/* ----------------------------
+   SEMESTER DROPDOWN spacing
+-----------------------------*/
+.form-container :deep(.formkit-outer) {
+  margin-bottom: 1rem;
+}
+
+/* ----------------------------
+   BUBBLE RADIO LAYOUT
+-----------------------------*/
+
+/* flex layout for radio options */
+.bubble-group :deep(.formkit-options) {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin: 1rem 0;
 }
 
-/* Hide default radio buttons */
-.hidden-radio input {
+/* each option wrapper */
+.bubble-group :deep(.formkit-option) {
+  display: inline-flex;
+}
+
+/* hide native radio input */
+.bubble-group :deep(input[type="radio"]) {
   display: none;
 }
 
-/* Each bubble */
-.bubble-option {
+/* bubble base style */
+.bubble-group :deep(label) {
   padding: 10px 16px;
   border: 2px solid #ccc;
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  display: inline-block;
 }
 
-/* Hover effect */
-.bubble-option:hover {
+/* hover */
+.bubble-group :deep(label:hover) {
   border-color: #888;
 }
 
-/* Selected state (this is the key part) */
-.bubble-option[data-checked="true"] {
+/* selected state (FormKit sets aria-checked/data-checked on wrapper) */
+.bubble-group :deep(.formkit-option[data-checked="true"] label),
+.bubble-group :deep(.formkit-option[aria-checked="true"] label) {
   background-color: #007bff;
   color: white;
   border-color: #007bff;
 }
 
-.bubble-option:active {
+/* click feedback */
+.bubble-group :deep(label:active) {
   transform: scale(0.97);
 }
 </style>
