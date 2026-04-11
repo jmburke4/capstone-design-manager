@@ -1,8 +1,8 @@
 <script setup>
-import { FormKit } from '@formkit/vue';
-import apiService from '../services/api';
-import { ref, onMounted, watch } from 'vue';
 import { useAuth0 } from '@auth0/auth0-vue';
+import { FormKit } from '@formkit/vue';
+import { onMounted, ref, watch } from 'vue';
+import apiService from '../services/api';
 
 const { getAccessTokenSilently } = useAuth0();
 const sponsorId = ref(null);
