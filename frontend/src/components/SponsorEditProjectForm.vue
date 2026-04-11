@@ -66,7 +66,7 @@ async function handleSubmission(data) {
       sponsor_availability: data.project_details.availability
     }
 
-    const projectId = data.project; 
+    const projectId = data.project;
     await apiService.putProject(projectPayload, projectId);
 
     alert("Project edited successfully!")
