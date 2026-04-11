@@ -9,15 +9,11 @@ const sponsorId = ref(null);
 const sponsorProjects = ref([]);
 const projectOptions = ref([]);
 const formData = ref({
-  sponsor_info: {
-    company_name: '',
-    contact_email: '',
-    availability: ''
-  },
   project_details: {
     name: '',
     website: '',
-    description: ''
+    description: '',
+    availability: ''
   }
 })
 
@@ -46,13 +42,10 @@ function loadProject(projectId) {
   const project = sponsorProjects.value.find(p => p.id === projectId)
   if (!project) return
 
-  formData.value.sponsor_info.company_name = project.company_name ?? ''
-  formData.value.sponsor_info.contact_email = project.contact_email ?? ''
-  formData.value.sponsor_info.availability = project.sponsor_availability ?? ''
-
   formData.value.project_details.name = project.name ?? ''
   formData.value.project_details.website = project.website ?? ''
   formData.value.project_details.description = project.description ?? ''
+  formData.value.project_details.availability = project.sponsor_availability ?? ''
 }
 
 watch(
@@ -65,16 +58,16 @@ watch(
 async function handleSubmission(data) {
 
   try {
-    console.log('SUBMIT FIRED', data)
     const projectPayload = {
       name: data.project_details.name,
       description: data.project_details.description,
       website: data.project_details.website || null,
-      sponsor: sponsorId,
-      sponsor_availability: data.sponsor_info.availability
+      sponsor: sponsorId.value,
+      sponsor_availability: data.project_details.availability
     }
 
-    await apiService.editProject(projectPayload);
+    const projectId = data.project;
+    await apiService.putProject(projectPayload, projectId);
 
     alert("Project edited successfully!")
 
@@ -114,33 +107,6 @@ async function handleSubmission(data) {
 
             <hr />
 
-        <FormKit type="group" name="sponsor_info">
-            <h3>Contact Information</h3>
-            <FormKit
-            type="text"
-            name="company_name"
-            label="Company/Organization"
-            validation="required"
-            />
-
-            <FormKit
-            type="email"
-            name="contact_email"
-            label="Primary Contact Email"
-            validation="required|email"
-            />
-
-            <FormKit
-            type="textarea"
-            name="availability"
-            label="Sponsor Availability"
-            validation="required"
-            help="State days of the week and the respective times of day you are available (Morning/Afternoon)"
-            />
-        </FormKit>
-
-        <hr />
-
         <FormKit type="group" name="project_details">
             <h3>Project Details</h3>
             <FormKit
@@ -163,6 +129,14 @@ async function handleSubmission(data) {
             name="description"
             label="Project Description"
             validation="required|length:20,2000"
+            />
+
+            <FormKit
+            type="textarea"
+            name="availability"
+            label="Sponsor Availability"
+            validation="required"
+            help="State days of the week and the respective times of day you are available (Morning/Afternoon)"
             />
         </FormKit>
         </FormKit>
