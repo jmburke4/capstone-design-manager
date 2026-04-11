@@ -8,7 +8,6 @@ const { getAccessTokenSilently } = useAuth0();
 const sponsorId = ref(null);
 const sponsorProjects = ref([]);
 const projectOptions = ref([]);
-const selectedProjectId = ref(null);
 const formData = ref({
   sponsor_info: {
     company_name: '',
@@ -35,44 +34,29 @@ onMounted(async () => {
 
     if (sponsorId.value) {
       sponsorProjects.value = await apiService.getProjectsBySponsor(sponsorId.value);
-      selectedProjectId.value = sponsorProjects.value?.[0]?.id ?? null;
       projectOptions.value = sponsorProjects.value.map(project => ({
         label: project.name,
         value: project.id
       }));
-    }
-
-    if (selectedProjectId.value) {
-        loadProject(selectedProjectId.value)
+      formData.value.project = sponsorProjects.value?.[0]?.id ?? null;
     }
 });
 
 function loadProject(projectId) {
   const project = sponsorProjects.value.find(p => p.id === projectId)
-
   if (!project) return
 
-  formData.value = {
-    sponsor_info: {
-      company_name: project.company_name ?? '',
-      contact_email: project.contact_email ?? '',
-      availability: project.sponsor_availability ?? ''
-    },
-    project_details: {
-      name: project.name ?? '',
-      website: project.website ?? '',
-      description: project.description ?? ''
-    }
-  }
+  formData.value.sponsor_info.company_name = project.company_name ?? ''
+  formData.value.sponsor_info.contact_email = project.contact_email ?? ''
+  formData.value.sponsor_info.availability = project.sponsor_availability ?? ''
+
+  formData.value.project_details.name = project.name ?? ''
+  formData.value.project_details.website = project.website ?? ''
+  formData.value.project_details.description = project.description ?? ''
 }
 
-watch(selectedProjectId, (newId) => {
-  if (!newId) return
-  loadProject(newId)
-})
-
 watch(
-  () => formData.value.selected_project_id,
+  () => formData.value.project,
   (id) => {
     if (id) loadProject(id)
   }
@@ -81,6 +65,7 @@ watch(
 async function handleSubmission(data) {
 
   try {
+    console.log('SUBMIT FIRED', data)
     const projectPayload = {
       name: data.project_details.name,
       description: data.project_details.description,
