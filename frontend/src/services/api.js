@@ -48,8 +48,8 @@ class ApiService {
     const response = await this.client.post('/projects/', data);
     return response.data;
   }
-  async editProject(data) {
-    const response = await this.client.patch('/projects/', data);
+  async editProject(data, projectId) {
+    const response = await this.client.put(`/projects/${projectId}/`, data);
     return response.data;
   }
 

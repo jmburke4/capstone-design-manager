@@ -1,8 +1,8 @@
 <script setup>
-import { FormKit } from '@formkit/vue';
-import apiService from '../services/api';
-import { ref, onMounted, watch } from 'vue';
 import { useAuth0 } from '@auth0/auth0-vue';
+import { FormKit } from '@formkit/vue';
+import { onMounted, ref, watch } from 'vue';
+import apiService from '../services/api';
 
 const { getAccessTokenSilently } = useAuth0();
 const sponsorId = ref(null);
@@ -66,15 +66,16 @@ async function handleSubmission(data) {
 
   try {
     console.log('SUBMIT FIRED', data)
+    const projectId = data.project;
     const projectPayload = {
       name: data.project_details.name,
       description: data.project_details.description,
       website: data.project_details.website || null,
-      sponsor: sponsorId,
+      sponsor: sponsorId.value,
       sponsor_availability: data.sponsor_info.availability
     }
 
-    await apiService.editProject(projectPayload);
+    await apiService.editProject(projectPayload, projectId);
 
     alert("Project edited successfully!")
 
