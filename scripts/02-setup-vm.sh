@@ -13,7 +13,7 @@
 set -e
 
 PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-a"
+ZONE="us-central1-b"
 VM_NAME="capstone-prod-vm"
 REPO_URL="https://github.com/jmburke4/capstone-design-manager.git"
 
@@ -98,9 +98,26 @@ else
     echo " ✓ Rootless Docker installed"
 fi
 
-# Verify Docker
+# Verify Docker installation
 $HOME/bin/docker --version
-echo " ✓ Docker verified (running as $(whoami), rootless)"
+echo " ✓ Docker binary found"
+
+# Verify Docker daemon is running
+echo ""
+echo "Verifying Docker daemon is running..."
+if ! $HOME/bin/docker info >/dev/null 2>&1; then
+    echo "  Starting Docker daemon..."
+    systemctl --user start docker
+    sleep 3
+    
+    # Retry check
+    if ! $HOME/bin/docker info >/dev/null 2>&1; then
+        echo " ✗ ERROR: Docker daemon failed to start"
+        echo " Check logs: journalctl --user -u docker"
+        exit 1
+    fi
+fi
+echo " ✓ Docker daemon running (rootless mode)"
 
 # Install Docker Compose
 echo ""
@@ -121,17 +138,40 @@ echo " ✓ Docker Compose verified"
 # Configure port forwarding (80->8080, 443->8443)
 echo ""
 echo "4. Configuring port forwarding for rootless Docker..."
-sudo tee /etc/rc.local > /dev/null << 'PORTFORWARD'
-#!/bin/bash
-iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
-iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443
-exit 0
-PORTFORWARD
-sudo chmod +x /etc/rc.local
 
-sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
-sudo iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443
-echo " ✓ Port forwarding configured (80->8080, 443->8443)"
+# Install iptables-persistent for rule persistence
+sudo apt-get install -y -qq iptables-persistent || echo "iptables-persistent already installed"
+
+# Create iptables rules directory
+sudo mkdir -p /etc/iptables
+
+# Create persistent iptables rules with proper NAT configuration
+sudo tee /etc/iptables/rules.v4 > /dev/null << 'EOF'
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+# Redirect port 80 to 8080 for rootless nginx
+-A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+# Redirect port 443 to 8443 for rootless nginx SSL
+-A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443
+COMMIT
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+COMMIT
+EOF
+
+# Load the rules immediately
+sudo iptables-restore < /etc/iptables/rules.v4
+
+# Enable netfilter-persistent service (replaces deprecated rc.local)
+sudo systemctl enable netfilter-persistent.service
+sudo systemctl start netfilter-persistent.service
+
+echo " ✓ Port forwarding configured and persisted (80->8080, 443->8443)"
 
 # Install utilities
 echo ""
@@ -149,12 +189,6 @@ sudo ufw allow ssh
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw --force enable
-
-gcloud compute firewall-rules create allow-ssh-iap \
-        --project=capstone-design-app-prod \
-        --allow=tcp:22 \
-        --source-ranges=35.235.240.0/20 \
-        --description="Allow SSH via IAP tunnel only"
 echo " ✓ Firewall configured"
 
 # Automatic security updates

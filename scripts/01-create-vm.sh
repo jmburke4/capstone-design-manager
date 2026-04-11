@@ -18,7 +18,7 @@ export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 PROJECT_ID="capstone-design-app-prod"
 REGION="us-central1"
-ZONE="us-central1-a"
+ZONE="us-central1-b"
 VM_NAME="capstone-prod-vm"
 MACHINE_TYPE="e2-micro" # Free tier eligible
 DISK_SIZE="30GB"

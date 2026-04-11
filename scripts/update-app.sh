@@ -12,7 +12,7 @@
 set -e
 
 PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-a"
+ZONE="us-central1-b"
 VM_NAME="capstone-prod-vm"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

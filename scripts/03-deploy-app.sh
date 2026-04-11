@@ -22,7 +22,7 @@
 set -e
 
 PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-a"
+ZONE="us-central1-b"
 VM_NAME="capstone-prod-vm"
 APP_DIR="capstone"
 
@@ -105,6 +105,12 @@ gcloud compute scp .env.production.db ${VM_NAME}:~/${APP_DIR}/ $SSH_FLAGS --quie
 gcloud compute scp frontend/.env.production ${VM_NAME}:~/${APP_DIR}/frontend/ $SSH_FLAGS --quiet
 echo " ✓ Environment files copied"
 
+# Fix permissions on copied files (SCP doesn't preserve 600 permissions)
+echo ""
+echo "Setting secure permissions on environment files..."
+gcloud compute ssh $VM_NAME $SSH_FLAGS --command="chmod 600 ~/${APP_DIR}/.env.production ~/${APP_DIR}/.env.production.db ~/${APP_DIR}/frontend/.env.production"
+echo " ✓ Permissions set (600)"
+
 # Deploy on VM
 echo ""
 echo "Deploying application on VM..."
@@ -152,17 +158,53 @@ echo " ✓ Containers started"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 5/7 — Waiting for backend to initialise"
+echo "Step 5/7 — Waiting for services to be healthy"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo " Streaming backend logs (15 seconds)..."
+
+# Wait for database to be healthy first (backend depends on it)
 echo ""
-$HOME/bin/docker compose -f docker-compose.prod.yml logs --follow --no-color &
-LOGS_PID=$!
-sleep 15
-kill $LOGS_PID 2>/dev/null || true
-wait $LOGS_PID 2>/dev/null || true
+echo "  Waiting for database..."
+DB_HEALTHY=false
+for i in {1..30}; do
+    if $HOME/bin/docker compose -f docker-compose.prod.yml ps db | grep -q "healthy"; then
+        echo "  ✓ Database is healthy (attempt $i/30)"
+        DB_HEALTHY=true
+        break
+    fi
+    echo "    [$i/30] Database not ready yet..."
+    sleep 2
+done
+
+if [ "$DB_HEALTHY" = false ]; then
+    echo "  ✗ ERROR: Database failed to become healthy after 60 seconds"
+    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=30 db
+    exit 1
+fi
+
+# Wait for backend to complete migrations and become healthy
 echo ""
-echo " ✓ Initial wait complete"
+echo "  Waiting for backend..."
+BACKEND_HEALTHY=false
+for i in {1..30}; do
+    if $HOME/bin/docker compose -f docker-compose.prod.yml ps backend | grep -q "healthy"; then
+        echo "  ✓ Backend is healthy (attempt $i/30)"
+        BACKEND_HEALTHY=true
+        break
+    fi
+    echo "    [$i/30] Backend not ready yet..."
+    sleep 2
+done
+
+if [ "$BACKEND_HEALTHY" = false ]; then
+    echo "  ✗ ERROR: Backend failed to become healthy after 60 seconds"
+    echo ""
+    echo "  Recent backend logs:"
+    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=30 backend
+    exit 1
+fi
+
+echo ""
+echo " ✓ All services are healthy"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -176,7 +218,8 @@ echo "Step 7/7 — Testing health endpoint"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 HEALTH_OK=false
 for i in {1..10}; do
-    if curl -s http://localhost/api/v1/health/ > /dev/null 2>&1; then
+    # Test through nginx on port 8080 (backend is not exposed on host directly)
+    if curl -s http://localhost:8080/api/v1/health/ > /dev/null 2>&1; then
         echo " ✓ Health check passed (attempt $i/10)"
         HEALTH_OK=true
         break
@@ -210,6 +253,39 @@ fi
 echo ""
 echo "=== Deployment on VM Complete ==="
 ENDSSH
+
+# Test external connectivity from local machine
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Testing External Connectivity..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+EXTERNAL_ACCESS=false
+for i in {1..10}; do
+    if curl -sS --max-time 5 "http://$EXTERNAL_IP/" >/dev/null 2>&1; then
+        echo " ✓ Application accessible externally at http://$EXTERNAL_IP"
+        EXTERNAL_ACCESS=true
+        break
+    fi
+    echo "  [$i/10] Waiting for external access... retrying in 3s"
+    sleep 3
+done
+
+if [ "$EXTERNAL_ACCESS" = false ]; then
+    echo ""
+    echo " ⚠ WARNING: Application not responding on external IP"
+    echo ""
+    echo "This is likely due to rootless Docker networking issues."
+    echo "To fix, SSH to the VM and run:"
+    echo "  sudo iptables -t nat -F PREROUTING"
+    echo "  sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080"
+    echo "  sudo iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443"
+    echo ""
+    echo "Or check if nginx is running:"
+    echo "  gcloud compute ssh $VM_NAME $SSH_FLAGS --command='docker compose -f docker-compose.prod.yml ps'"
+    echo ""
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
