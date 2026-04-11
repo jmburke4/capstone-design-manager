@@ -15,7 +15,7 @@
 set -e
 
 PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-a"
+ZONE="us-central1-b"
 VM_NAME="capstone-prod-vm"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -36,7 +36,7 @@ cd ~/capstone
 cat > ~/capstone/backup-db.sh << 'EOF'
 #!/bin/bash
 
-# Daily PostgreSQL backup script
+# Daily PostgreSQL backup script with validation
 
 set -e
 
@@ -49,26 +49,58 @@ cd $APP_DIR
 
 echo "Starting database backup: $BACKUP_FILE"
 
+# Verify database container is running and healthy
+echo "  Checking database container status..."
+if ! $HOME/bin/docker compose -f docker-compose.prod.yml ps db | grep -q "healthy"; then
+    echo "  ✗ ERROR: Database container is not running or not healthy"
+    echo "  Check status: docker compose -f docker-compose.prod.yml ps db"
+    exit 1
+fi
+
 # Create backup using pg_dump (rootless Docker)
+echo "  Running pg_dump..."
 $HOME/bin/docker compose -f docker-compose.prod.yml exec -T db pg_dump \
     -U capstone_user \
     -d capstone_production \
     > "${BACKUP_DIR}/${BACKUP_FILE}"
 
+# Verify backup file was created and is not empty
+if [ ! -s "${BACKUP_DIR}/${BACKUP_FILE}" ]; then
+    echo "  ✗ ERROR: Backup file is empty or was not created"
+    rm -f "${BACKUP_DIR}/${BACKUP_FILE}"
+    exit 1
+fi
+
+BACKUP_SIZE=$(du -h "${BACKUP_DIR}/${BACKUP_FILE}" | cut -f1)
+echo "  ✓ Raw backup created: ${BACKUP_SIZE}"
+
 # Compress backup
+echo "  Compressing backup..."
 gzip "${BACKUP_DIR}/${BACKUP_FILE}"
 
-echo "✓ Backup created: ${BACKUP_FILE}.gz"
+# Verify compressed backup
+if [ ! -s "${BACKUP_DIR}/${BACKUP_FILE}.gz" ]; then
+    echo "  ✗ ERROR: Compressed backup file is empty"
+    exit 1
+fi
+
+COMPRESSED_SIZE=$(du -h "${BACKUP_DIR}/${BACKUP_FILE}.gz" | cut -f1)
+echo "✓ Backup created: ${BACKUP_FILE}.gz (${COMPRESSED_SIZE})"
 
 # Delete backups older than 7 days
-find "${BACKUP_DIR}" -name "backup_*.sql.gz" -mtime +7 -delete
-
-echo "✓ Old backups cleaned up (keeping last 7 days)"
+echo "  Cleaning up old backups..."
+DELETED_COUNT=$(find "${BACKUP_DIR}" -name "backup_*.sql.gz" -mtime +7 -delete -print | wc -l)
+echo "✓ Old backups cleaned up (${DELETED_COUNT} files removed, keeping last 7 days)"
 
 # Optional: Upload to Cloud Storage (uncomment if using Cloud Storage)
 # BUCKET_NAME="capstone-backups-${PROJECT_ID}"
 # gsutil cp "${BACKUP_DIR}/${BACKUP_FILE}.gz" "gs://${BUCKET_NAME}/"
 # echo "✓ Backup uploaded to Cloud Storage"
+
+# Log backup completion with timestamp
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Backup completed: ${BACKUP_FILE}.gz (${COMPRESSED_SIZE})" >> "$APP_DIR/logs/backup.log"
+
+echo "✓ Backup process completed successfully"
 
 EOF
 
@@ -95,9 +127,28 @@ mkdir -p ~/capstone/logs
 echo ""
 echo "Running test backup..."
 cd ~/capstone
-./backup-db.sh
 
-echo "✓ Test backup successful"
+# Run the backup script and capture output
+if ! ./backup-db.sh; then
+    echo ""
+    echo "✗ Test backup FAILED"
+    echo ""
+    echo "Troubleshooting:"
+    echo "  1. Check database container: docker compose -f docker-compose.prod.yml ps db"
+    echo "  2. Check database logs: docker compose -f docker-compose.prod.yml logs db"
+    echo "  3. Verify environment variables in .env.production.db"
+    exit 1
+fi
+
+# Verify backup file was actually created
+BACKUP_COUNT=$(ls -1 ~/capstone/backups/backup_*.sql.gz 2>/dev/null | wc -l)
+if [ "$BACKUP_COUNT" -eq 0 ]; then
+    echo ""
+    echo "✗ No backup files found after test backup"
+    exit 1
+fi
+
+echo "✓ Test backup successful (${BACKUP_COUNT} backup file(s) found)"
 
 # List backups
 echo ""

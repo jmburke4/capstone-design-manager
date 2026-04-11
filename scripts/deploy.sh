@@ -64,7 +64,7 @@ print_header "Step 4: Deploy Application"
 
 # Get VM IP
 VM_IP=$(gcloud compute instances describe capstone-prod-vm \
-    --zone=us-central1-a \
+    --zone=us-central1-b \
     --project=capstone-design-app-prod \
     --format='value(networkInterfaces[0].accessConfigs[0].natIP)')
 

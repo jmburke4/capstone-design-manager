@@ -11,7 +11,7 @@
 set -e
 
 PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-a"
+ZONE="us-central1-b"
 VM_NAME="capstone-prod-vm"
 DOMAIN=${1:-""}  # Optional domain parameter
 
@@ -38,10 +38,10 @@ echo "  ✓ VM found with IP: $EXTERNAL_IP"
 # Build ALLOWED_HOSTS based on domain parameter
 if [ -n "$DOMAIN" ]; then
     echo "  ✓ Using domain: $DOMAIN"
-    ALLOWED_HOSTS="$DOMAIN www.$DOMAIN $EXTERNAL_IP localhost 127.0.0.1"
+    ALLOWED_HOSTS="$DOMAIN www.$DOMAIN $EXTERNAL_IP localhost 127.0.0.1 backend"
 else
     echo "  ℹ No domain provided - using VM IP only"
-    ALLOWED_HOSTS="$EXTERNAL_IP localhost 127.0.0.1"
+    ALLOWED_HOSTS="$EXTERNAL_IP localhost 127.0.0.1 backend"
 fi
 
 echo ""
@@ -120,6 +120,69 @@ echo "  ✓ frontend/.env.production created"
 
 # Set restrictive permissions
 chmod 600 .env.production .env.production.db frontend/.env.production
+
+# Validate generated files
+echo ""
+echo "Validating generated environment files..."
+
+# Check for placeholder values
+VALIDATION_ERRORS=0
+
+if grep -q "REPLACE_" .env.production 2>/dev/null; then
+    echo "  ✗ ERROR: .env.production contains placeholder values (REPLACE_)"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+if grep -q "CHANGE_ME" .env.production 2>/dev/null; then
+    echo "  ✗ ERROR: .env.production contains placeholder values (CHANGE_ME)"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+# Check SECRET_KEY length (should be 50+ chars)
+SECRET_KEY_LENGTH=$(grep "SECRET_KEY=" .env.production | cut -d'=' -f2 | tr -d '\n' | wc -c)
+if [ "$SECRET_KEY_LENGTH" -lt 50 ]; then
+    echo "  ✗ WARNING: SECRET_KEY is only $SECRET_KEY_LENGTH characters (should be 50+)"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+# Check DJANGO_ALLOWED_HOSTS has required values
+if ! grep -q "backend" .env.production; then
+    echo "  ✗ ERROR: DJANGO_ALLOWED_HOSTS missing 'backend' (required for Docker networking)"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+if ! grep -q "localhost" .env.production; then
+    echo "  ✗ ERROR: DJANGO_ALLOWED_HOSTS missing 'localhost' (required for health checks)"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+# Verify database credentials match
+DB_USER=$(grep "POSTGRES_USER=" .env.production.db | cut -d'=' -f2)
+DB_PASS=$(grep "POSTGRES_PASSWORD=" .env.production.db | cut -d'=' -f2)
+DB_NAME=$(grep "POSTGRES_DB=" .env.production.db | cut -d'=' -f2)
+
+if ! grep -q "SQL_USER=${DB_USER}" .env.production; then
+    echo "  ✗ ERROR: Database user mismatch between .env.production and .env.production.db"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+if ! grep -q "SQL_PASSWORD=${DB_PASS}" .env.production; then
+    echo "  ✗ ERROR: Database password mismatch between .env.production and .env.production.db"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+if ! grep -q "SQL_DATABASE=${DB_NAME}" .env.production; then
+    echo "  ✗ ERROR: Database name mismatch between .env.production and .env.production.db"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+if [ $VALIDATION_ERRORS -eq 0 ]; then
+    echo "  ✓ All environment files validated successfully"
+else
+    echo ""
+    echo "⚠ Found $VALIDATION_ERRORS validation error(s). Please review and fix before deploying."
+    exit 1
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
