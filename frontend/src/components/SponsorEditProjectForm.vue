@@ -89,7 +89,7 @@ async function handleSubmission(data) {
       sponsor_availability: data.sponsor_info.availability
     }
 
-    await apiService.createProject(projectPayload);//NEEDS TO BE editProject(projectPayload) !!!!
+    await apiService.editProject(projectPayload);
 
     alert("Project edited successfully!")
 
