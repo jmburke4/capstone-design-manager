@@ -1,5 +1,5 @@
 services:
-  # Nginx - Reverse proxy with SSL termination
+  # Nginx - Reverse proxy + static SPA server + SSL termination
   # Note: Rootless Docker can't bind to ports < 1024
   # Using 8080/8443, iptables redirects 80->8080 and 443->8443
   nginx:
@@ -9,12 +9,13 @@ services:
       - "8080:8080"
       - "8443:8443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:rw          # rw so SSL script can write configs
       - letsencrypt:/etc/letsencrypt:ro
       - certbot-webroot:/var/www/certbot:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro     # Built Vue assets (run npm run build first)
     depends_on:
-      - frontend
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app-network
@@ -23,23 +24,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  # Frontend - Vue.js production build served by Nginx
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-    container_name: capstone-frontend
-    env_file:
-      - frontend/.env.production
-    restart: unless-stopped
-    networks:
-      - app-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # Backend - Django with Gunicorn
   backend:
@@ -52,7 +42,8 @@ services:
     env_file:
       - .env.production
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - static-files:/app/staticfiles
     restart: unless-stopped
@@ -94,14 +85,19 @@ services:
       timeout: 5s
       retries: 5
 
-  # Certbot - Let's Encrypt SSL certificate renewal
+  # Certbot - Let's Encrypt with nginx reload hook
   certbot:
     image: certbot/certbot
     container_name: capstone-certbot
     volumes:
       - letsencrypt:/etc/letsencrypt
       - certbot-webroot:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    entrypoint: /bin/sh -c '
+      trap exit TERM;
+      while :; do
+        certbot renew --deploy-hook "docker compose -f /compose/docker-compose.prod.yml exec -T nginx nginx -s reload" --quiet || true;
+        sleep 12h & wait $${!};
+      done'
     restart: unless-stopped
 
 volumes:
