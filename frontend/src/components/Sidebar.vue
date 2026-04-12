@@ -55,6 +55,7 @@ const menuItems = computed(() => {
   } else if (props.userRole === 'sponsor') {
     items.push({ name: 'Dashboard', path: '/sponsor' });
     items.push({ name: 'Submit Project', path: '/sponsor/submit' });
+    items.push({ name: 'Edit Project', path: '/sponsor/edit' });
     items.push({ name: 'Submit Feedback', path: '/sponsor/feedback' });
   }
 
