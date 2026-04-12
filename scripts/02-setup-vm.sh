@@ -170,9 +170,21 @@ echo "8. Installing utilities..."
 sudo apt-get install -y -qq git curl wget unzip htop
 echo " ✓ Utilities installed"
 
+# Install Node.js (required for building frontend)
+echo ""
+echo "9. Installing Node.js..."
+if command -v node &> /dev/null && command -v npm &> /dev/null; then
+    echo " ✓ Node.js already installed: $(node --version)"
+else
+    # Install Node.js 20.x LTS via NodeSource
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y -qq nodejs
+    echo " ✓ Node.js installed: $(node --version), npm: $(npm --version)"
+fi
+
 # Automatic security updates
 echo ""
-echo "9. Enabling automatic security updates..."
+echo "10. Enabling automatic security updates..."
 sudo apt-get install -y -qq unattended-upgrades
 echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | sudo debconf-set-selections
 sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure unattended-upgrades
@@ -180,7 +192,7 @@ echo " ✓ Automatic updates enabled"
 
 # Clone repository
 echo ""
-echo "10. Cloning application repository (branch: Cloud-V2)..."
+echo "11. Cloning application repository (branch: Cloud-V2)..."
 if [ -d "$HOME/capstone" ]; then
     echo " Directory already exists, pulling latest..."
     cd $HOME/capstone
@@ -195,7 +207,7 @@ fi
 
 # Create directories
 echo ""
-echo "11. Creating application directories..."
+echo "12. Creating application directories..."
 mkdir -p $HOME/capstone/backups
 mkdir -p $HOME/capstone/logs
 echo " ✓ Directories created"
