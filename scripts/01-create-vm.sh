@@ -92,10 +92,25 @@ else
         echo " ✓ Static IP reserved: $EXTERNAL_IP"
 fi
 
-# Create firewall rules (now with explicit existence check to avoid any error-path surprises)
+# ====================== Firewall Rules ======================
 echo ""
 echo "Creating firewall rules..."
-# Allow HTTP (port 80)
+
+# Allow SSH via IAP only (secure - no public port 22 exposure)
+if gcloud compute firewall-rules describe allow-ssh-iap --project=$PROJECT_ID &>/dev/null; then
+        echo " ✓ IAP SSH firewall rule already exists"
+else
+        gcloud compute firewall-rules create allow-ssh-iap \
+                --project=$PROJECT_ID \
+                --allow=tcp:22 \
+                --source-ranges=35.235.240.0/20 \
+                --target-tags=${VM_NAME} \
+                --description="Allow SSH via IAP tunnel only" \
+                --quiet
+        echo " ✓ IAP SSH firewall rule created"
+fi
+
+# Allow HTTP (port 80) - needed for the app and Let's Encrypt
 if gcloud compute firewall-rules describe ${VM_NAME}-allow-http --project=$PROJECT_ID &>/dev/null; then
         echo " ✓ HTTP firewall rule already exists"
 else
@@ -104,7 +119,7 @@ else
                 --allow=tcp:80 \
                 --source-ranges=0.0.0.0/0 \
                 --target-tags=${VM_NAME} \
-                --description="Allow HTTP traffic" \
+                --description="Allow HTTP traffic for app and certbot" \
                 --quiet
         echo " ✓ HTTP firewall rule created"
 fi
@@ -122,7 +137,8 @@ else
                 --quiet
         echo " ✓ HTTPS firewall rule created"
 fi
-echo " ✓ Firewall rules configured"
+
+echo " ✓ Firewall rules configured (IAP SSH + HTTP + HTTPS)"
 
 # Create VM instance
 echo ""

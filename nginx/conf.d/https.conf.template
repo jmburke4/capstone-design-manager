@@ -1,23 +1,13 @@
 # HTTPS configuration template
-# This file will be renamed to https.conf after SSL certificate is obtained
-# Replace DOMAIN_NAME with your actual domain
+# This file will be used by the SSL script to generate https.conf
+# Replace DOMAIN_NAME with your actual domain using: sed 's/DOMAIN_NAME/your-domain.com/g'
 
-upstream frontend {
-    server frontend:3000;
-}
-
-upstream backend {
-    server backend:8000;
-}
-
-# HTTP -> HTTPS redirect
-# Rootless Docker: Listen on 8080 instead of 80
-# iptables redirects port 80 -> 8080 on the VM
+# HTTP -> HTTPS redirect (port 8080)
 server {
     listen 8080;
     server_name DOMAIN_NAME www.DOMAIN_NAME;
 
-    # Let's Encrypt ACME challenge
+    # Let's Encrypt ACME challenge (must be accessible for certificate renewal)
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }
@@ -28,9 +18,7 @@ server {
     }
 }
 
-# HTTPS Server
-# Rootless Docker: Listen on 8443 instead of 443
-# iptables redirects port 443 -> 8443 on the VM
+# HTTPS Server (port 8443)
 server {
     listen 8443 ssl http2;
     server_name DOMAIN_NAME www.DOMAIN_NAME;
@@ -61,16 +49,24 @@ server {
     # Client body size (for file uploads)
     client_max_body_size 5M;
 
-    # Health check endpoint
-    location /health {
-        access_log off;
-        return 200 "healthy\n";
-        add_header Content-Type text/plain;
+    # Root directory for Vue SPA static files (mounted from ./frontend/dist)
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Vue SPA routing - all routes serve index.html (for client-side routing)
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets aggressively
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 
     # Django static files (admin CSS/JS)
     location /static/ {
-        proxy_pass http://backend;
+        proxy_pass http://backend:8000/static/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -80,13 +76,13 @@ server {
 
     # Django admin panel
     location /admin/ {
-        proxy_pass http://backend;
+        proxy_pass http://backend:8000/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
         proxy_redirect off;
-        
+
         # Increase timeouts for admin operations
         proxy_read_timeout 300s;
         proxy_connect_timeout 75s;
@@ -94,7 +90,7 @@ server {
 
     # Django API endpoints
     location /api/ {
-        proxy_pass http://backend;
+        proxy_pass http://backend:8000/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -102,20 +98,5 @@ server {
         proxy_set_header Authorization $http_authorization;
         proxy_pass_header Authorization;
         proxy_redirect off;
-    }
-
-    # Vue.js SPA - all other routes
-    location / {
-        proxy_pass http://frontend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_redirect off;
-
-        # WebSocket support (for future features)
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
     }
 }

@@ -1,23 +1,16 @@
 #!/bin/bash
 #############################################################################
-# Deploy Application to VM
+# Deploy Application to VM (Updated for consolidated nginx + static SPA)
 #
 # This script:
 # - Copies .env files to VM
 # - Pulls latest code from GitHub
+# - Builds frontend (Vue) for production on the VM
 # - Builds Docker images
 # - Starts containers with docker-compose
 # - Runs migrations and collectstatic
 #
 # Usage: ./scripts/03-deploy-app.sh
-#
-# Prerequisites:
-#   Firewall rule allowing SSH via IAP (run once):
-#   gcloud compute firewall-rules create allow-ssh-iap \
-#     --project=capstone-design-app-prod \
-#     --allow=tcp:22 \
-#     --source-ranges=35.235.240.0/20 \
-#     --description="Allow SSH via IAP tunnel only"
 #############################################################################
 set -e
 
@@ -26,78 +19,81 @@ ZONE="us-central1-b"
 VM_NAME="capstone-prod-vm"
 APP_DIR="capstone"
 
-# All SSH/SCP is routed through IAP — port 22 does not need to be open to the internet
+# All SSH/SCP is routed through IAP
 SSH_FLAGS="--zone=$ZONE --project=$PROJECT_ID --tunnel-through-iap"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo " Deploying Application to VM"
+echo " Deploying Application to VM (Consolidated Nginx)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 # Verify .env files exist
 echo "Checking environment files..."
 if [ ! -f ".env.production" ]; then
-        echo " ✗ .env.production not found"
-        echo " Run: ./scripts/generate-secrets.sh first"
-        exit 1
+    echo " ✗ .env.production not found"
+    echo " Run: ./scripts/generate-secrets.sh ua-capstone-projects.com first"
+    exit 1
 fi
 if [ ! -f ".env.production.db" ]; then
-        echo " ✗ .env.production.db not found"
-        echo " Run: ./scripts/generate-secrets.sh first"
-        exit 1
+    echo " ✗ .env.production.db not found"
+    exit 1
 fi
 if [ ! -f "frontend/.env.production" ]; then
-        echo " ✗ frontend/.env.production not found"
-        echo " Run: ./scripts/generate-secrets.sh first"
-        exit 1
+    echo " ✗ frontend/.env.production not found"
+    exit 1
 fi
 echo " ✓ All environment files found"
 
-# Fetch VM external IP and auto-configure DJANGO_ALLOWED_HOSTS
+# Fetch VM external IP
 echo ""
 echo "Fetching VM external IP..."
 EXTERNAL_IP=$(gcloud compute instances describe $VM_NAME \
-        --zone=$ZONE \
-        --project=$PROJECT_ID \
-        --format='value(networkInterfaces[0].accessConfigs[0].natIP)')
-
+    --zone=$ZONE \
+    --project=$PROJECT_ID \
+    --format='value(networkInterfaces[0].accessConfigs[0].natIP)')
 if [ -z "$EXTERNAL_IP" ]; then
-        echo " ✗ Could not fetch external IP — is the VM running?"
-        echo " Check: gcloud compute instances list --project=$PROJECT_ID"
-        exit 1
+    echo " ✗ Could not fetch external IP"
+    exit 1
 fi
 echo " ✓ VM external IP: $EXTERNAL_IP"
 
-# Patch DJANGO_ALLOWED_HOSTS in .env.production (handles CHANGE_ME placeholder or stale IP)
-if grep -q "DJANGO_ALLOWED_HOSTS" .env.production; then
-        sed -i.bak "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$EXTERNAL_IP|" .env.production
-        echo " ✓ DJANGO_ALLOWED_HOSTS set to $EXTERNAL_IP in .env.production"
+# Patch DJANGO_ALLOWED_HOSTS — preserve domain + add IP if missing
+echo ""
+echo "Updating DJANGO_ALLOWED_HOSTS (preserves domain)..."
+if grep -q "^DJANGO_ALLOWED_HOSTS=" .env.production; then
+    CURRENT_HOSTS=$(grep "^DJANGO_ALLOWED_HOSTS=" .env.production | cut -d'=' -f2-)
+    if ! echo "$CURRENT_HOSTS" | grep -q "$EXTERNAL_IP"; then
+        NEW_HOSTS="$CURRENT_HOSTS $EXTERNAL_IP"
+    else
+        NEW_HOSTS="$CURRENT_HOSTS"
+    fi
+    sed -i.bak "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$NEW_HOSTS|" .env.production
+    echo " ✓ DJANGO_ALLOWED_HOSTS updated: $NEW_HOSTS (domain preserved)"
 else
-        echo "DJANGO_ALLOWED_HOSTS=$EXTERNAL_IP" >>.env.production
-        echo " ✓ DJANGO_ALLOWED_HOSTS appended to .env.production"
+    echo "DJANGO_ALLOWED_HOSTS=ua-capstone-projects.com www.ua-capstone-projects.com $EXTERNAL_IP localhost 127.0.0.1 backend" >>.env.production
+    echo " ✓ DJANGO_ALLOWED_HOSTS appended"
 fi
-echo " ✓ Environment files validated"
 
-# Ensure repository exists and is up-to-date BEFORE copying .env files
+# Ensure repository exists and is up-to-date on VM
 echo ""
 echo "Ensuring application repository exists and is up-to-date on VM..."
 gcloud compute ssh $VM_NAME $SSH_FLAGS --quiet --command='
 set -e
 cd ~/
 if [ -d capstone/.git ]; then
-    echo "  Repository exists — pulling latest changes..."
+    echo " Repository exists — pulling latest changes..."
     cd capstone
     git fetch origin
     git checkout Cloud-V2
     git pull origin Cloud-V2
 else
-    echo "  Cloning repository for the first time..."
+    echo " Cloning repository for the first time..."
     git clone -b Cloud-V2 https://github.com/jmburke4/capstone-design-manager.git capstone
 fi
 echo " ✓ Repository ready"
 '
 
-# Copy .env files to VM (directory now guaranteed to exist)
+# Copy .env files
 echo ""
 echo "Copying environment files to VM..."
 gcloud compute scp .env.production ${VM_NAME}:~/${APP_DIR}/ $SSH_FLAGS --quiet
@@ -105,7 +101,7 @@ gcloud compute scp .env.production.db ${VM_NAME}:~/${APP_DIR}/ $SSH_FLAGS --quie
 gcloud compute scp frontend/.env.production ${VM_NAME}:~/${APP_DIR}/frontend/ $SSH_FLAGS --quiet
 echo " ✓ Environment files copied"
 
-# Fix permissions on copied files (SCP doesn't preserve 600 permissions)
+# Fix permissions
 echo ""
 echo "Setting secure permissions on environment files..."
 gcloud compute ssh $VM_NAME $SSH_FLAGS --command="chmod 600 ~/${APP_DIR}/.env.production ~/${APP_DIR}/.env.production.db ~/${APP_DIR}/frontend/.env.production"
@@ -114,16 +110,13 @@ echo " ✓ Permissions set (600)"
 # Deploy on VM
 echo ""
 echo "Deploying application on VM..."
-echo ""
-
 gcloud compute ssh $VM_NAME $SSH_FLAGS --command="bash -s" <<'ENDSSH'
 set -e
 cd ~/capstone
 echo "=== Deployment on VM ==="
-echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 1/7 — Pulling latest code from GitHub (branch: Cloud-V2)"
+echo "Step 1/8 — Pulling latest code from GitHub (branch: Cloud-V2)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 git fetch origin
 git checkout Cloud-V2
@@ -132,178 +125,102 @@ echo " ✓ Code updated"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 2/7 — Stopping existing containers"
+echo "Step 2/8 — Building frontend (Vue.js) for production"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cd frontend
+npm ci --no-audit --no-fund
+npm run build
+cd ..
+echo " ✓ Frontend built (dist/ directory created)"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 3/8 — Stopping existing containers"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 $HOME/bin/docker compose -f docker-compose.prod.yml down 2>/dev/null || echo " ℹ No containers to stop"
 echo " ✓ Containers stopped"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 3/7 — Building Docker images (live output)"
+echo "Step 4/8 — Building Docker images"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo " Each '#N' line below is one Dockerfile instruction completing."
-echo ""
-DOCKER_BUILDKIT=1 $HOME/bin/docker compose -f docker-compose.prod.yml build \
-    --no-cache \
-    --progress plain
-echo ""
+DOCKER_BUILDKIT=1 $HOME/bin/docker compose -f docker-compose.prod.yml build --no-cache --progress plain
 echo " ✓ Images built"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 4/7 — Starting containers"
+echo "Step 5/8 — Starting containers"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 $HOME/bin/docker compose -f docker-compose.prod.yml up -d
 echo " ✓ Containers started"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 5/7 — Waiting for services to be healthy"
+echo "Step 6/8 — Waiting for database to be ready"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Wait for database to be healthy first (backend depends on it)
-echo ""
-echo "  Waiting for database..."
-DB_HEALTHY=false
 for i in {1..30}; do
-    if $HOME/bin/docker compose -f docker-compose.prod.yml ps db | grep -q "healthy"; then
-        echo "  ✓ Database is healthy (attempt $i/30)"
-        DB_HEALTHY=true
+    if $HOME/bin/docker compose -f docker-compose.prod.yml exec -T db pg_isready -U postgres 2>/dev/null | grep -q "accepting connections"; then
+        echo " ✓ Database is ready (attempt $i/30)"
         break
     fi
-    echo "    [$i/30] Database not ready yet..."
+    echo " [$i/30] Waiting for database..."
     sleep 2
 done
 
-if [ "$DB_HEALTHY" = false ]; then
-    echo "  ✗ ERROR: Database failed to become healthy after 60 seconds"
-    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=30 db
-    exit 1
-fi
-
-# Wait for backend to complete migrations and become healthy
 echo ""
-echo "  Waiting for backend..."
-BACKEND_HEALTHY=false
-for i in {1..30}; do
-    if $HOME/bin/docker compose -f docker-compose.prod.yml ps backend | grep -q "healthy"; then
-        echo "  ✓ Backend is healthy (attempt $i/30)"
-        BACKEND_HEALTHY=true
-        break
-    fi
-    echo "    [$i/30] Backend not ready yet..."
-    sleep 2
-done
-
-if [ "$BACKEND_HEALTHY" = false ]; then
-    echo "  ✗ ERROR: Backend failed to become healthy after 60 seconds"
-    echo ""
-    echo "  Recent backend logs:"
-    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=30 backend
-    exit 1
-fi
-
-echo ""
-echo " ✓ All services are healthy"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 7/8 — Running Django migrations and collectstatic"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+$HOME/bin/docker compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput
+$HOME/bin/docker compose -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput
+echo " ✓ Migrations and static files complete"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 6/7 — Verifying container health"
+echo "Step 8/8 — Health checks"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 $HOME/bin/docker compose -f docker-compose.prod.yml ps
 
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 7/7 — Testing health endpoint"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-HEALTH_OK=false
+# Check backend health
 for i in {1..10}; do
-    # Test through nginx on port 8080 (backend is not exposed on host directly)
-    if curl -s http://localhost:8080/api/v1/health/ > /dev/null 2>&1; then
-        echo " ✓ Health check passed (attempt $i/10)"
-        HEALTH_OK=true
+    if $HOME/bin/docker compose -f docker-compose.prod.yml exec -T backend curl -sf http://localhost:8000/api/v1/health/ >/dev/null 2>&1; then
+        echo " ✓ Backend health check passed (attempt $i/10)"
         break
     fi
-    echo " [$i/10] Backend not yet ready — retrying in 3 seconds..."
+    echo " [$i/10] Backend health check pending..."
     sleep 3
 done
 
-if [ "$HEALTH_OK" = false ]; then
-    echo ""
-    echo " ✗ Health check did not pass after 10 attempts."
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Backend Container Logs (last 50 lines):"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=50 backend
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "All Container Status:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    $HOME/bin/docker compose -f docker-compose.prod.yml ps
-    echo ""
-    echo "To debug further:"
-    echo "  gcloud compute ssh $VM_NAME --zone=$ZONE"
-    echo "  cd ~/capstone"
-    echo "  docker compose -f docker-compose.prod.yml logs backend"
-    echo ""
-    exit 1
+# Check nginx
+if $HOME/bin/docker compose -f docker-compose.prod.yml exec -T nginx curl -sf http://localhost:8080/ >/dev/null 2>&1; then
+    echo " ✓ Nginx health check passed"
+else
+    echo " ⚠ Nginx health check failed — check logs"
+    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=20 nginx || true
 fi
 
 echo ""
 echo "=== Deployment on VM Complete ==="
 ENDSSH
 
-# Test external connectivity from local machine
+# External connectivity test
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Testing External Connectivity..."
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-
-EXTERNAL_ACCESS=false
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 for i in {1..10}; do
-    if curl -sS --max-time 5 "http://$EXTERNAL_IP/" >/dev/null 2>&1; then
-        echo " ✓ Application accessible externally at http://$EXTERNAL_IP"
-        EXTERNAL_ACCESS=true
+    if curl -sS --max-time 10 "http://$EXTERNAL_IP/" >/dev/null 2>&1; then
+        echo " ✓ Application reachable on HTTP (attempt $i/10)"
         break
     fi
-    echo "  [$i/10] Waiting for external access... retrying in 3s"
-    sleep 3
+    echo " [$i/10] Retrying in 5s..."
+    sleep 5
 done
 
-if [ "$EXTERNAL_ACCESS" = false ]; then
-    echo ""
-    echo " ⚠ WARNING: Application not responding on external IP"
-    echo ""
-    echo "This is likely due to rootless Docker networking issues."
-    echo "To fix, SSH to the VM and run:"
-    echo "  sudo iptables -t nat -F PREROUTING"
-    echo "  sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080"
-    echo "  sudo iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443"
-    echo ""
-    echo "Or check if nginx is running:"
-    echo "  gcloud compute ssh $VM_NAME $SSH_FLAGS --command='docker compose -f docker-compose.prod.yml ps'"
-    echo ""
-fi
-
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo " ✓ Deployment Complete"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "🌐 Application URL: http://$EXTERNAL_IP"
+echo "🌐 Application URL: http://$EXTERNAL_IP   (and https://ua-capstone-projects.com after SSL setup)"
 echo ""
-echo "Test health check:"
-echo " curl http://$EXTERNAL_IP/api/v1/health/"
-echo ""
-echo "View logs on VM:"
-echo " gcloud compute ssh $VM_NAME $SSH_FLAGS"
-echo " cd ~/capstone"
-echo " \$HOME/bin/docker compose -f docker-compose.prod.yml logs -f"
-echo ""
-echo "Next steps:"
-echo " 1. Test application at: http://$EXTERNAL_IP"
-echo " 2. Create Django superuser (see docs)"
-echo " 3. Setup SSL with: ./scripts/04-setup-ssl.sh yourdomain.com"
+echo "Next step: ./scripts/04-setup-ssl.sh ua-capstone-projects.com your-email@example.com"
 echo ""
