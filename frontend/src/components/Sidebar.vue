@@ -46,6 +46,7 @@ const menuItems = computed(() => {
   } else if (props.userRole === 'sponsor') {
     items.push({ name: 'Dashboard', path: '/sponsor' });
     items.push({ name: 'Submit Project', path: '/sponsor/submit' });
+    items.push({ name: 'Edit Project', path: '/sponsor/edit' });
     items.push({ name: 'Submit Feedback', path: '/sponsor/feedback' });
   }
 
@@ -74,7 +75,7 @@ const handleLogout = () => emit('logout');
             </div>
         </nav>
         
-        <div class="profile-section">
+        <div class="profile-section" v-if="userRole === 'sponsor'">
             <div
                 class="nav-item"
                 :class="{ active: isActive('/profile/edit') }"

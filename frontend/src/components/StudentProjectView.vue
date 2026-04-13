@@ -17,7 +17,32 @@ const loading = computed(() => projectsStore.loading);
 const error = computed(() => projectsStore.error);
 const selectedProject = ref(null); // For sidebar details
 
-const sponsors = ref(new Map());
+const sponsors = ref(new Map())
+
+// Fetch Logic
+const fetchData = async () => {
+  try {
+    loading.value = true; // Reset loading state if called again
+    const token = await getAccessTokenSilently();
+    apiService.setToken(token);
+    const [projectsRes, sponsorsRes] = await Promise.all([
+      apiService.client.get('/projects/?format=json'),
+      apiService.client.get('/sponsors/?format=json')
+    ]);
+    
+    // Map sponsor ID to sponsor object
+    sponsorsRes.data.forEach(sponsor => {
+      sponsors.value.set(sponsor.id, sponsor);
+    })
+
+    posts.value = projectsRes.data; 
+  } catch (err) {
+    error.value = err;
+    console.error("Fetch Error:", err);
+  } finally {
+    loading.value = false;
+  }
+};
 
 const getSponsorDisplay = (project) => {
   const sponsor = sponsors.value.get(project?.sponsor);

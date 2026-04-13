@@ -11,6 +11,7 @@ services:
       - ./.env.dev
     depends_on:
       - db
+      - minio
     cap_drop:
       - ALL
     cap_add:
@@ -71,6 +72,18 @@ services:
     cap_drop:
       - ALL
 
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    env_file:
+      - ./.env.dev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
 volumes:
   postgres_data:
   frontend_node_modules:
+  minio_data:

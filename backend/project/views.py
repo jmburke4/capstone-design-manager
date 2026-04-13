@@ -3,12 +3,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from user.authentication import Auth0Authentication
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Project, Assignment, Preference, Semester, Feedback
-from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer
+from .models import Project, Assignment, Preference, Semester, Feedback, Attachment
+from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer, AttachmentSerializer
 import logging
 import datetime
+from rest_framework.decorators import action
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +21,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
 
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['sponsor']  # allows ?sponsor=<id>
+    filterset_fields = ['name', 'sponsor', 'status']
 
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
@@ -33,20 +36,45 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class SemesterAPIView(APIView):
+class AttachmentViewSet(viewsets.ModelViewSet):
+    queryset = Attachment.objects.all()
+    serializer_class = AttachmentSerializer
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['project']
+
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, pk=None, format=None):
-        if pk:
-            semester = get_object_or_404(Semester, pk=pk)
-            serializer = SemesterSerializer(semester)
-            return Response(serializer.data)
-        else:
-            semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
-                datetime.datetime.now()), year=datetime.datetime.now().year).first()
-            serializer = SemesterSerializer(semester)
-            return Response(serializer.data)
+
+class AttachmentDownloadAPIView(APIView):
+    authentication_classes = [Auth0Authentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk, format=None):
+        attachment = get_object_or_404(Attachment, pk=pk)
+        if not attachment.file:
+            return Response({'error': 'This attachment does not have a file.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_handle = attachment.file.open('rb')
+        filename = attachment.file.name.rsplit('/', 1)[-1]
+        return FileResponse(file_handle, as_attachment=False, filename=filename)
+
+
+class SemesterViewSet(viewsets.ModelViewSet):
+    queryset = Semester.objects.all()
+    serializer_class = SemesterSerializer
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['semester', 'year']
+
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        """Returns a semester based on the current date"""
+        semester = Semester.objects.filter(semester=Semester.get_semester_by_date(
+            datetime.datetime.now()), year=datetime.datetime.now().year).first()
+        serializer = SemesterSerializer(semester)
+        return Response(serializer.data)
 
 
 class PreferenceAPIView(APIView):
@@ -145,7 +173,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     serializer_class = AssignmentSerializer
 
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['project', 'semester']
+    filterset_fields = ['semester', 'student', 'project']
 
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
@@ -154,6 +182,9 @@ class AssignmentViewSet(viewsets.ModelViewSet):
 class FeedbackViewSet(viewsets.ModelViewSet):
     queryset = Feedback.objects.all()
     serializer_class = FeedbackSerializer
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['sponsor', 'project', 'semester']
 
     authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
