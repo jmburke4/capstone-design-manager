@@ -27,7 +27,7 @@ onMounted(async () => {
       label: `${s.semester} ${s.year}`,
       value: s.id
     }));
-    selectedSemesterId.value = currentSemester?.id ?? allSemesters?.[1]?.id ?? null;
+    selectedSemesterId.value = currentSemester?.id ?? allSemesters?.[0]?.id ?? null;
 
     if (sponsorId.value && selectedSemesterId.value) {
       sponsorProjects.value = await apiService.getProjectsBySponsor(sponsorId.value, selectedSemesterId.value);

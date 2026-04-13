@@ -6,6 +6,7 @@ import ProjectDescription from '../components/ProjectDescription.vue';
 import SponsorFeedbackForm from '../components/SponsorFeedbackForm.vue';
 import SponsorLanding from '../components/SponsorLanding.vue';
 import SponsorProjectForm from '../components/SponsorProjectForm.vue';
+import SponsorEditProjectForm from '../components/SponsorEditProjectForm.vue';
 import StudentAssignment from '../components/StudentAssignment.vue';
 import StudentLanding from '../components/StudentLanding.vue';
 import StudentNotRegistered from '../components/StudentNotRegistered.vue';
@@ -46,6 +47,7 @@ const routes = [
   { path: '/projects/:id', name: 'ProjectDescription', component: ProjectDescription, props: true },
   { path: '/sponsor/submit', name: 'SponsorSubmit', component: SponsorProjectForm, meta: { roles: ['sponsor'], requiresProfile: true } },
   { path: '/sponsor/feedback', name: 'SponsorFeedback', component: SponsorFeedbackForm, meta: { roles: ['sponsor'], requiresProfile: true } },
+  { path: '/sponsor/edit', name: 'SponsorEditProject', component: SponsorEditProjectForm, meta: { roles: ['sponsor'], requiresProfile: true } },
   { path: '/profile/create', name: 'ProfileCreate', component: ProfileCreate },
   { path: '/profile/edit', name: 'ProfileEdit', component: ProfileEdit }
 ];
