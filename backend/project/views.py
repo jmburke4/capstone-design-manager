@@ -1,17 +1,26 @@
-from rest_framework import viewsets, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from user.authentication import Auth0Authentication
+import datetime
+import logging
+
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Project, Assignment, Preference, Semester, Feedback, Attachment
-from .serializers import ProjectSerializer, AssignmentSerializer, PreferenceSerializer, SemesterSerializer, FeedbackSerializer, AttachmentSerializer
-import logging
-import datetime
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from user.authentication import Auth0Authentication
+
+from .models import Assignment, Attachment, Feedback, Preference, Project, Semester
+from .serializers import (
+    AssignmentSerializer,
+    AttachmentSerializer,
+    FeedbackSerializer,
+    PreferenceSerializer,
+    ProjectSerializer,
+    SemesterSerializer,
+)
 
 logger = logging.getLogger(__name__)
 

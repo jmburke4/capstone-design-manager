@@ -1,15 +1,17 @@
+import logging
+
 from django import forms
 from django.contrib import admin
 from django.db.models import Count, Exists, IntegerField, OuterRef, Subquery
 from django.db.models.functions import Coalesce
-from django.urls import reverse
+from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.http import urlencode
 from django_admin_action_forms import AdminActionForm, action_with_form
 from import_export.admin import ImportExportModelAdmin
+
 from project.models import Project, Semester, Preference, Assignment, Feedback, Attachment
 from project.resources import ProjectResource, SemesterResource, PreferenceResource, AssignmentResource, FeedbackResource, AttachmentResource
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +106,7 @@ class ProjectAdmin(ImportExportModelAdmin):
 class AttachmentAdmin(ImportExportModelAdmin):
     resource_classes = [AttachmentResource]
 
-    list_display = ['id', 'project', 'target_link']
+    list_display = ['id', Attachment, 'project', 'content_preview', 'created_at', 'target_link']
     list_filter = ['project']
     search_fields = ['project__name', 'file', 'link']
     ordering = ['id']
@@ -113,12 +115,45 @@ class AttachmentAdmin(ImportExportModelAdmin):
     def target_link(self, obj):
         if obj.link:
             return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.link, obj.link)
-
         if obj.file:
             url = reverse('project:attachment-download', args=[obj.pk])
             return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', url, obj.file.name)
-
         return '-'
+
+    @admin.display(description='Content Preview')
+    def content_preview(self, obj):
+        if obj.content:
+            return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
+        return '-'
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('<int:pk>/download/', self.admin_site.admin_view(self.download_view), name='project_attachment_download'),
+        ]
+        return custom_urls + urls
+
+    def download_view(self, request, pk):
+        from django.http import HttpResponse
+        attachment = self.get_object(request, pk)
+        if attachment.content:
+            content = attachment.content
+            if content.startswith('<!DOCTYPE html') or content.startswith('<html'):
+                content_type = 'text/html'
+                filename = f"{attachment.title or 'email'}.html"
+            else:
+                content_type = 'message/rfc822'
+                filename = f"{attachment.title or 'email'}.eml"
+        elif attachment.file:
+            content = attachment.file.read()
+            content_type = 'application/octet-stream'
+            filename = attachment.file.name.split('/')[-1]
+        else:
+            from django.http import Http404
+            raise Http404('No content available')
+        response = HttpResponse(content, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
 
 @admin.register(Semester)

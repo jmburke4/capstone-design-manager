@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from emails.utils import email_client
 from emails.serializers import EmailSerializer
+from project.models import Attachment
 
 
 @api_view(['GET', 'POST'])
@@ -10,7 +11,7 @@ def send_email(request):
     if request.method == 'GET':
         serializer = EmailSerializer()
         return Response(serializer.data)
-    
+
     serializer = EmailSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -68,8 +69,9 @@ def send_sponsor_outreach(request):
 
 @api_view(['POST'])
 def send_project_presentation(request):
-    required_fields = ['recipients', 'date', 'time', 'project_name', 'project_description', 'contact_name', 'contact_email', 'zoom_details']
-    
+    required_fields = ['recipients', 'date', 'time', 'project_name',
+                       'project_description', 'contact_name', 'contact_email', 'zoom_details']
+
     for field in required_fields:
         if not request.data.get(field):
             return Response(
@@ -101,3 +103,50 @@ def send_project_presentation(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['GET'])
+def export_sponsor_outreach(request):
+    semester = request.query_params.get('semester', 'spring')
+    collection_date = request.query_params.get('collection_date', 'TBD')
+
+    html_content = email_client.render_sponsor_outreach_html(semester, collection_date)
+
+    attachment = Attachment.objects.create(
+        title=f"Sponsor Outreach Email - {semester.capitalize()} {collection_date}",
+        content=html_content
+    )
+
+    return Response({
+        'id': attachment.id,
+        'title': attachment.title,
+        'content': html_content,
+        'download_url': f'/api/v1/projects/attachments/{attachment.id}/download/'
+    })
+
+
+@api_view(['GET'])
+def export_project_presentation(request):
+    context = {
+        'date': request.query_params.get('date', 'TBD'),
+        'time': request.query_params.get('time', 'TBD'),
+        'project_name': request.query_params.get('project_name', 'TBD'),
+        'project_description': request.query_params.get('project_description', 'TBD'),
+        'contact_name': request.query_params.get('contact_name', 'TBD'),
+        'contact_email': request.query_params.get('contact_email', 'TBD'),
+        'zoom_details': request.query_params.get('zoom_details', 'TBD'),
+    }
+
+    html_content = email_client.render_project_presentation_html(**context)
+
+    attachment = Attachment.objects.create(
+        title=f"Project Presentation Email - {context['project_name']}",
+        content=html_content
+    )
+
+    return Response({
+        'id': attachment.id,
+        'title': attachment.title,
+        'content': html_content,
+        'download_url': f'/api/v1/projects/attachments/{attachment.id}/download/'
+    })

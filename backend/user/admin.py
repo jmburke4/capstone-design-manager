@@ -1,15 +1,16 @@
 from django.contrib import admin
-from django.shortcuts import render, redirect
+from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.http import urlencode
-from django.contrib import messages
-from django.http import HttpResponse
 from import_export.admin import ImportExportModelAdmin
-from project.models import Project
+
+from emails.utils import email_client
+from project.models import Project, Attachment
 from user.models import Sponsor, Student
 from user.resources import SponsorResource, StudentResource
-from emails.utils import email_client
 
 
 @admin.register(Sponsor)
@@ -20,145 +21,289 @@ class SponsorAdmin(ImportExportModelAdmin):
     list_filter = ['organization']
     search_fields = ['last_name', 'first_name', 'organization', 'email']
     ordering = ['last_name', 'first_name', 'organization', 'id']
-    actions = ['send_sponsor_outreach', 'send_project_presentation',
-               'export_sponsor_outreach_email', 'export_project_presentation_email']
 
-    def send_sponsor_outreach(self, request, queryset):
-        emails = [sponsor.email for sponsor in queryset]
+    actions = ['export_sponsor_outreach_eml', 'send_sponsor_outreach_email',
+               'export_project_presentation_eml', 'send_project_presentation_email']
 
-        if 'semester' in request.POST:
-            semester = request.POST.get('semester', 'Spring')
-            collection_date = request.POST.get('collection_date', '')
-            from_email = request.POST.get('from_email') or None
-            smtp_host = request.POST.get('smtp_host') or None
-            smtp_port = request.POST.get('smtp_port') or None
-            smtp_username = request.POST.get('smtp_username') or None
-            smtp_password = request.POST.get('smtp_password') or None
+    def send_sponsor_outreach_email(self, request, queryset):
+        if request.method == 'POST':
+            semester = request.POST.get('semester', 'spring')
+            collection_date = request.POST.get('collection_date', 'TBD')
+            from_email = request.POST.get('from_email')
+            smtp_host = request.POST.get('smtp_host')
+            smtp_port = request.POST.get('smtp_port')
+            smtp_username = request.POST.get('smtp_username')
+            smtp_password = request.POST.get('smtp_password')
+
+            recipients = [s.email for s in queryset]
 
             try:
+                kwargs = {}
+                if from_email:
+                    kwargs['from_email'] = from_email
+                if smtp_host:
+                    kwargs['smtp_host'] = smtp_host
+                if smtp_port:
+                    kwargs['smtp_port'] = smtp_port
+                if smtp_username:
+                    kwargs['smtp_username'] = smtp_username
+                if smtp_password:
+                    kwargs['smtp_password'] = smtp_password
+
                 email_client.send_sponsor_outreach(
-                    recipient_list=emails,
+                    recipient_list=recipients,
                     semester=semester,
                     collection_date=collection_date,
-                    from_email=from_email,
-                    smtp_host=smtp_host,
-                    smtp_port=smtp_port,
-                    smtp_username=smtp_username,
-                    smtp_password=smtp_password
+                    **kwargs
                 )
-                self.message_user(
-                    request, f'Successfully sent outreach email to {len(emails)} sponsor(s).', messages.SUCCESS)
+                self.message_user(request, f'Successfully sent outreach email to {len(recipients)} sponsor(s)')
             except Exception as e:
-                self.message_user(request, f'Failed to send email: {str(e)}', messages.ERROR)
-            return
+                self.message_user(request, f'Error sending email: {str(e)}', level='error')
 
-        context = {
-            'queryset': queryset,
-            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
-        }
-        return render(request, 'admin/sponsor_outreach_action.html', context)
+            return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
 
-    send_sponsor_outreach.short_description = 'Send Sponsor Outreach Email'
-
-    def export_sponsor_outreach_email(self, request, queryset):
-        if 'semester' in request.GET:
-            semester = request.GET.get('semester', 'spring')
-            collection_date = request.GET.get('collection_date', 'TBD')
-
-            from django.template.loader import render_to_string
-
-            context = {
-                'semester': semester.lower(),
-                'collection_date': collection_date,
+        selected = queryset.values_list('id', flat=True)
+        return render(
+            request,
+            'admin/sponsor_outreach_action.html',
+            {
+                'queryset': queryset,
+                'title': 'Send Sponsor Outreach Email',
+                'action_checkbox_name': ACTION_CHECKBOX_NAME,
+                'selected_ids': list(selected),
             }
+        )
+    send_sponsor_outreach_email.short_description = 'Send Sponsor Outreach Email'
 
-            html_content = render_to_string('emails/sponsor_outreach.html', context)
+    def export_sponsor_outreach_eml(self, request, queryset):
+        if request.method == 'POST':
+            semester = request.POST.get('semester', 'spring')
+            collection_date = request.POST.get('collection_date', 'TBD')
 
-            response = HttpResponse(html_content, content_type='text/html')
-            response['Content-Disposition'] = 'attachment; filename="sponsor_outreach_email.html"'
-            return response
+            if request.POST.get('create_btn'):
+                html_content = email_client.render_sponsor_outreach_html(semester, collection_date)
 
-        return render(request, 'admin/export_sponsor_outreach.html', {
-            'queryset': queryset,
-            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
-        })
+                # Create EML for first sponsor (for the To field)
+                first_sponsor = queryset.first()
+                eml_content = email_client.convert_html_to_eml(
+                    html_content,
+                    subject=f"UA CS Capstone Project Opportunity - {semester.capitalize()}",
+                    to_email=first_sponsor.email if first_sponsor else ''
+                )
 
-    export_sponsor_outreach_email.short_description = 'Export Sponsor Outreach as HTML'
+                attachment = Attachment.objects.create(
+                    title=f"Sponsor Outreach Email - {semester.capitalize()} {collection_date}",
+                    content=eml_content
+                )
 
-    def send_project_presentation(self, request, queryset):
-        emails = [sponsor.email for sponsor in queryset]
+                download_url = f"/admin/project/attachment/{attachment.id}/download/"
 
-        if 'date' in request.POST:
+                self.message_user(
+                    request,
+                    f'Exported EML file created: {attachment.title}. '
+                    f'<a href="{download_url}" target="_blank">Download</a>',
+                    level='info',
+                    extra_tags='safe'
+                )
+                return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
+
+            if request.POST.get('preview_btn'):
+                preview_html = email_client.render_sponsor_outreach_html(semester, collection_date)
+                return render(
+                    request,
+                    'admin/export_sponsor_outreach.html',
+                    {
+                        'queryset': queryset,
+                        'title': 'Export Sponsor Outreach as EML',
+                        'action_checkbox_name': ACTION_CHECKBOX_NAME,
+                        'semester': semester,
+                        'collection_date': collection_date,
+                        'preview_html': preview_html,
+                    }
+                )
+
+        return render(
+            request,
+            'admin/export_sponsor_outreach.html',
+            {
+                'queryset': queryset,
+                'title': 'Export Sponsor Outreach as EML',
+                'action_checkbox_name': ACTION_CHECKBOX_NAME,
+                'semester': 'spring',
+                'collection_date': 'TBD',
+            }
+        )
+    export_sponsor_outreach_eml.short_description = 'Export Sponsor Outreach as EML'
+
+    def send_project_presentation_email(self, request, queryset):
+        if request.method == 'POST':
             date = request.POST.get('date', 'TBD')
             time = request.POST.get('time', 'TBD')
-            project_name = request.POST.get('project_name', 'TBD')
-            project_description = request.POST.get('project_description', 'TBD')
-            contact_name = request.POST.get('contact_name', 'TBD')
-            contact_email = request.POST.get('contact_email', 'TBD')
             zoom_details = request.POST.get('zoom_details', 'TBD')
-            from_email = request.POST.get('from_email') or None
-            smtp_host = request.POST.get('smtp_host') or None
-            smtp_port = request.POST.get('smtp_port') or None
-            smtp_username = request.POST.get('smtp_username') or None
-            smtp_password = request.POST.get('smtp_password') or None
+            from_email = request.POST.get('from_email')
+            smtp_host = request.POST.get('smtp_host')
+            smtp_port = request.POST.get('smtp_port')
+            smtp_username = request.POST.get('smtp_username')
+            smtp_password = request.POST.get('smtp_password')
 
-            try:
-                for email in emails:
-                    email_client.send_project_presentation(
-                        recipient_list=[email],
+            total_sent = 0
+            for sponsor in queryset:
+                projects = Project.objects.filter(sponsor=sponsor)
+                if not projects:
+                    continue
+
+                kwargs = {}
+                if from_email:
+                    kwargs['from_email'] = from_email
+                if smtp_host:
+                    kwargs['smtp_host'] = smtp_host
+                if smtp_port:
+                    kwargs['smtp_port'] = smtp_port
+                if smtp_username:
+                    kwargs['smtp_username'] = smtp_username
+                if smtp_password:
+                    kwargs['smtp_password'] = smtp_password
+
+                for project in projects:
+                    try:
+                        email_client.send_project_presentation_for_project(
+                            recipient_list=[sponsor.email],
+                            date=date,
+                            time=time,
+                            project=project,
+                            zoom_details=zoom_details,
+                            **kwargs
+                        )
+                        total_sent += 1
+                    except Exception as e:
+                        self.message_user(request, f'Error sending for {project.name}: {str(e)}', level='error')
+
+            self.message_user(request, f'Successfully sent {total_sent} project presentation email(s)')
+            return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
+
+        first_sponsor = queryset.first()
+        if first_sponsor:
+            projects = Project.objects.filter(sponsor=first_sponsor)
+            default_contact_name = f"{first_sponsor.first_name} {first_sponsor.last_name}"
+            default_contact_email = first_sponsor.email
+        else:
+            projects = []
+            default_contact_name = ''
+            default_contact_email = ''
+
+        return render(
+            request,
+            'admin/project_presentation_action.html',
+            {
+                'queryset': queryset,
+                'title': 'Send Project Presentation Email',
+                'action_checkbox_name': ACTION_CHECKBOX_NAME,
+                'projects': projects,
+                'contact_name': default_contact_name,
+                'contact_email': default_contact_email,
+            }
+        )
+    send_project_presentation_email.short_description = 'Send Project Presentation Email'
+
+    def export_project_presentation_eml(self, request, queryset):
+        if request.method == 'POST':
+            date = request.POST.get('date', 'TBD')
+            time = request.POST.get('time', 'TBD')
+            zoom_details = request.POST.get('zoom_details', 'TBD')
+
+            if request.POST.get('create_btn'):
+                created_count = 0
+                for sponsor in queryset:
+                    projects = Project.objects.filter(sponsor=sponsor)
+                    for project in projects:
+                        html_content = email_client.render_project_presentation_single_html(
+                            date=date,
+                            time=time,
+                            project=project,
+                            zoom_details=zoom_details
+                        )
+
+                        eml_content = email_client.convert_html_to_eml(
+                            html_content,
+                            subject=f"Project Presentation: {project.name}",
+                            to_email=sponsor.email
+                        )
+                        eml_attachment = Attachment.objects.create(
+                            title=f"Project Presentation - {project.name}",
+                            content=eml_content,
+                            project=project
+                        )
+                        created_count += 1
+
+                self.message_user(
+                    request,
+                    f'Created {created_count} EML file(s)',
+                    level='info',
+                )
+                return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
+
+            if request.POST.get('preview_btn'):
+                first_sponsor = queryset.first()
+                projects = list(Project.objects.filter(sponsor=first_sponsor)) if first_sponsor else []
+                preview_project = projects[0] if projects else None
+                preview_html = ''
+                if preview_project:
+                    preview_html = email_client.render_project_presentation_single_html(
                         date=date,
                         time=time,
-                        project_name=project_name,
-                        project_description=project_description,
-                        contact_name=contact_name,
-                        contact_email=contact_email,
-                        zoom_details=zoom_details,
-                        from_email=from_email,
-                        smtp_host=smtp_host,
-                        smtp_port=smtp_port,
-                        smtp_username=smtp_username,
-                        smtp_password=smtp_password
+                        project=preview_project,
+                        zoom_details=zoom_details
                     )
-                self.message_user(
-                    request, f'Successfully sent presentation email to {len(emails)} sponsor(s).', messages.SUCCESS)
-            except Exception as e:
-                self.message_user(request, f'Failed to send email: {str(e)}', messages.ERROR)
-            return
 
-        context = {
-            'queryset': queryset,
-            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
-        }
-        return render(request, 'admin/project_presentation_action.html', context)
+                return render(
+                    request,
+                    'admin/export_project_presentation.html',
+                    {
+                        'queryset': queryset,
+                        'title': 'Export Project Presentation as EML',
+                        'action_checkbox_name': ACTION_CHECKBOX_NAME,
+                        'date': date,
+                        'time': time,
+                        'zoom_details': zoom_details,
+                        'projects': projects,
+                        'preview_html': preview_html,
+                    }
+                )
 
-    send_project_presentation.short_description = 'Send Project Presentation Email'
+        first_sponsor = queryset.first()
+        if first_sponsor:
+            projects = list(Project.objects.filter(sponsor=first_sponsor))
+            default_contact_name = f"{first_sponsor.first_name} {first_sponsor.last_name}"
+            default_contact_email = first_sponsor.email
+        else:
+            projects = []
+            default_contact_name = ''
+            default_contact_email = ''
 
-    def export_project_presentation_email(self, request, queryset):
-        if 'date' in request.GET:
-            from django.template.loader import render_to_string
-
-            context = {
-                'date': request.GET.get('date', 'TBD'),
-                'time': request.GET.get('time', 'TBD'),
-                'project_name': request.GET.get('project_name', 'TBD'),
-                'project_description': request.GET.get('project_description', 'TBD'),
-                'contact_name': request.GET.get('contact_name', 'TBD'),
-                'contact_email': request.GET.get('contact_email', 'TBD'),
-                'zoom_details': request.GET.get('zoom_details', 'TBD'),
+        return render(
+            request,
+            'admin/export_project_presentation.html',
+            {
+                'queryset': queryset,
+                'title': 'Export Project Presentation as EML',
+                'action_checkbox_name': ACTION_CHECKBOX_NAME,
+                'date': 'TBD',
+                'time': 'TBD',
+                'zoom_details': '',
+                'projects': projects,
+                'contact_name': default_contact_name,
+                'contact_email': default_contact_email,
             }
+        )
+    export_project_presentation_eml.short_description = 'Export Project Presentation as EML'
 
-            html_content = render_to_string('emails/project_presentation.html', context)
-
-            response = HttpResponse(html_content, content_type='text/html')
-            response['Content-Disposition'] = 'attachment; filename="project_presentation_email.html"'
-            return response
-
-        return render(request, 'admin/export_project_presentation.html', {
-            'queryset': queryset,
-            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
-        })
-
-    export_project_presentation_email.short_description = 'Export Project Presentation as HTML'
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        if object_id:
+            sponsor = self.get_object(request, object_id)
+            attachments = Attachment.objects.filter(project__sponsor=sponsor).order_by('-created_at')[:10]
+            extra_context['recent_attachments'] = attachments
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
     def projects(self, obj):
         url = (
