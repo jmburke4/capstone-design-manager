@@ -11,6 +11,37 @@ The REST API can be interacted with by using ```curl```, the [Django Browsable A
 | Update | PATCH | ```/api/v1/projects/<id>``` |
 | Delete | DELETE | ```/api/v1/projects/<id>``` |
 
+## Admin Panel - Email Actions
+
+The Django admin panel provides email functionality for sponsors. Access it at `/admin/`.
+
+### Sponsor Actions
+
+Navigate to **User → Sponsors**, select one or more sponsors, and choose an action from the dropdown:
+
+| Action | Description |
+| - | - |
+| **Send Sponsor Outreach Email** | Sends an outreach email to selected sponsors via SMTP |
+| **Export Sponsor Outreach as EML** | Creates an EML file that opens in your default email client |
+| **Send Project Presentation Email** | Sends project presentation emails (one per project) to sponsors |
+| **Export Project Presentation as EML** | Creates EML files for each project, ready to send from your email client |
+
+### How to Use EML Files
+
+When native SMTP sending doesn't work with the user's email address, use EML exports:
+
+1. **Export** - Download the `.eml` file from Admin → Project → Attachments
+2. **Open** - Double-click the `.eml` file to open in your default email client (Outlook, Mail.app, etc.)
+3. **Send** - The email opens as a new unsent message with:
+   - **To:** field pre-filled with sponsor's email
+   - **From:** field uses your default email account
+4. **Send** - Click send from your email client
+
+### EML vs HTML Export
+
+- **EML files**: Open directly in your email client as a ready-to-send email
+- **HTML files**: Can be opened in a browser, then copy/paste into an email
+
 ## Creating New Models (w/ associated tables)
 
 The ```project``` subdirectory of the ```backend``` directory represents a standalone Python module, that is used by the ```core``` module. The ```Project``` module will hold and route models relating to non-user related objects, and the ```User``` module will hold user models and user-related models. Each model in ```models.py``` requires an entry in the associated ```serializers.py```, ```views.py```, and ```urls.py``` classes.
