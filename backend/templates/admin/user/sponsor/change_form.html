@@ -4,24 +4,48 @@
 {% block extrahead %}
 {{ block.super }}
 <style>
-    .sponsor-info { 
-        background: #f8f9fa; 
-        padding: 15px; 
-        border-radius: 4px; 
+    .sponsor-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
         margin-bottom: 20px;
     }
-    .sponsor-info h3 { margin-top: 0; }
-    .sponsor-info table { width: 100%; }
-    .sponsor-info td { padding: 5px; }
-    .attachments-section { margin-top: 20px; }
-    .attachments-section h3 { margin-bottom: 10px; }
-    .attachments-table { width: 100%; }
-    .attachments-table th, .attachments-table td {
+
+    .sponsor-info h3 {
+        margin-top: 0;
+    }
+
+    .sponsor-info table {
+        width: 100%;
+    }
+
+    .sponsor-info td {
+        padding: 5px;
+    }
+
+    .attachments-section {
+        margin-top: 20px;
+    }
+
+    .attachments-section h3 {
+        margin-bottom: 10px;
+    }
+
+    .attachments-table {
+        width: 100%;
+    }
+
+    .attachments-table th,
+    .attachments-table td {
         padding: 8px;
         border: 1px solid #ddd;
         text-align: left;
     }
-    .attachments-table th { background: #f0f0f0; }
+
+    .attachments-table th {
+        background: #f0f0f0;
+    }
+
     .download-btn {
         background: #007bff;
         color: white;
@@ -29,7 +53,10 @@
         text-decoration: none;
         border-radius: 3px;
     }
-    .download-btn:hover { background: #0056b3; }
+
+    .download-btn:hover {
+        background: #0056b3;
+    }
 </style>
 {% endblock %}
 
@@ -74,7 +101,8 @@
                 <td>{{ attachment.title }}</td>
                 <td>{{ attachment.created_at|date:"M d, Y H:i" }}</td>
                 <td>
-                    <a href="/admin/project/attachment/{{ attachment.id }}/download/" class="download-btn" target="_blank">Download</a>
+                    <a href="/admin/project/attachment/{{ attachment.id }}/download/" class="download-btn"
+                        target="_blank">Download</a>
                 </td>
             </tr>
             {% endfor %}

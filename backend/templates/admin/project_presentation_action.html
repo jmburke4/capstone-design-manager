@@ -3,18 +3,51 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-    .email-form { max-width: 700px; margin: 20px auto; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-    .form-group input, .form-group textarea { 
-        width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
+    .email-form {
+        max-width: 700px;
+        margin: 20px auto;
     }
-    .form-group textarea { height: 80px; }
-    .submit-row { margin-top: 20px; }
-    .selected-count { 
-        background: #f5f5f5; padding: 10px; border-radius: 4px; margin-bottom: 15px;
+
+    .form-group {
+        margin-bottom: 15px;
     }
-    .info-text { font-size: 12px; color: #666; margin-top: 3px; }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    .form-group textarea {
+        height: 80px;
+    }
+
+    .submit-row {
+        margin-top: 20px;
+    }
+
+    .selected-count {
+        background: #f5f5f5;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+
+    .info-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 3px;
+    }
+
     .smtp-section {
         background: #f9f9f9;
         padding: 15px;
@@ -22,31 +55,41 @@
         margin-bottom: 20px;
         border: 1px solid #ddd;
     }
-    .smtp-section h3 { margin-top: 0; }
+
+    .smtp-section h3 {
+        margin-top: 0;
+    }
+
     .projects-info {
         background: #e7f3ff;
         padding: 15px;
         border-radius: 4px;
         margin-bottom: 15px;
     }
+
     .project-list {
         border: 1px solid #ccc;
         border-radius: 4px;
         margin-bottom: 15px;
     }
+
     .project-list table {
         width: 100%;
         border-collapse: collapse;
     }
-    .project-list th, .project-list td {
+
+    .project-list th,
+    .project-list td {
         padding: 10px;
         text-align: left;
         border-bottom: 1px solid #eee;
     }
+
     .project-list th {
         background: #f5f5f5;
         font-weight: bold;
     }
+
     .contact-info {
         background: #f0fff0;
         padding: 10px;
@@ -60,22 +103,22 @@
 {% block content %}
 <div class="email-form">
     <h1>Send Project Presentation Email</h1>
-    
+
     <div class="selected-count">
         {{ queryset|length }} sponsor(s) selected
     </div>
-    
+
     {% if projects %}
     <div class="contact-info">
         <strong>Contact Info (auto-filled from sponsor):</strong><br>
         Name: {{ contact_name }}<br>
         Email: {{ contact_email }}
     </div>
-    
+
     <div class="projects-info">
         <strong>Projects that will receive emails:</strong>
     </div>
-    
+
     <div class="project-list">
         <table>
             <thead>
@@ -99,62 +142,63 @@
     {% else %}
     <p>No projects found for the selected sponsor(s).</p>
     {% endif %}
-    
+
     <form method="post">
         {% csrf_token %}
         {% for obj in queryset %}
         <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
         {% endfor %}
         <input type="hidden" name="action" value="send_project_presentation">
-        
+
         <div class="form-group">
             <label for="date">Date</label>
             <input type="text" name="date" id="date" placeholder="Tuesday Jan 14, 2025">
         </div>
-        
+
         <div class="form-group">
             <label for="time">Time</label>
             <input type="text" name="time" id="time" placeholder="3:45 - 4:00">
         </div>
-        
+
         <div class="form-group">
             <label for="zoom_details">Zoom Details</label>
             <textarea name="zoom_details" id="zoom_details" placeholder="Zoom meeting link"></textarea>
         </div>
-        
+
         <div class="smtp-section">
             <h3>SMTP Settings</h3>
             <p class="info-text">Leave blank to use default settings. Fill in to send from a different email.</p>
-            
+
             <div class="form-group">
                 <label for="from_email">From Email</label>
                 <input type="email" name="from_email" id="from_email" placeholder="sender@example.com">
             </div>
-            
+
             <div class="form-group">
                 <label for="smtp_host">SMTP Host</label>
                 <input type="text" name="smtp_host" id="smtp_host" placeholder="smtp.gmail.com">
             </div>
-            
+
             <div class="form-group">
                 <label for="smtp_port">SMTP Port</label>
                 <input type="number" name="smtp_port" id="smtp_port" placeholder="587">
             </div>
-            
+
             <div class="form-group">
                 <label for="smtp_username">SMTP Username</label>
                 <input type="text" name="smtp_username" id="smtp_username" placeholder="your@email.com">
             </div>
-            
+
             <div class="form-group">
                 <label for="smtp_password">SMTP Password</label>
                 <input type="password" name="smtp_password" id="smtp_password" placeholder="Password or App Password">
             </div>
         </div>
-        
+
         <div class="submit-row">
             <input type="submit" name="apply" value="Send Emails" class="default">
-            <a href="/admin/user/sponsor/" onclick="window.history.back(); return false;" class="button cancel-link">Cancel</a>
+            <a href="/admin/user/sponsor/" onclick="window.history.back(); return false;"
+                class="button cancel-link">Cancel</a>
         </div>
     </form>
 </div>
