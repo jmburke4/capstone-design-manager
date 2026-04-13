@@ -80,10 +80,12 @@ def attachment_upload_path(instance, filename):
 
 
 class Attachment(models.Model):
-    # [Required] FK to a project
+    # [Optional] FK to a project
     project = models.ForeignKey(
         Project,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True
     )
 
     # [Optional] Stored file attachment. Leave blank when storing a link instead.
@@ -101,14 +103,26 @@ class Attachment(models.Model):
     # [Optional] Stored hyperlink attachment. Leave blank when uploading a file instead.
     link = models.URLField(blank=True, null=True)
 
+    # [Optional] Title for the attachment (used for email exports)
+    title = models.CharField(max_length=255, blank=True, null=True)
+
+    # [Optional] Content for email exports (EML/HTML content stored as text)
+    content = models.TextField(blank=True, null=True)
+
     # [Default] Tracks when the record was created
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
         super().clean()
 
+        # For email exports, content alone is valid (no file or link needed)
+        if self.content:
+            return  # Email exports are valid with just content
+
+        # For regular attachments, require either file or link, but not both
         if bool(self.file) == bool(self.link):
-            raise ValidationError('Provide either a file or a link, but not both.')
+            if not self.file and not self.link:
+                raise ValidationError('Provide a file, link, or content.')
 
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -26,7 +26,11 @@ class SponsorAdmin(ImportExportModelAdmin):
                'export_project_presentation_eml', 'send_project_presentation_email']
 
     def send_sponsor_outreach_email(self, request, queryset):
-        if request.method == 'POST':
+        if '_cancel' in request.POST:
+            return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
+        
+        # Check if form was submitted (has semester field) vs just selecting action
+        if request.method == 'POST' and request.POST.get('semester'):
             semester = request.POST.get('semester', 'spring')
             collection_date = request.POST.get('collection_date', 'TBD')
             from_email = request.POST.get('from_email')
@@ -62,6 +66,7 @@ class SponsorAdmin(ImportExportModelAdmin):
 
             return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
 
+        # Show the form
         selected = queryset.values_list('id', flat=True)
         return render(
             request,
@@ -136,7 +141,11 @@ class SponsorAdmin(ImportExportModelAdmin):
     export_sponsor_outreach_eml.short_description = 'Export Sponsor Outreach as EML'
 
     def send_project_presentation_email(self, request, queryset):
-        if request.method == 'POST':
+        if '_cancel' in request.POST:
+            return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
+        
+        # Check if form was submitted (has date field) vs just selecting action
+        if request.method == 'POST' and request.POST.get('date'):
             date = request.POST.get('date', 'TBD')
             time = request.POST.get('time', 'TBD')
             zoom_details = request.POST.get('zoom_details', 'TBD')
@@ -181,6 +190,7 @@ class SponsorAdmin(ImportExportModelAdmin):
             self.message_user(request, f'Successfully sent {total_sent} project presentation email(s)')
             return HttpResponseRedirect(reverse('admin:user_sponsor_changelist'))
 
+        # Show the form
         first_sponsor = queryset.first()
         if first_sponsor:
             projects = Project.objects.filter(sponsor=first_sponsor)

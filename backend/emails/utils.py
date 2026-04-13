@@ -51,8 +51,13 @@ class EmailClient:
                              from_email=None, smtp_host=None, smtp_port=None,
                              smtp_username=None, smtp_password=None):
         context = context or {}
-        text_content = render_to_string(f'{template_name}.txt', context)
-        html_content = render_to_string(f'{template_name}.html', context)
+        
+        html_content = render_to_string(f'emails/{template_name}.html', context)
+        
+        # For text version, strip HTML tags from HTML content
+        import re
+        text_content = re.sub(r'<[^>]+>', '', html_content)
+        text_content = re.sub(r'\n\s*\n', '\n', text_content).strip()
 
         return self.send_email(
             subject=subject,
