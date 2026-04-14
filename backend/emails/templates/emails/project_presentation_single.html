@@ -24,18 +24,35 @@
             border-left: 4px solid #007bff;
             margin: 20px 0;
         }
+        .project-box {
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: white;
+        }
+        .project-box h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-in-progress { background: #ffc107; color: #000; }
+        .status-pending { background: #6c757d; color: white; }
+        .status-complete { background: #28a745; color: white; }
+        .status-cancelled { background: #dc3545; color: white; }
         .footer {
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid #ddd;
             font-size: 14px;
             color: #666;
-        }
-        ul, ol {
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -69,14 +86,25 @@
             </ul>
         </ul>
         
-        <h3>Project information</h3>
-        <p><strong>{{ project_name }}</strong></p>
-        <p>{{ project_description }}</p>
-        <p>{{ contact_name }}<br>
-        {{ contact_email }}</p>
+        <h3>Your Project</h3>
+        <div class="project-box">
+            <h3>{{ project.name }}</h3>
+            <span class="status {% if project.status == 'IP' %}status-in-progress{% elif project.status == 'PNDG' %}status-pending{% elif project.status == 'CMPL' %}status-complete{% elif project.status == 'CNCL' %}status-cancelled{% endif %}">
+                {% if project.status == 'IP' %}In Progress
+                {% elif project.status == 'PNDG' %}Pending
+                {% elif project.status == 'CMPL' %}Complete
+                {% elif project.status == 'CNCL' %}Cancelled{% endif %}
+            </span>
+            {% if project.description %}
+            <p><strong>Description:</strong> {{ project.description }}</p>
+            {% endif %}
+            {% if project.website %}
+            <p><strong>Website:</strong> <a href="{{ project.website }}">{{ project.website }}</a></p>
+            {% endif %}
+        </div>
         
         <h3>Zoom Link</h3>
-        <p>{{ zoom_details }}</p>
+        <p><a href="{{ zoom_details }}" style="color: #007bff; text-decoration: underline;">{{ zoom_details }}</a></p>
     </div>
 </body>
 </html>

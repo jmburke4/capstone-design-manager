@@ -1,15 +1,18 @@
+import logging
+import mimetypes
+
 from django import forms
 from django.contrib import admin
 from django.db.models import Count, Exists, IntegerField, OuterRef, Subquery
 from django.db.models.functions import Coalesce
-from django.urls import reverse
+from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.http import urlencode
 from django_admin_action_forms import AdminActionForm, action_with_form
 from import_export.admin import ImportExportModelAdmin
+
 from project.models import Project, Semester, Preference, Assignment, Feedback, Attachment
 from project.resources import ProjectResource, SemesterResource, PreferenceResource, AssignmentResource, FeedbackResource, AttachmentResource
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -104,21 +107,123 @@ class ProjectAdmin(ImportExportModelAdmin):
 class AttachmentAdmin(ImportExportModelAdmin):
     resource_classes = [AttachmentResource]
 
-    list_display = ['id', 'project', 'target_link']
-    list_filter = ['project']
-    search_fields = ['project__name', 'file', 'link']
-    ordering = ['id']
+    list_display = ['id', 'title', 'project', 'type_badge', 'file_type_badge', 'download_button', 'created_at']
+    list_filter = ['project', 'created_at']
+    search_fields = ['title', 'content', 'link']
+    ordering = ['-created_at']
+    readonly_fields = ['created_at']
 
-    @admin.display(description='Attachment')
-    def target_link(self, obj):
-        if obj.link:
-            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.link, obj.link)
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['accepted_file_types'] = [
+            {'ext': 'pdf', 'name': 'PDF Document', 'color': '#dc3545'},
+            {'ext': 'docx', 'name': 'Word Document', 'color': '#007bff'},
+            {'ext': 'pptx', 'name': 'PowerPoint', 'color': '#d63384'},
+            {'ext': 'png', 'name': 'PNG Image', 'color': '#28a745'},
+            {'ext': 'jpeg/jpg', 'name': 'JPEG Image', 'color': '#20c997'},
+            {'ext': 'zip', 'name': 'ZIP Archive', 'color': '#6c757d'},
+        ]
+        return super().changelist_view(request, extra_context)
 
+    @admin.display(description='Type')
+    def type_badge(self, obj):
+        if obj.content:
+            if obj.content.strip().startswith(('Subject:', 'To:', 'From:', 'Return-Path:')):
+                return format_html('<span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 3px;">EML</span>')
+            return format_html('<span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 3px;">HTML</span>')
         if obj.file:
-            url = reverse('project:attachment-download', args=[obj.pk])
-            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', url, obj.file.name)
-
+            return format_html('<span style="background: #6c757d; color: white; padding: 3px 8px; border-radius: 3px;">File</span>')
+        if obj.link:
+            return format_html('<span style="background: #ffc107; color: black; padding: 3px 8px; border-radius: 3px;">Link</span>')
         return '-'
+
+    @admin.display(description='File Type')
+    def file_type_badge(self, obj):
+        if not obj.file:
+            return '-'
+        filename = obj.file.name.lower()
+        if filename.endswith('.pdf'):
+            return format_html('<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">PDF</span>')
+        if filename.endswith('.docx'):
+            return format_html('<span style="background: #007bff; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">DOCX</span>')
+        if filename.endswith('.pptx'):
+            return format_html('<span style="background: #d63384; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">PPTX</span>')
+        if filename.endswith('.png'):
+            return format_html('<span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">PNG</span>')
+        if filename.endswith('.jpg') or filename.endswith('.jpeg'):
+            return format_html('<span style="background: #20c997; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">JPEG</span>')
+        if filename.endswith('.zip'):
+            return format_html('<span style="background: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">ZIP</span>')
+        ext = filename.split('.')[-1] if '.' in filename else '?'
+        return format_html('<span style="background: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">{}</span>', ext.upper())
+
+    @admin.display(description='Download')
+    def download_button(self, obj):
+        if obj.content or obj.file:
+            url = reverse('admin:project_attachment_download', args=[obj.pk])
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer" class="button" style="padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px;">Download</a>', url)
+        if obj.link:
+            return format_html('<a href="{}" target="_blank" class="button" style="padding: 5px 10px; background: #ffc107; color: black; text-decoration: none; border-radius: 3px;">Open Link</a>', obj.link)
+        return '-'
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('<int:pk>/download/', self.admin_site.admin_view(self.download_view), name='project_attachment_download'),
+        ]
+        return custom_urls + urls
+
+    def download_view(self, request, pk):
+        from django.http import HttpResponse, Http404
+
+        attachment = self.get_object(request, pk)
+        if not attachment:
+            raise Http404('Attachment not found')
+
+        if attachment.content:
+            content = attachment.content
+            # Check if it's an EML file (starts with headers like Subject:, To:, etc.)
+            if content.strip().startswith(('Subject:', 'To:', 'From:', 'Return-Path:')):
+                content_type = 'message/rfc822'
+                filename = f"{attachment.title or 'email'}.eml"
+                should_render_inline = False
+            else:
+                # It's HTML content
+                content_type = 'text/html'
+                filename = f"{attachment.title or 'email'}.html"
+                should_render_inline = True
+        elif attachment.file:
+            content = attachment.file.read()
+            filename = attachment.file.name.split('/')[-1]
+            guessed_type, _ = mimetypes.guess_type(filename)
+            content_type = guessed_type or 'application/octet-stream'
+
+            inline_types = {
+                'application/pdf',
+                'application/json',
+                'application/xml',
+                'text/plain',
+                'text/csv',
+                'text/html',
+            }
+            should_render_inline = (
+                content_type in inline_types
+                or content_type.startswith('image/')
+                or content_type.startswith('text/')
+                or content_type.startswith('audio/')
+                or content_type.startswith('video/')
+            )
+        elif attachment.link:
+            # Redirect to external link if it's a link
+            from django.shortcuts import redirect
+            return redirect(attachment.link)
+        else:
+            raise Http404('No content available')
+
+        response = HttpResponse(content, content_type=content_type)
+        disposition = 'inline' if should_render_inline else 'attachment'
+        response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+        return response
 
 
 @admin.register(Semester)
