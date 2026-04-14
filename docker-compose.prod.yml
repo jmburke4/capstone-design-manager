@@ -1,4 +1,7 @@
 services:
+  # Nginx - Reverse proxy + static SPA server + SSL termination
+  # Note: Rootless Docker can't bind to ports < 1024
+  # Using 8080/8443, iptables redirects 80->8080 and 443->8443
   nginx:
     build: ./nginx
     container_name: capstone-nginx
@@ -6,17 +9,30 @@ services:
       - "8080:8080"
       - "8443:8443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:rw
+      - ./nginx/conf.d:/etc/nginx/conf.d:rw          # rw so SSL script can write configs
       - letsencrypt:/etc/letsencrypt:ro
       - certbot-webroot:/var/www/certbot:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - static-files:/usr/share/nginx/staticfiles:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro     # Built Vue assets (run npm run build first)
+      - static-files:/usr/share/nginx/staticfiles:ro  # Django static files (admin CSS/JS)
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     networks:
       - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Backend - Django with Gunicorn
   backend:
     build:
       context: ./backend
@@ -30,10 +46,23 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - static-files:/usr/src/app/staticfiles  # FIXED: Match Dockerfile path
+      - static-files:/usr/src/app/staticfiles  # FIXED: Match Dockerfile path (/usr/src/app from Dockerfile)
     restart: unless-stopped
     networks:
       - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database
   db:
     image: postgres:17
     container_name: capstone-db
@@ -46,6 +75,18 @@ services:
     networks:
       - app-network
     shm_size: 128mb
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Certbot - Let's Encrypt with nginx reload hook
   certbot:
     image: certbot/certbot
     container_name: capstone-certbot
@@ -61,10 +102,17 @@ services:
         sleep 12h & wait $${!};
       done'
     restart: unless-stopped
+
 volumes:
   postgres-data:
+    driver: local
   static-files:
+    driver: local
   letsencrypt:
+    driver: local
   certbot-webroot:
+    driver: local
+
 networks:
   app-network:
+    driver: bridge
