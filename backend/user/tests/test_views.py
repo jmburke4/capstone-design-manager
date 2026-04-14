@@ -1,4 +1,5 @@
 import pytest
+from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -7,8 +8,16 @@ from user.models import Sponsor, Student
 
 
 @pytest.fixture
-def api_client():
-    return APIClient()
+def api_client(db):
+    """Create an authenticated API client for testing."""
+    client = APIClient()
+    user = User.objects.create_user(
+        username="testuser",
+        email="testuser@example.com",
+        password="testpass123",
+    )
+    client.force_authenticate(user=user)
+    return client
 
 
 @pytest.fixture
