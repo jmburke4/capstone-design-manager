@@ -131,6 +131,10 @@ SESSION_COOKIE_SAMESITE = 'Lax'  # Required for cross-origin session cookies
 SESSION_COOKIE_HTTPONLY = True  # Security: prevents JavaScript access
 SESSION_COOKIE_SECURE = False  # False for localhost, True for production HTTPS
 
+# Trust X-Forwarded-Proto header from nginx reverse proxy for HTTPS detection
+# This allows Django to know the original request was HTTPS even when served via HTTP internally
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -178,12 +182,16 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'https://ua-capstone-projects.com',
+    'https://www.ua-capstone-projects.com',
 ]
 CORS_ALLOW_CREDENTIALS = True  # Required for session cookies
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'https://ua-capstone-projects.com',
+    'https://www.ua-capstone-projects.com',
 ]
 
 LOGGING = {
