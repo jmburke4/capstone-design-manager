@@ -92,10 +92,12 @@ services:
     volumes:
       - letsencrypt:/etc/letsencrypt
       - certbot-webroot:/var/www/certbot
+    environment:
+      - VM_USERNAME=${VM_USERNAME:-colewalkerkelley_gmail_com}
     entrypoint: /bin/sh -c '
       trap exit TERM;
       while :; do
-        certbot renew --deploy-hook "docker compose -f /compose/docker-compose.prod.yml exec -T nginx nginx -s reload" --quiet || true;
+        certbot renew --deploy-hook "docker compose -f /home/$${VM_USERNAME}/capstone/docker-compose.prod.yml exec -T nginx nginx -s reload" --quiet || true;
         sleep 12h & wait $${!};
       done'
     restart: unless-stopped
