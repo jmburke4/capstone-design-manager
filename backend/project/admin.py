@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 
 from django import forms
 from django.contrib import admin
@@ -160,7 +161,7 @@ class AttachmentAdmin(ImportExportModelAdmin):
     def download_button(self, obj):
         if obj.content or obj.file:
             url = reverse('admin:project_attachment_download', args=[obj.pk])
-            return format_html('<a href="{}" class="button" style="padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px;">Download</a>', url)
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer" class="button" style="padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 3px;">Download</a>', url)
         if obj.link:
             return format_html('<a href="{}" target="_blank" class="button" style="padding: 5px 10px; background: #ffc107; color: black; text-decoration: none; border-radius: 3px;">Open Link</a>', obj.link)
         return '-'
@@ -174,34 +175,54 @@ class AttachmentAdmin(ImportExportModelAdmin):
 
     def download_view(self, request, pk):
         from django.http import HttpResponse, Http404
-        
+
         attachment = self.get_object(request, pk)
         if not attachment:
             raise Http404('Attachment not found')
-        
+
         if attachment.content:
             content = attachment.content
             # Check if it's an EML file (starts with headers like Subject:, To:, etc.)
             if content.strip().startswith(('Subject:', 'To:', 'From:', 'Return-Path:')):
                 content_type = 'message/rfc822'
                 filename = f"{attachment.title or 'email'}.eml"
+                should_render_inline = False
             else:
                 # It's HTML content
                 content_type = 'text/html'
                 filename = f"{attachment.title or 'email'}.html"
+                should_render_inline = True
         elif attachment.file:
             content = attachment.file.read()
-            content_type = 'application/octet-stream'
             filename = attachment.file.name.split('/')[-1]
+            guessed_type, _ = mimetypes.guess_type(filename)
+            content_type = guessed_type or 'application/octet-stream'
+
+            inline_types = {
+                'application/pdf',
+                'application/json',
+                'application/xml',
+                'text/plain',
+                'text/csv',
+                'text/html',
+            }
+            should_render_inline = (
+                content_type in inline_types
+                or content_type.startswith('image/')
+                or content_type.startswith('text/')
+                or content_type.startswith('audio/')
+                or content_type.startswith('video/')
+            )
         elif attachment.link:
             # Redirect to external link if it's a link
             from django.shortcuts import redirect
             return redirect(attachment.link)
         else:
             raise Http404('No content available')
-        
+
         response = HttpResponse(content, content_type=content_type)
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        disposition = 'inline' if should_render_inline else 'attachment'
+        response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
         return response
 
 
