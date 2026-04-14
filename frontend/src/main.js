@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import { plugin, defaultConfig } from '@formkit/vue'
 import '@formkit/themes/genesis'
+import { createPinia } from 'pinia'
 
 const auth0 = createAuth0({
         domain: import.meta.env.VITE_AUTH0_DOMAIN,
@@ -21,8 +22,10 @@ const auth0 = createAuth0({
 
 const app = createApp(App)
 
+const pinia = createPinia()
 app.use(auth0)
 app.use(router)
+app.use(pinia)
 app.use(plugin, defaultConfig)
 
 app.mount('#app')

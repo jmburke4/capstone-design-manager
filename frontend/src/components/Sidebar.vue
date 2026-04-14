@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 import apiService from '../services/api';
+import { useStudentStore } from '../stores/studentStore';
 
 const props = defineProps({
   userRole: { type: String, default: '' },
@@ -14,28 +15,18 @@ const router = useRouter();
 const route = useRoute();
 
 const { getAccessTokenSilently } = useAuth0();
-const hasRanked = ref(false);
-const isDeadlinePast = false;
-const isAssigned = false;
+const studentStore = useStudentStore();
+const isDeadlinePast = computed(() => studentStore.isDeadlinePast);
 
 onMounted(async () => {
-  if (props.userRole !== 'student') return;
-  try {
-    const token = await getAccessTokenSilently();
-    apiService.setToken(token);
-
-    // profile endpoint returns { type, data } — normalize to the inner data
-    const profileResp = await apiService.getProfile();
-    const profile = profileResp?.data ?? profileResp;
-    const studentId = profile?.id;
-
-    if (!studentId) return;
-
-    const prefsResp = await apiService.client.get('/preferences/');
-    hasRanked.value = Array.isArray(prefsResp.data) && prefsResp.data.some(p => p.student === studentId);
-  } catch (e) {
-    console.error('Sidebar: failed to detect existing preferences', e);
-  }
+    if (props.userRole !== 'student') return;
+    try {
+        const token = await getAccessTokenSilently();
+        apiService.setToken(token);
+        await studentStore.fetchProfileAndPrefs();
+    } catch (e) {
+        console.error('Sidebar: failed to initialize student store', e);
+    }
 });
 
 const menuItems = computed(() => {
@@ -45,13 +36,13 @@ const menuItems = computed(() => {
     items.push({ name: 'Dashboard', path: '/student' });
     items.push({ name: 'Project Gallery', path: '/student/projects' });
 
-    if (!isDeadlinePast) {
-      const rankLabel = hasRanked.value ? 'Edit Rankings' : 'Submit Rankings';
+        if (!isDeadlinePast.value) {
+            const rankLabel = studentStore.hasRanked ? 'Edit Rankings' : 'Submit Rankings';
       items.push({ name: rankLabel, path: '/student/submit' });
     }
-    if (isDeadlinePast && isAssigned) {
-      items.push({ name: 'View Assignment', path: '/student/assignment' });
-    }
+        if (isDeadlinePast.value && studentStore.isAssigned) {
+            items.push({ name: 'View Assignment', path: '/student/assignment' });
+        }
   } else if (props.userRole === 'sponsor') {
     items.push({ name: 'Dashboard', path: '/sponsor' });
     items.push({ name: 'Submit Project', path: '/sponsor/submit' });

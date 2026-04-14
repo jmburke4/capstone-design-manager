@@ -1,18 +1,20 @@
 <script setup>
-import { useAuth0 } from '@auth0/auth0-vue';
-import { onMounted, ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import apiService from '../services/api';
-import ProjectDetailsSidebar from './ProjectDetailsSidebar.vue';
+import { useAuth0 } from '@auth0/auth0-vue';
 import StudentProjectCard from './StudentProjectCard.vue';
+import ProjectDetailsSidebar from './ProjectDetailsSidebar.vue';
+import { useProjectsStore } from '../stores/projectsStore';
+import apiService from '../services/api';
 
 const router = useRouter();
 const { getAccessTokenSilently } = useAuth0();
+const projectsStore = useProjectsStore();
 
 // Reactive State
-const posts = ref([]); // Initialize as empty array to avoid v-for errors
-const loading = ref(true);
-const error = ref(null);
+const posts = computed(() => projectsStore.projects || []);
+const loading = computed(() => projectsStore.loading);
+const error = computed(() => projectsStore.error);
 const selectedProject = ref(null); // For sidebar details
 
 const sponsors = ref(new Map())
@@ -43,9 +45,9 @@ const fetchData = async () => {
 };
 
 const getSponsorDisplay = (project) => {
-  const sponsor = sponsors.value.get(project.sponsor);
+  const sponsor = sponsors.value.get(project?.sponsor);
   if (!sponsor) return 'Unknown';
-  return sponsor.organization || `${sponsor.first_name} ${sponsor.last_name}`;
+  return sponsor.organization || `${sponsor.first_name || ''} ${sponsor.last_name || ''}`.trim();
 }
 
 // Toggle sidebar
@@ -57,8 +59,23 @@ const closeDetails = () => {
   selectedProject.value = null;
 }
 
-// Trigger the fetch on mount
-onMounted(fetchData);
+onMounted(() => {
+  (async () => {
+    try {
+      const token = await getAccessTokenSilently();
+      apiService.setToken(token);
+      const [, sponsorsResp] = await Promise.all([
+        projectsStore.fetchProjects(),
+        apiService.client.get('/sponsors/')
+      ]);
+      (sponsorsResp.data || []).forEach((sponsor) => {
+        sponsors.value.set(sponsor.id, sponsor);
+      });
+    } catch (err) {
+      console.error('StudentProjectView initialization failed', err);
+    }
+  })();
+});
 </script>
 
 <template>
@@ -98,7 +115,6 @@ onMounted(fetchData);
 <style scoped>
 .project-grid {
   display: grid;
-  /* Creates a responsive grid that fits as many 350px cards as possible */
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
 }

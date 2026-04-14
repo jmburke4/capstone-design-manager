@@ -67,6 +67,28 @@ class ApiService {
     const response = await this.client.post('/feedback/', data);
     return response.data;
   }
+
+  async getStudent(studentId) {
+    const response = await this.client.get(`/students/${studentId}/`);
+    const data = response.data;
+    if (!data) return null;
+    // Return minimal student info to avoid exposing unnecessary PII
+    return {
+      id: data.id ?? studentId,
+      first_name: data.first_name ?? null,
+      last_name: data.last_name ?? null,
+      name: (data.first_name || data.last_name) ? `${data.first_name || ''}${data.first_name && data.last_name ? ' ' : ''}${data.last_name || ''}`.trim() : null
+    };
+  }
+
+  async getStudents(studentIds = []) {
+    // Fetch students in parallel and return a map id -> minimal student info (names only)
+    const unique = Array.from(new Set(studentIds.filter(Boolean)));
+    const results = await Promise.all(unique.map(id => this.getStudent(id).catch(() => null)));
+    const map = {};
+    unique.forEach((id, idx) => { map[String(id)] = results[idx]; });
+    return map;
+  }
 }
 
 export const apiService = new ApiService();
