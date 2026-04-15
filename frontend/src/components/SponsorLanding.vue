@@ -2,16 +2,28 @@
 import SponsorProjectCard from './SponsorProjectCard.vue';
 import apiService from '../services/api';
 import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 
 const { getAccessTokenSilently } = useAuth0();
+const route = useRoute();
+const router = useRouter();
 
 const currentSponsorId = ref(null);
 const projects = ref([]);
 const loading = ref(true);
 const error = ref(null);
+const flash = ref(null);
 
 onMounted(async () => {
+    if (route.query?.flash) {
+        flash.value = {
+            type: route.query.flash,
+            message: route.query.message || (route.query.flash === 'success' ? 'Saved successfully.' : 'Operation result.')
+        };
+        router.replace({ path: route.path, query: {} });
+    }
+
     try {
         const token = await getAccessTokenSilently();
         apiService.setToken(token);
@@ -39,6 +51,11 @@ onMounted(async () => {
 <template>
     <div class="inside-wrapper">
         <h1>Sponsor Dashboard</h1>
+        <div v-if="flash" :class="['info', flash.type === 'success' ? 'success' : 'error']">
+            <strong v-if="flash.type === 'success'">Success</strong>
+            <strong v-else>Notice</strong>
+            <p>{{ flash.message }}</p>
+        </div>
         <h2>Projects</h2>
         <p v-if="loading">Loading projects...</p>
         <p v-else-if="error">Unable to load projects.</p>

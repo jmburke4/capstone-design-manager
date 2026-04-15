@@ -86,7 +86,6 @@ watch([isAuthenticated, isLoading], ([authed, loading]) => {
         <div class="login-container">
                 <div class="login-card">
                         <h1>Capstone Project Manager</h1>
-                        <p class="subtitle">Welcome to the platform</p>
 
                         <div v-if="error === 'no_role'" class="error-message">
                                 <strong>Authentication Error</strong>
@@ -96,14 +95,12 @@ watch([isAuthenticated, isLoading], ([authed, loading]) => {
 
                         <!-- Email Verification Required -->
                         <div v-else-if="isUnverifiedEmail" class="verification-message">
-                                <div class="verification-icon">✉️</div>
                                 <h2>Verify Your Email</h2>
-                                <p>Please verify your email address before logging in.</p>
+                                <p>Check your inbox for a verification link. Make sure to
+                                        check your spam folder.</p>
                                 <p v-if="userEmail" class="verification-email">
                                         <strong>Email:</strong> {{ userEmail }}
                                 </p>
-                                <p class="verification-hint">Check your inbox for a verification link. Don't forget to
-                                        check your spam folder!</p>
                                 <button @click="clearError" class="btn-primary">
                                         Back to Login
                                 </button>
@@ -176,7 +173,7 @@ watch([isAuthenticated, isLoading], ([authed, loading]) => {
 
 h1 {
         font-size: 2.25rem;
-        margin: 0 0 0.5rem 0;
+        margin: 0 0 2rem 0;
         color: var(--text-default);
 }
 
@@ -224,8 +221,8 @@ button {
 }
 
 button:hover {
-        transform: scale(1.02);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        /* transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); */
 }
 
 .btn-student {
@@ -303,22 +300,10 @@ button:hover {
 }
 
 .btn-primary {
-        background-color: var(--accent-primary);
-        color: white;
         padding: 0.75rem 2rem;
-        font-size: 1rem;
-        font-weight: 600;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
 }
 
-.btn-primary:hover {
-        filter: brightness(0.9);
-        transform: scale(1.02);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
+
 
 /* Main action buttons */
 .main-actions {
