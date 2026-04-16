@@ -1,0 +1,38 @@
+.sidenav {
+    width: 130px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    float: left;
+    margin-left: 10px;
+    padding: 8px 0;
+}
+
+.sidenav a {
+    padding: 6px 8px 6px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+@media screen and (max-width: 900px) {
+    .sidenav {
+        position: static;
+        float: none;
+        width: auto;
+        margin-left: 0;
+    }
+
+    .main {
+        margin-left: 0;
+    }
+}
+
+@media screen and (max-height: 450px) {
+    .sidenav {
+        padding-top: 15px;
+    }
+
+    .sidenav a {
+        font-size: 18px;
+    }
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Project Documentation - Capstone Design Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="sidenav.css">
+    <!-- Only page specific styles go here -->
+    <style>
+        iframe {
+            width: 100%;
+            min-height: 700px;
+            border: 1px solid var(--crimson);
+        }
+    </style>
+    <script src="markdown.js"></script>
+    <script>
+        window.onload = function () {
+            renderMarkdown('test-strategy', './assets/about/test-strategy.md');
+        };
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1>Capstone Design Manager</h1>
+        <p>Project Documentation</p>
+    </header>
+
+    <div class="sidenav">
+        <a href="#projectvideo">Project Video</a>
+        <a href="#backlog">Backlog</a>
+        <a href="#cyber">Cyber Security</a>
+        <a href="#features">Features</a>
+        <a href="#deployment">Deployment</a>
+        <a href="#userguide">User Guide</a>
+        <a href="#development">Development</a>
+        <a href="#faqs">FAQs</a>
+        <a href="#testing">Testing</a>
+        <p><a href="index.html">← Home</a></p>
+    </div>
+
+    <main class="main">
+
+        <section id="projectvideo">
+            <a href="#projectvideo">
+                <h2>Project Video</h2>
+            </a>
+        </section>
+
+        <section id="backlog">
+            <a href="#backlog">
+                <h2>Backlog</h2>
+            </a>
+        </section>
+
+        <section id="cyber">
+            <a href="#cyber">
+                <h2>Cyber Security</h2>
+            </a>
+        </section>
+
+        <section id="features">
+            <a href="#features">
+                <h2>Features</h2>
+            </a>
+        </section>
+
+        <section id="deployment">
+            <a href="#deployment">
+                <h2>Deployment</h2>
+            </a>
+        </section>
+
+        <section id="userguide">
+            <a href="#userguide">
+                <h2>User Guide</h2>
+            </a>
+        </section>
+
+        <section id="development">
+            <a href="#development">
+                <h2>Development</h2>
+            </a>
+        </section>
+
+        <section id="faqs">
+            <a href="#faqs">
+                <h2>FAQs</h2>
+            </a>
+        </section>
+
+        <section id="testing">
+            <a href="#testing">
+                <h2>Testing</h2>
+            </a>
+            <iframe id="test-strategy"></iframe>
+        </section>
+
+        <section>
+            <p><a href="index.html">← Back to Home</a></p>
+        </section>
+
+    </main>
+    <footer>
+        © 2026 Capstone Design Manager · Inspired by The University of Alabama
+    </footer>
+</body>
+
+</html>
