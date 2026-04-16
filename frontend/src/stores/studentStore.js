@@ -87,8 +87,8 @@ export const useStudentStore = defineStore('student', {
 
         // Fetch current semester and assignment deadline (best-effort).
         try {
-          const semResp = await apiService.client.get('/semesters/')
-          const sem = semResp?.data ?? null
+          const semResp = await apiService.getCurrentSemester()
+          const sem = semResp?.data ?? semResp ?? null
           this.currentSemester = sem
           this.assignmentDate = sem?.assignment_date ?? null
         } catch (semErr) {

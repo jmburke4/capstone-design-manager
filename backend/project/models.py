@@ -123,6 +123,8 @@ class Attachment(models.Model):
         if bool(self.file) == bool(self.link):
             if not self.file and not self.link:
                 raise ValidationError('Provide a file, link, or content.')
+            elif self.file and self.link:
+                raise ValidationError('Provide only a file, link, or content.')
 
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -264,7 +264,7 @@ class TestAssignment:
             semester=sample_semester,
             project=sample_project,
         )
-        assert str(assignment) == f"{sample_student} ({sample_semester})"
+        assert str(assignment) == f"{sample_project} -> {sample_student} ({sample_semester})"
 
     def test_assignment_generate_id(self, sample_student, sample_semester, sample_project):
         assignment = Assignment(
