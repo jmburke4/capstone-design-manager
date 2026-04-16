@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuth0 } from '@auth0/auth0-vue';
 import apiService from '../services/api';
@@ -15,6 +15,7 @@ const router = useRouter();
 const route = useRoute();
 
 const { getAccessTokenSilently } = useAuth0();
+const studentStore = useStudentStore();
 const hasRanked = ref(false);
 const isDeadlinePast = false;
 const isAssigned = false;
