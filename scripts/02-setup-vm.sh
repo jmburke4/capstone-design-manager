@@ -163,7 +163,31 @@ EOF
 sudo iptables-restore < /etc/iptables/rules.v4
 sudo systemctl enable netfilter-persistent.service
 sudo systemctl start netfilter-persistent.service
-echo " ✓ Port forwarding configured and persisted"
+
+# Verify iptables rules are active
+echo ""
+echo "Verifying iptables rules..."
+sleep 2
+if sudo iptables -t nat -L PREROUTING -n | grep -q "REDIRECT.*8080"; then
+    echo " ✓ Port 80→8080 redirect rule verified"
+else
+    echo " ⚠ WARNING: iptables redirect rule not found. Attempting to restore..."
+    sudo iptables-restore < /etc/iptables/rules.v4
+    sleep 2
+    if sudo iptables -t nat -L PREROUTING -n | grep -q "REDIRECT.*8080"; then
+        echo " ✓ Port 80→8080 redirect rule restored"
+    else
+        echo " ✗ ERROR: Failed to configure iptables rules. Port 80 will not be reachable."
+        exit 1
+    fi
+fi
+
+if sudo iptables -t nat -L PREROUTING -n | grep -q "REDIRECT.*8443"; then
+    echo " ✓ Port 443→8443 redirect rule verified"
+else
+    echo " ✗ ERROR: Port 443→8443 redirect rule not found"
+    exit 1
+fi
 
 # Install utilities
 echo ""
