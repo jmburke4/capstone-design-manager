@@ -14,10 +14,9 @@
 #############################################################################
 set -e
 
-PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-b"
-VM_NAME="capstone-prod-vm"
-APP_DIR="capstone"
+# Source configuration file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
 
 # All SSH/SCP is routed through IAP
 SSH_FLAGS="--zone=$ZONE --project=$PROJECT_ID --tunnel-through-iap"
@@ -115,8 +114,17 @@ set -e
 cd ~/capstone
 echo "=== Deployment on VM ==="
 
+# Ensure clean nginx config directory
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 1/8 — Pulling latest code from GitHub (branch: Cloud-V2)"
+echo "Step 0/9 — Preparing nginx configs"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+rm -f nginx/conf.d/default.conf nginx/conf.d/redirect.conf nginx/conf.d/https.conf
+mkdir -p nginx/conf.d
+echo " ✓ Clean nginx config directory prepared"
+echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 1/9 — Pulling latest code from GitHub (branch: Cloud-V2)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 git fetch origin
 git checkout Cloud-V2
@@ -125,7 +133,7 @@ echo " ✓ Code updated"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 2/8 — Building frontend (Vue.js) for production"
+echo "Step 2/9 — Building frontend (Vue.js) for production"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 cd frontend
 npm ci --no-audit --no-fund
@@ -133,30 +141,37 @@ npm run build
 cd ..
 echo " ✓ Frontend built (dist/ directory created)"
 
+# Verify dist exists for nginx volume mount
+if [ ! -d "frontend/dist" ]; then
+    echo " ✗ ERROR: frontend/dist directory not found after build"
+    exit 1
+fi
+echo " ✓ Frontend dist directory verified"
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 3/8 — Stopping existing containers"
+echo "Step 3/9 — Stopping existing containers"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 $HOME/bin/docker compose -f docker-compose.prod.yml down 2>/dev/null || echo " ℹ No containers to stop"
 echo " ✓ Containers stopped"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 4/8 — Building Docker images"
+echo "Step 4/9 — Building Docker images"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 DOCKER_BUILDKIT=1 $HOME/bin/docker compose -f docker-compose.prod.yml build --no-cache --progress plain
 echo " ✓ Images built"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 5/8 — Starting containers"
+echo "Step 5/9 — Starting containers"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 $HOME/bin/docker compose -f docker-compose.prod.yml up -d
 echo " ✓ Containers started"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 6/8 — Waiting for database to be ready"
+echo "Step 6/9 — Waiting for database to be ready"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 for i in {1..30}; do
     if $HOME/bin/docker compose -f docker-compose.prod.yml exec -T db pg_isready -U postgres 2>/dev/null | grep -q "accepting connections"; then
@@ -169,7 +184,7 @@ done
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 7/8 — Running Django migrations and collectstatic"
+echo "Step 7/9 — Running Django migrations and collectstatic"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 $HOME/bin/docker compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput
 $HOME/bin/docker compose -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput
@@ -177,7 +192,7 @@ echo " ✓ Migrations and static files complete"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Step 8/8 — Health checks"
+echo "Step 8/9 — Health checks"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 $HOME/bin/docker compose -f docker-compose.prod.yml ps
 
@@ -198,6 +213,12 @@ else
     echo " ⚠ Nginx health check failed — check logs"
     $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=20 nginx || true
 fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Step 9/9 — Final nginx config check"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+$HOME/bin/docker compose -f docker-compose.prod.yml exec -T nginx nginx -t || echo " ⚠ Nginx config test failed"
 
 echo ""
 echo "=== Deployment on VM Complete ==="

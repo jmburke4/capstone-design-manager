@@ -11,15 +11,16 @@
 #############################################################################
 set -e
 
+# Source configuration file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
+
 # Disable gcloud interactive prompts globally for this script run.
 # This prevents the script from ever getting stuck waiting for a Y/n prompt,
 # confirmation dialog, or any other interactive input.
 export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
-PROJECT_ID="capstone-design-app-prod"
 REGION="us-central1"
-ZONE="us-central1-b"
-VM_NAME="capstone-prod-vm"
 MACHINE_TYPE="e2-micro" # Free tier eligible
 DISK_SIZE="30GB"
 IMAGE_FAMILY="ubuntu-2204-lts"

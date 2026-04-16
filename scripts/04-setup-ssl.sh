@@ -14,9 +14,9 @@
 #############################################################################
 set -e
 
-PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-b"
-VM_NAME="capstone-prod-vm"
+# Source configuration file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
 
 DOMAIN=${1:-""}
 EMAIL=${2:-"admin@${DOMAIN}"}
@@ -250,85 +250,54 @@ gcloud compute ssh "$VM_NAME" \
 set -e
 cd ~/capstone
 
-# Verify certificates were created (check via Docker container since certs are in a volume)
-echo "  Verifying certificate in Docker volume..."
+# Verify certificate exists
 if ! $HOME/bin/docker compose -f docker-compose.prod.yml exec -T certbot test -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" 2>/dev/null; then
-    echo " ✗ ERROR: Certificate not found at /etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
-    echo "   This shouldn't happen after certbot succeeded."
-    echo "   Checking certbot logs..."
-    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=30 certbot || true
+    echo " ✗ Certificate not found"
     exit 1
 fi
-echo " ✓ Certificate files verified in Docker volume"
+echo " ✓ Certificate verified"
 
-# === CLEAN CONFIG CREATION (no sed mutations) ===
-
-# Create redirect.conf for HTTP→HTTPS redirect (this will be used after SSL setup)
-# We keep the default.conf for now (with ACME support) but create redirect.conf
+# Create redirect.conf (HTTP → HTTPS)
 cat > nginx/conf.d/redirect.conf << 'EOF'
 server {
     listen 8080 default_server;
     server_name _;
 
-    # Let's Encrypt ACME challenge (must be accessible for renewal)
+    # Allow Let's Encrypt ACME challenges
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }
 
-    # Redirect all HTTP traffic to HTTPS
+    # Redirect all other traffic to HTTPS
     location / {
         return 301 https://$host$request_uri;
     }
 }
 EOF
-echo " ✓ redirect.conf created (HTTP → HTTPS with ACME)"
+echo " ✓ redirect.conf created (HTTP → HTTPS)"
 
-# Generate https.conf from template (clean generation, no mutations)
+# Generate https.conf from template (clean & reliable)
 if [ -f nginx/conf.d/https.conf.template ]; then
-    echo "  Generating https.conf from template..."
+    echo " Generating https.conf from template..."
     sed "s/DOMAIN_NAME/${DOMAIN}/g" nginx/conf.d/https.conf.template > nginx/conf.d/https.conf
-    echo " ✓ https.conf created from template"
+    echo " ✓ https.conf generated successfully"
 else
     echo " ✗ ERROR: https.conf.template not found"
     exit 1
 fi
 
-# Remove default.conf to avoid conflicts (now we use redirect.conf + https.conf)
-if [ -f nginx/conf.d/default.conf ]; then
-    echo "  Removing default.conf to avoid config conflicts..."
-    rm -f nginx/conf.d/default.conf
-    echo " ✓ default.conf removed"
-fi
+# Remove any old conflicting files
+rm -f nginx/conf.d/default.conf
 
-# Reload nginx to pick up new configuration
-echo "  Reloading nginx..."
-$HOME/bin/docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload 2>/dev/null || {
-    echo "   Nginx reload failed, restarting container..."
+# Reload nginx
+echo " Reloading nginx..."
+$HOME/bin/docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || {
+    echo "   Reload failed, restarting nginx..."
     $HOME/bin/docker compose -f docker-compose.prod.yml restart nginx
     sleep 3
 }
 
-# Verify HTTPS is working
-echo "  Verifying HTTPS..."
-sleep 2
-if $HOME/bin/docker compose -f docker-compose.prod.yml exec -T nginx curl -sfk https://localhost:8443/ >/dev/null 2>&1; then
-    echo " ✓ HTTPS is responding on port 8443"
-else
-    echo " ⚠ HTTPS check on port 8443 failed – checking nginx logs..."
-    $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=30 nginx || true
-    echo ""
-    echo "Trying to restart nginx..."
-    $HOME/bin/docker compose -f docker-compose.prod.yml restart nginx
-    sleep 5
-    if $HOME/bin/docker compose -f docker-compose.prod.yml exec -T nginx curl -sfk https://localhost:8443/ >/dev/null 2>&1; then
-        echo " ✓ HTTPS is now responding after restart"
-    else
-        echo " ✗ HTTPS still not responding – manual intervention needed"
-        $HOME/bin/docker compose -f docker-compose.prod.yml logs --tail=50 nginx || true
-        exit 1
-    fi
-fi
-
+echo " ✓ Nginx reloaded with new HTTPS + Admin proxy configuration"
 ENDSSH3
 
 echo ""

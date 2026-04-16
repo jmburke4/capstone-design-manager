@@ -10,9 +10,10 @@
 
 set -e
 
-PROJECT_ID="capstone-design-app-prod"
-ZONE="us-central1-b"
-VM_NAME="capstone-prod-vm"
+# Source configuration file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/config.sh"
+
 DOMAIN=${1:-""}  # Optional domain parameter
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
