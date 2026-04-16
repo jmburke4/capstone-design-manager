@@ -46,7 +46,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - static-files:/usr/src/app/staticfiles  # FIXED: Match Dockerfile path (/usr/src/app from Dockerfile)
+      - static-files:/usr/src/app/staticfiles
     restart: unless-stopped
     networks:
       - app-network
