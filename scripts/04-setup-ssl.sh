@@ -99,8 +99,12 @@ else
     exit 1
 fi
 
-echo "Removing default.conf..."
-rm -f nginx/conf.d/default.conf
+echo "Moving nginx files to prevent conflicts..."
+if [ -f nginx/conf.d/default.conf ]; then
+    mv nginx/conf.d/default.conf nginx/conf.d/backup.default.conf
+    echo " ✓ Renamed default.conf → backup.default.conf"
+fi
+
 
 echo "Reloading nginx..."
 $HOME/bin/docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || {
