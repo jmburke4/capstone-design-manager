@@ -10,6 +10,7 @@ const route = useRoute();
 
 const ROLE_KEY = 'https://backend-api-capstone/roles';
 const showDebug = ref(false);
+const isProduction = computed(() => import.meta.env.PROD);
 
 function getUserRole() {
   if (!user.value) return null;
@@ -71,8 +72,8 @@ const toggleDebug = () => {
       </div> 
     </div>
     
-    <!-- Debug Overlay -->
-    <div v-if="showDebug" class="debug-overlay">
+    <!-- Debug Overlay - Hidden in Production -->
+    <div v-if="showDebug && !isProduction" class="debug-overlay">
       <div class="debug-header">
         <span>DEBUG INFO</span>
         <button @click="toggleDebug" class="debug-close">×</button>
@@ -113,9 +114,9 @@ const toggleDebug = () => {
       </div>
     </div>
     
-    <!-- Debug Toggle Button -->
+    <!-- Debug Toggle Button - Hidden in Production -->
     <button 
-      v-if="!showDebug" 
+      v-if="!showDebug && !isProduction" 
       @click="toggleDebug" 
       class="debug-toggle"
     >
