@@ -11,6 +11,7 @@ const router = useRouter();
 const sponsorId = ref(null);
 const sponsorProjects = ref([]);
 const projectOptions = ref([]);
+const loading = ref(true);
 const showConfirm = ref(false);
 const pendingSubmission = ref(null);
 const formData = ref({
@@ -23,15 +24,16 @@ const formData = ref({
 })
 
 onMounted(async () => {
+  try {
     const token = await getAccessTokenSilently();
     apiService.setToken(token);
     const profileResponse = await apiService.getProfile();
     sponsorId.value = profileResponse.data.id ?? null;
 
-        if (!sponsorId.value) {
-            sponsorProjects.value = [];
-            return;
-        }
+    if (!sponsorId.value) {
+      sponsorProjects.value = [];
+      return;
+    }
 
     if (sponsorId.value) {
       sponsorProjects.value = await apiService.getProjectsBySponsor(sponsorId.value);
@@ -41,6 +43,9 @@ onMounted(async () => {
       }));
       formData.value.project = sponsorProjects.value?.[0]?.id ?? null;
     }
+  } finally {
+    loading.value = false;
+  }
 });
 
 function loadProject(projectId) {
@@ -116,7 +121,15 @@ async function handleSubmission() {
     <h1>Edit Project</h1>
     <div class="card">
     <div class="form-container">
+        <p v-if="loading">Loading projects...</p>
+
+        <div v-else-if="sponsorProjects.length === 0">
+          <p>You have no projects submitted yet.</p>
+          <p><router-link  to="/sponsor/submit">Submit a Project →</router-link></p>
+        </div>
+
         <FormKit 
+        v-else
         type="form" 
         id="sponsor-form"
         v-model="formData"

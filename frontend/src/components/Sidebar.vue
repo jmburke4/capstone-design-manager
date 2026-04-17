@@ -140,6 +140,10 @@ const handleLogout = () => emit('logout');
 .nav-item:hover, .nav-item.active {
     background: var(--accent-dark);
 }
+.nav-text {
+  -webkit-user-select: none;
+  user-select: none;
+}
 .user-logo {
   width: 24px;
   height: 24px;

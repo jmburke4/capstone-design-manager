@@ -57,21 +57,27 @@ onMounted(async () => {
             <p>{{ flash.message }}</p>
         </div>
         <h2>Projects</h2>
-        <p v-if="loading">Loading projects...</p>
-        <p v-else-if="error">Unable to load projects.</p>
+        <div v-if="loading" class="card"><p>Loading projects...</p></div>
+        <div v-else-if="error" class="info error">Unable to load projects.</div>
 
         <div v-else-if="projects.length" class="cards-list">
             <div v-for="project in projects" :key="project.id" class="card-item">
                 <SponsorProjectCard :project="project" />
             </div>
     </div>
-        <p v-else>No projects submitted yet.</p>
+        <div v-else class="card empty">
+            <p>You have no projects submitted yet.</p>
+            <p><router-link to="sponsor/submit">Submit a Project →</router-link></p>
+        </div>
     </div>
 </template>
 
 <style scoped>
 h2 {
     margin: 0;
+}
+.card {
+    margin-top: 1rem;
 }
 .inside-wrapper {
     margin: 0 auto;
