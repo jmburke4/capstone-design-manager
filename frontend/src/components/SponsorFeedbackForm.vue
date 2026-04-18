@@ -3,8 +3,11 @@ import { FormKit } from '@formkit/vue';
 import apiService from '../services/api';
 import { ref, onMounted, watch } from 'vue';
 import { useAuth0 } from '@auth0/auth0-vue';
+import { useRouter } from 'vue-router';
+import ConfirmationModal from './ConfirmationModal.vue';
 
 const { getAccessTokenSilently } = useAuth0()
+const router = useRouter();
 
 const projectOptions = ref([]);
 const sponsorId = ref(null);
@@ -12,6 +15,8 @@ const selectedSemesterId = ref(null);
 const semesters = ref([]);
 const sponsorProjects = ref([]);
 const selectedProjectId = ref(null);
+const showConfirm = ref(false);
+const pendingSubmission = ref(null);
 
 onMounted(async () => {
   try {
@@ -55,7 +60,26 @@ watch(selectedSemesterId, async (newId) => {
   }));
 });
 
-async function handleSubmission(data) {
+const openConfirm = (data) => {
+  pendingSubmission.value = data;
+  showConfirm.value = true;
+};
+
+const cancelConfirm = () => {
+  showConfirm.value = false;
+  pendingSubmission.value = null;
+};
+
+async function handleSubmission() {
+  const data = pendingSubmission.value;
+
+  if (!data) {
+    cancelConfirm();
+    return;
+  }
+
+  showConfirm.value = false;
+  pendingSubmission.value = null;
 
   try {
     const token = await getAccessTokenSilently();
@@ -70,7 +94,10 @@ async function handleSubmission(data) {
 
     await apiService.createFeedback(feedbackPayload);
 
-    alert("Feedback submitted successfully!")
+    router.push({
+      path: '/sponsor',
+      query: { flash: 'success', message: 'Your feedback has been submitted.' }
+    });
 
   } catch (error) {
     console.error("Submission failed:", error)
@@ -97,7 +124,7 @@ async function handleSubmission(data) {
         type="form" 
         id="sponsor-form"
         submit-label="Submit Sponsor Feedback"
-        @submit="handleSubmission"
+        @submit="openConfirm"
         >
 
         <!-- Semester Selection Dropdown -->
@@ -118,17 +145,25 @@ async function handleSubmission(data) {
             v-model="selectedProjectId"
             :options="projectOptions"
             validation="required"
-            outer-class="bubble-group"
             />
 
         <FormKit type="group" name="sponsor_info">
             <FormKit
             type="textarea"
             name="feedback"
+            label="Feedback"
             validation="required"
             />
         </FormKit>
         </FormKit>
+
+        <ConfirmationModal
+          :show="showConfirm"
+          title="Submit sponsor feedback?"
+          message="Confirm that you want to submit this feedback."
+          @confirm="handleSubmission"
+          @cancel="cancelConfirm"
+        />
     </div>
     </div>
     </div>
@@ -136,7 +171,25 @@ async function handleSubmission(data) {
 
 <style scoped>
 hr {
-  margin-top: 2rem;
+  margin: 2rem 0;
+}
+
+/* override formkit radio buttons */
+:deep(.formkit-fieldset) {
+  border: none !important;
+  padding: 0;
+  margin: 0;
+}
+:deep(.formkit-legend) {
+  display: block;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-size: 1rem;
+}
+:deep(.formkit-options){
+  border: var(--fk-border);
+  border-radius: var(--fk-border-radius);
+  padding: 1rem !important;
 }
 
 .container {
@@ -149,61 +202,8 @@ hr {
   padding: 1.5rem;
 }
 
-/* ----------------------------
-   SEMESTER DROPDOWN spacing
------------------------------*/
 .form-container :deep(.formkit-outer) {
   margin-bottom: 1rem;
 }
 
-/* ----------------------------
-   BUBBLE RADIO LAYOUT
------------------------------*/
-
-/* flex layout for radio options */
-.bubble-group :deep(.formkit-options) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 1rem 0;
-}
-
-/* each option wrapper */
-.bubble-group :deep(.formkit-option) {
-  display: inline-flex;
-}
-
-/* hide native radio input */
-.bubble-group :deep(input[type="radio"]) {
-  display: none;
-}
-
-/* bubble base style */
-.bubble-group :deep(label) {
-  padding: 10px 16px;
-  border: 2px solid #ccc;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-  display: inline-block;
-}
-
-/* hover */
-.bubble-group :deep(label:hover) {
-  border-color: #888;
-}
-
-/* selected state (FormKit sets aria-checked/data-checked on wrapper) */
-.bubble-group :deep(.formkit-option[data-checked="true"] label),
-.bubble-group :deep(.formkit-option[aria-checked="true"] label) {
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
-}
-
-/* click feedback */
-.bubble-group :deep(label:active) {
-  transform: scale(0.97);
-}
 </style>

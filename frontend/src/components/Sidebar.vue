@@ -75,19 +75,23 @@ const handleLogout = () => emit('logout');
             </div>
         </nav>
         
-        <div class="profile-section" v-if="userRole === 'sponsor'">
-            <div
+        <div class="profile-section">
+            <div v-if="userRole === 'sponsor'"
                 class="nav-item"
                 :class="{ active: isActive('/profile/edit') }"
                 @click="router.push('/profile/edit')"
             >
                 <span class="nav-text">Edit Profile</span>
             </div>
+            <div class="nav-item" @click="handleLogout">
+                <span class="nav-text">Logout</span>
+            </div>
         </div>
         
         <footer class="user-info">
+            <div class="user-logo">{{ userName.charAt(0).toUpperCase() }}</div>
             <span>{{ userName || 'User' }}</span>
-            <span class="logout-link" @click="handleLogout">Logout</span>
+            <!-- <span class="logout-link" @click="handleLogout">Logout</span> -->
         </footer>
     </aside>
 </template>
@@ -117,8 +121,11 @@ const handleLogout = () => emit('logout');
 
 .profile-section {
     border-top: 1px solid rgba(255, 255, 255, 0.2);
-    padding-top: 0.5rem;
-    margin-top: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
 }
 
 .nav-item {
@@ -133,12 +140,31 @@ const handleLogout = () => emit('logout');
 .nav-item:hover, .nav-item.active {
     background: var(--accent-dark);
 }
-.user-info, .user-info span {
+.nav-text {
+  -webkit-user-select: none;
+  user-select: none;
+}
+.user-logo {
+  width: 24px;
+  height: 24px;
+  background: white;
+  color: var(--accent-primary);
+  flex: 0 0 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: bold;
+}
+.user-info  {
+    display: flex;
+    margin-top: 1rem;
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+.user-info span {
     font-weight: 400;
     font-size: 1rem;
-    display: flex;
-    justify-content: space-between;
-    margin-top: auto;
 }
 .logout-link {
     cursor: pointer;

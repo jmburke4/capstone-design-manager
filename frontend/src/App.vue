@@ -26,7 +26,7 @@ function getUserRole() {
 const userRole = computed(() => getUserRole());
 const userName = computed(() => {
   // return 'nickname', i.e. the user's email before the domain
-  return user.value.nickname || '';
+  return user.value.nickname || 'User';
 });
 
 const showSidebar = computed(() => {

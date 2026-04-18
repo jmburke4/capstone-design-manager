@@ -2,42 +2,91 @@
 import { FormKit } from '@formkit/vue';
 import apiService from '../services/api';
 import { useAuth0 } from '@auth0/auth0-vue';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import ConfirmationModal from './ConfirmationModal.vue';
 
 const { getAccessTokenSilently } = useAuth0();
+const router = useRouter();
+const sponsorId = ref(null);
+const tooManyProjects = ref(false);
+const showConfirm = ref(false);
+const pendingSubmission = ref(null);
 
-async function handleSubmission(data) {
+async function loadProjectLimitState() {
+  const token = await getAccessTokenSilently();
+  apiService.setToken(token);
+
+  const profileResponse = await apiService.getProfile();
+  sponsorId.value = profileResponse.data.id ?? null;
+
+  if (!sponsorId.value) {
+    tooManyProjects.value = false;
+    return;
+  }
+
+  const currentProjects = await apiService.getProjectsBySponsor(sponsorId.value);
+  const projectCount = currentProjects.length;
+  const projectNumLimit = Number(profileResponse.data.projects_allowed);
+
+  tooManyProjects.value = projectCount >= projectNumLimit;
+}
+
+onMounted(async () => {
+  try {
+    await loadProjectLimitState();
+  } catch (error) {
+    console.error('Failed to load project limit state:', error);
+    tooManyProjects.value = false;
+  }
+});
+
+const openConfirm = (data) => {
+  if (tooManyProjects.value) {
+    alert('You have reached the maximum number of allowed projects.');
+    return;
+  }
+
+  pendingSubmission.value = data;
+  showConfirm.value = true;
+};
+
+const cancelConfirm = () => {
+  showConfirm.value = false;
+  pendingSubmission.value = null;
+};
+
+async function handleSubmission() {
+  const data = pendingSubmission.value;
+
+  if (!data || tooManyProjects.value) {
+    cancelConfirm();
+    return;
+  }
+
+  showConfirm.value = false;
+  pendingSubmission.value = null;
 
   try {
-    const token = await getAccessTokenSilently();
-    apiService.setToken(token);
-
-    const profileResponse = await apiService.getProfile();
-
-    const sponsorId = profileResponse.data.id;
-    const currentProjects = await apiService.getProjectsBySponsor(sponsorId);
-    const projectCount = currentProjects.length;
-    const projectNumLimit = Number(profileResponse.data.projects_allowed);
-
-    if (projectCount >= projectNumLimit) {
-      throw new Error("You have reached the maximum number of allowed projects.");
-    }
-
     const projectPayload = {
       name: data.project_details.name,
       description: data.project_details.description,
       website: data.project_details.website || null,
-      sponsor: sponsorId,
+      sponsor: sponsorId.value,
       sponsor_availability: data.sponsor_info.availability
     }
 
     await apiService.createProject(projectPayload);
 
-    alert("Project submitted successfully!")
+    router.push({
+      path: '/sponsor',
+      query: { flash: 'success', message: 'Your project proposal has been submitted.' }
+    });
 
   } catch (error) {
     console.error("Submission failed:", error)
     if (error instanceof Error) {
-      alert(error.message); // e.g. "You have reached the maximum number of allowed projects."
+      alert(error.message); 
     } else {
       // fallback for unexpected errors
       alert("Submission failed.");
@@ -50,13 +99,17 @@ async function handleSubmission(data) {
 <template>
     <div class="container">
     <h1>Project Submission</h1>
+    <div v-if="tooManyProjects" class="warning-block" role="alert">
+          You have reached the maximum number of allowed projects, so this form is currently disabled.
+    </div>
     <div class="card">
     <div class="form-container">
         <FormKit 
         type="form" 
         id="sponsor-form"
         submit-label="Submit Project Proposal"
-        @submit="handleSubmission"
+        :submit-attrs="{ disabled: tooManyProjects }"
+      @submit="openConfirm"
         >
 
         <div class="form-intro">
@@ -100,6 +153,7 @@ async function handleSubmission(data) {
             name="company_name"
             label="Company/Organization"
             validation="required"
+            :disabled="tooManyProjects"
             />
 
             <FormKit
@@ -107,6 +161,7 @@ async function handleSubmission(data) {
             name="contact_email"
             label="Primary Contact Email"
             validation="required|email"
+            :disabled="tooManyProjects"
             />
 
             <FormKit
@@ -115,6 +170,7 @@ async function handleSubmission(data) {
             label="Sponsor Availability"
             validation="required"
             help="State days of the week and the respective times of day you are available (Morning/Afternoon)"
+            :disabled="tooManyProjects"
             />
         </FormKit>
 
@@ -127,6 +183,7 @@ async function handleSubmission(data) {
             name="name"
             label="Project Name"
             validation="required|length:5,100"
+            :disabled="tooManyProjects"
             />
             
             <FormKit
@@ -135,6 +192,7 @@ async function handleSubmission(data) {
             label="Project/Company Website"
             placeholder="https://..."
             validation="url"
+            :disabled="tooManyProjects"
             />
 
             <FormKit
@@ -142,9 +200,18 @@ async function handleSubmission(data) {
             name="description"
             label="Project Description"
             validation="required|length:20,2000"
+            :disabled="tooManyProjects"
             />
         </FormKit>
         </FormKit>
+
+          <ConfirmationModal
+            :show="showConfirm"
+            title="Submit project proposal?"
+            message="Confirm that you want to submit this project proposal."
+            @confirm="handleSubmission"
+            @cancel="cancelConfirm"
+          />
     </div>
     </div>
     </div>
@@ -158,5 +225,15 @@ hr {
   text-align: left;
   max-width: var(--max-content-width);
   margin: 0 auto;
+}
+
+.warning-block {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #d97706;
+  border-radius: 0.5rem;
+  background: #fffbeb;
+  color: #92400e;
+  font-weight: 600;
 }
 </style>

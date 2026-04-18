@@ -2,12 +2,18 @@
 import { useAuth0 } from '@auth0/auth0-vue';
 import { FormKit } from '@formkit/vue';
 import { onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import ConfirmationModal from './ConfirmationModal.vue';
 import apiService from '../services/api';
 
 const { getAccessTokenSilently } = useAuth0();
+const router = useRouter();
 const sponsorId = ref(null);
 const sponsorProjects = ref([]);
 const projectOptions = ref([]);
+const loading = ref(true);
+const showConfirm = ref(false);
+const pendingSubmission = ref(null);
 const formData = ref({
   project_details: {
     name: '',
@@ -18,15 +24,16 @@ const formData = ref({
 })
 
 onMounted(async () => {
+  try {
     const token = await getAccessTokenSilently();
     apiService.setToken(token);
     const profileResponse = await apiService.getProfile();
     sponsorId.value = profileResponse.data.id ?? null;
 
-        if (!sponsorId.value) {
-            sponsorProjects.value = [];
-            return;
-        }
+    if (!sponsorId.value) {
+      sponsorProjects.value = [];
+      return;
+    }
 
     if (sponsorId.value) {
       sponsorProjects.value = await apiService.getProjectsBySponsor(sponsorId.value);
@@ -36,6 +43,9 @@ onMounted(async () => {
       }));
       formData.value.project = sponsorProjects.value?.[0]?.id ?? null;
     }
+  } finally {
+    loading.value = false;
+  }
 });
 
 function loadProject(projectId) {
@@ -55,7 +65,26 @@ watch(
   }
 )
 
-async function handleSubmission(data) {
+const openConfirm = (data) => {
+  pendingSubmission.value = data;
+  showConfirm.value = true;
+}
+
+const cancelConfirm = () => {
+  showConfirm.value = false;
+  pendingSubmission.value = null;
+}
+
+async function handleSubmission() {
+  const data = pendingSubmission.value;
+
+  if (!data) {
+    cancelConfirm();
+    return;
+  }
+
+  showConfirm.value = false;
+  pendingSubmission.value = null;
 
   try {
     const projectPayload = {
@@ -69,12 +98,15 @@ async function handleSubmission(data) {
     const projectId = data.project;
     await apiService.putProject(projectPayload, projectId);
 
-    alert("Project edited successfully!")
+    router.push({
+      path: '/sponsor',
+      query: { flash: 'success', message: 'Your project has been updated.' }
+    });
 
   } catch (error) {
     console.error("Submission failed:", error)
     if (error instanceof Error) {
-      alert(error.message); // e.g. "You have reached the maximum number of allowed projects."
+      alert(error.message);
     } else {
       // fallback for unexpected errors
       alert("Submission failed.");
@@ -89,12 +121,20 @@ async function handleSubmission(data) {
     <h1>Edit Project</h1>
     <div class="card">
     <div class="form-container">
+        <p v-if="loading">Loading projects...</p>
+
+        <div v-else-if="sponsorProjects.length === 0">
+          <p>You have no projects submitted yet.</p>
+          <p><router-link  to="/sponsor/submit">Submit a Project →</router-link></p>
+        </div>
+
         <FormKit 
+        v-else
         type="form" 
         id="sponsor-form"
         v-model="formData"
         submit-label="Edit Your Project"
-        @submit="handleSubmission"
+        @submit="openConfirm"
         >
 
         <FormKit
@@ -107,8 +147,7 @@ async function handleSubmission(data) {
 
             <hr />
 
-        <FormKit type="group" name="project_details">
-            <h3>Project Details</h3>
+        <FormKit type="group" name="project_details" class="project_details">
             <FormKit
             type="text"
             name="name"
@@ -139,6 +178,14 @@ async function handleSubmission(data) {
             help="State days of the week and the respective times of day you are available (Morning/Afternoon)"
             />
         </FormKit>
+
+        <ConfirmationModal
+          :show="showConfirm"
+          title="Save project changes?"
+          message="Confirm that you want to save these edits to the project."
+          @confirm="handleSubmission"
+          @cancel="cancelConfirm"
+        />
         </FormKit>
     </div>
     </div>
@@ -147,7 +194,7 @@ async function handleSubmission(data) {
 
 <style scoped>
 hr {
-  margin-top: 2rem;
+  margin: 2rem 0;
 }
 
 .container {
@@ -156,11 +203,7 @@ hr {
   margin: 0 auto;
 }
 
-.card {
-  padding: 1.5rem;
-}
-
 .form-container :deep(.formkit-outer) {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 </style>
