@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Capstone Design Manager - User Guide</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../styles.css">
+    <script src="markdown.js"></script>
+    <style>
+        .content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Capstone Design Manager - User Guide</h1>
+    </header>
+    <main>
+        <div class="content">
+            <iframe id="guide-content" style="width: 100%; min-height: 800px; border: 1px solid var(--crimson);"></iframe>
+        </div>
+    </main>
+    <footer>
+        <p><a href="about.html">← Back to Documentation</a></p>
+        <p>© 2026 Capstone Design Manager</p>
+    </footer>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const guide = params.get('guide') || '01-Overview';
+        renderMarkdown('guide-content', './User Guide/' + guide + '.md');
+    </script>
+</body>
+</html>
