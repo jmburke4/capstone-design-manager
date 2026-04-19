@@ -19,6 +19,7 @@
     <script>
         window.onload = function () {
             renderMarkdown('test-strategy', './assets/about/test-strategy.md');
+            renderMarkdown('user-guide', './UserGuide.md');
         };
     </script>
 </head>
@@ -74,12 +75,11 @@
             </a>
         </section>
 
-<section id="userguide">
+        <section id="userguide">
             <a href="#userguide">
                 <h2>User Guide</h2>
             </a>
-            <p>Comprehensive user guide for using the Capstone Design Manager application.</p>
-            <p><a href="userguide.html">Open User Guide →</a></p>
+            <iframe id="user-guide" style="width: 100%; min-height: 700px; border: 1px solid var(--crimson);"></iframe>
         </section>
 
         <section id="development">
