@@ -31,7 +31,8 @@ The UA Computer Science Senior Design Projects Portal is a web application that 
 - Email: SMTP (Gmail integration)
 
 **Frontend:**
-- Framework: React with Vite
+- Framework: Vue 3 with Vite
+- Pinia: State management
 - Styling: CSS Modules
 
 **Infrastructure:**
@@ -242,7 +243,7 @@ URL: http://localhost:5173
 - **Login**: Auth0 authentication
 - **Dashboard**: View semester info and assignments
 - **Browse Projects**: View available projects
-- **Submit Preferences**: Rank up to 3 projects
+- **Submit Preferences**: Rank 15 projects (high, medium, low priority)
 - **View Assignment**: See final project assignment
 
 ---
