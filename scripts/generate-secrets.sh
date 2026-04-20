@@ -40,10 +40,14 @@ echo "  ✓ VM found with IP: $EXTERNAL_IP"
 if [ -n "$DOMAIN" ]; then
     echo "  ✓ Using domain: $DOMAIN"
     ALLOWED_HOSTS="$DOMAIN www.$DOMAIN $EXTERNAL_IP localhost 127.0.0.1 backend"
+    APP_BASE_URL="https://$DOMAIN"
 else
     echo "  ℹ No domain provided - using VM IP only"
     ALLOWED_HOSTS="$EXTERNAL_IP localhost 127.0.0.1 backend"
+    APP_BASE_URL="https://$EXTERNAL_IP"
 fi
+
+echo "  ✓ APP_BASE_URL set to: $APP_BASE_URL"
 
 echo ""
 
@@ -73,6 +77,10 @@ cat > .env.production << EOF
 DEBUG=0
 SECRET_KEY=${DJANGO_SECRET}
 DJANGO_ALLOWED_HOSTS=${ALLOWED_HOSTS}
+
+# Frontend Application Base URL
+# Used for redirects (e.g., unauthorized admin access)
+APP_BASE_URL=${APP_BASE_URL}
 
 # Auth0 Configuration
 AUTH0_DOMAIN=dev-qjyd077ykn3qqq7v.us.auth0.com
@@ -131,6 +139,12 @@ VALIDATION_ERRORS=0
 
 if grep -q "REPLACE_" .env.production 2>/dev/null; then
     echo "  ✗ ERROR: .env.production contains placeholder values (REPLACE_)"
+    VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+fi
+
+# Check APP_BASE_URL is set and not empty
+if ! grep -q "^APP_BASE_URL=" .env.production 2>/dev/null || grep -q "^APP_BASE_URL=$" .env.production 2>/dev/null; then
+    echo "  ✗ ERROR: APP_BASE_URL is not set or is empty (required for redirects)"
     VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
 fi
 
