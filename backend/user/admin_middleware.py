@@ -5,6 +5,7 @@ Blocks manual navigation - users must use the admin panel button.
 """
 from django.http import HttpResponseRedirect
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,10 @@ class Auth0AdminMiddleware:
             
             # No valid authorization - silently redirect to home
             logger.warning(f'Unauthorized admin access attempt from {request.META.get("REMOTE_ADDR")}')
-            return HttpResponseRedirect('http://localhost:5173/')
+            redirect_url = os.environ.get('APP_BASE_URL')
+            if not redirect_url:
+                raise ValueError("APP_BASE_URL environment variable is required but not set")
+            return HttpResponseRedirect(redirect_url)
         
         # Not an admin route, continue normally
         return self.get_response(request)
