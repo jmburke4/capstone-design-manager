@@ -1,8 +1,6 @@
 # Frequently Asked Questions
 
-## Section 1
-
-### Developer Questions
+## Developer Questions
 
 | Question | Answer | 
 |---|---| 
@@ -12,7 +10,7 @@
 | Why do I keep getting an error about missing authentication credentials? | This error has occured in the past with APIservices and OAuth. If the user's authentication info is retreived and used correctly via API services, see the OAuth documentation for further support. | 
 | Why am I getting an error where some of my containers aren't starting? | In the docker-compose.dev.yml file, there are various ports being accessed. Some of these ports may be used by your computer's OS or another program. If this is the case, simply change the port number to an available one and be careful not to push that change to the repo. (example: 9001:9001 => 9101:9001) | 
 
-### Administartor Questions
+## Administartor Questions
 
 | Question | Answer | 
 |---|---| 
