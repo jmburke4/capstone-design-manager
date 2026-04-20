@@ -123,8 +123,8 @@ const handleAdminClick = async () => {
             </div>
         </div>
         
-        <div class="profile-section" v-if="userRole === 'sponsor'">
-            <div
+        <div class="profile-section">
+            <div v-if="userRole === 'sponsor'"
                 class="nav-item"
                 :class="{ active: isActive('/profile/edit') }"
                 @click="router.push('/profile/edit')"
