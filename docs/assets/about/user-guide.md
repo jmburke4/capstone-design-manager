@@ -344,4 +344,4 @@ docker-compose -f docker-compose.dev.yml up -d --build
 
 ---
 
-For developers, see the backend README.md for technical documentation.
+For developers, see the backend [README.md](https://github.com/jmburke4/capstone-design-manager/blob/b35c08f4c0e82e3b91b8aaef572b9e97b944d132/backend/README.md) for technical documentation.

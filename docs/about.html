@@ -9,18 +9,61 @@
     <link rel="stylesheet" href="sidenav.css">
     <!-- Only page specific styles go here -->
     <style>
-        iframe {
-            width: 100%;
-            min-height: 700px;
-            border: 1px solid var(--crimson);
+        main {
+            margin-top: 0;
+            margin-bottom: 0;
         }
     </style>
     <script src="markdown.js"></script>
     <script>
         window.onload = function () {
-            renderMarkdown('test-strategy', './assets/about/test-strategy.md');
-            renderMarkdown('user-guide', './UserGuide.md');
-            renderMarkdown('development-guide', './assets/about/development-guide.md');
+            const contentId = 'content';
+            const storageKey = 'about-page-section';
+
+            function rememberSection(markdownPath) {
+                try {
+                    localStorage.setItem(storageKey, markdownPath);
+                } catch (error) {
+                    // Ignore storage failures and fall back to the current load only.
+                }
+            }
+
+            async function loadSection(markdownPath) {
+                try {
+                    rememberSection(markdownPath);
+                    await renderMarkdown(contentId, markdownPath);
+                } catch (error) {
+                    const content = document.getElementById(contentId);
+                    if (content) {
+                        content.innerHTML = `
+                            <article class="markdown-body">
+                                <h2>Content Not Available Yet</h2>
+                                <p>Could not load: <code>${markdownPath}</code></p>
+                            </article>
+                        `;
+                    }
+                }
+            }
+
+            document.querySelectorAll('.sidenav a[data-md]').forEach((link) => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const markdownPath = link.getAttribute('data-md');
+                    if (markdownPath) {
+                        loadSection(markdownPath);
+                    }
+                });
+            });
+
+            const savedSection = (() => {
+                try {
+                    return localStorage.getItem(storageKey);
+                } catch (error) {
+                    return null;
+                }
+            })();
+
+            loadSection(savedSection || './assets/about/test-strategy.md');
         };
     </script>
 </head>
@@ -32,82 +75,22 @@
     </header>
 
     <div class="sidenav">
-        <a href="#projectvideo">Project Video</a>
-        <a href="#backlog">Backlog</a>
-        <a href="#cyber">Cyber Security</a>
-        <a href="#features">Features</a>
-        <a href="#deployment">Deployment</a>
-        <a href="#userguide">User Guide</a>
-        <a href="#development">Development</a>
-        <a href="#faqs">FAQs</a>
-        <a href="#testing">Testing</a>
+        <a href="#" data-md="./assets/about/project-video.md">Project Video</a>
+        <a href="#" data-md="./assets/about/backlog.md">Backlog</a>
+        <a href="#" data-md="./assets/about/cyber-security.md">Cyber Security</a>
+        <a href="#" data-md="./assets/about/features.md">Features</a>
+        <a href="#" data-md="./assets/about/deployment.md">Deployment</a>
+        <a href="#" data-md="./assets/about/user-guide.md">User Guide</a>
+        <a href="#" data-md="./assets/about/development-guide.md">Development</a>
+        <a href="#" data-md="./assets/about/faqs.md">FAQs</a>
+        <a href="#" data-md="./assets/about/test-strategy.md">Testing</a>
         <p><a href="index.html">← Home</a></p>
     </div>
 
-    <main class="main">
-
-        <section id="projectvideo">
-            <a href="#projectvideo">
-                <h2>Project Video</h2>
-            </a>
-        </section>
-
-        <section id="backlog">
-            <a href="#backlog">
-                <h2>Backlog</h2>
-            </a>
-        </section>
-
-        <section id="cyber">
-            <a href="#cyber">
-                <h2>Cyber Security</h2>
-            </a>
-        </section>
-
-        <section id="features">
-            <a href="#features">
-                <h2>Features</h2>
-            </a>
-        </section>
-
-        <section id="deployment">
-            <a href="#deployment">
-                <h2>Deployment</h2>
-            </a>
-        </section>
-
-        <section id="userguide">
-            <a href="#userguide">
-                <h2>User Guide</h2>
-            </a>
-            <iframe id="user-guide" style="width: 100%; min-height: 700px; border: 1px solid var(--crimson);"></iframe>
-        </section>
-
-        <section id="development">
-            <a href="#development">
-                <h2>Development Guide</h2>
-            </a>
-            <iframe id="development-guide"></iframe>
-        </section>
-
-        <section id="faqs">
-            <a href="#faqs">
-                <h2>FAQs</h2>
-            </a>
-        </section>
-
-        <section id="testing">
-            <a href="#testing">
-                <h2>Testing</h2>
-            </a>
-            <iframe id="test-strategy"></iframe>
-        </section>
-
-        <section>
-            <p><a href="index.html">← Back to Home</a></p>
-        </section>
-
+    <main>
+        <div id="content"></div>
     </main>
+
     <footer>
         © 2026 Capstone Design Manager · Inspired by The University of Alabama
     </footer>
