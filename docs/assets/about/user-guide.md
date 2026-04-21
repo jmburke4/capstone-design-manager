@@ -83,7 +83,7 @@ To access the Capstone Design Manager application, follow these steps:
 2. Navigate to https://ua-capstone-projects.com/
 3. You will see the landing page with options to Sign Up or Log In.
 
-![Application Landing Page](docs/assets/user-guide/landing-page.png)
+![Application Landing Page](../user-guide/landing-page.jpg)
 
 ### Understanding Authentication
 
@@ -139,7 +139,7 @@ To log in after creating your account:
 3. Complete the authentication process.
 4. You will be redirected to your dashboard based on your role.
 
-![Log In Page](docs/assets/user-guide/log-in-page.png)
+![Log In Page](../user-guide/sign-up-page.jpg)
 
 ---
 
@@ -151,36 +151,35 @@ This section provides detailed instructions for students on how to use the Capst
 
 After successfully logging in, you will be taken to your Student Dashboard. This is your home page within the application and provides an overview of your status.
 
-![Student Dashboard](docs/assets/user-guide/student/student-dashboard.png)
+![Student Dashboard](../user-guide/student/student-dashboard.jpg)
 
 The Student Dashboard displays the following information:
 
-- **Your Profile**: Your first and last name displayed at the top of the page
-- **Your CWID**: Your 8-digit Campus-Wide ID number
-- **Current Semester**: The current academic semester (Fall, Spring, or Summer)
-- **Your Project Preferences**: A summary of the projects you have ranked
-- **Your Project Assignment**: The project you have been assigned to (visible after the assignment date)
+- **Submission**: Status of your rankings submission
+- **Top 5 Rankings**: Your highest ranked projects
+- **Project Assignment**: The project you have been assigned to (visible after the assignment date)
 
 ### Navigating the Student Interface
 
 The student interface includes a sidebar with the following menu options:
 
-- **All Projects**: Browse and view all available projects
-- **My Preferences**: View and manage your project rankings
-- **My Assignment**: View your final project assignment
-- **Profile**: Update your personal information
+- **Dashboard**: View your dashboard
+- **Dashboard**: View your dashboard
+- **Submit/Edit Rankings**: Submit and manage your project rankings
+- **Project Gallery**: Browse all available projects
+- **Logout**: Log out of the application
 
-![Student Sidebar Menu](docs/assets/user-guide/student/student-sidebar.png)
+
 
 ### How to View All Available Projects
 
 To browse all projects that are available for the current semester:
 
 1. Locate the sidebar on the left side of the screen.
-2. Click on **All Projects**.
+2. Click on **Project Gallery**.
 3. You will see a list of all projects that have been submitted by sponsors.
 
-![Project List](docs/assets/user-guide/student/project-list.png)
+![Project List](../user-guide/student/project-list.jpg)
 
 The project list displays each project with:
 
@@ -202,42 +201,41 @@ The project list displays each project with:
 
 To see all details about a specific project:
 
-1. From the **All Projects** page, click on the project name or the View/Edit icon.
+1. From the **Project Gallery** page, click on the project name or the View/Edit icon.
 2. A detailed view of the project will open.
 
-![Project Details](docs/assets/user-guide/student/project-details.png)
+![Project Details](../user-guide/student/project-details.jpg)
 
 The project details page shows:
 
 - **Full Description**: Complete details about the project including goals, requirements, and deliverables
 - **Sponsor Information**: The name of the sponsor and their organization
 - **Website Link**: A link to additional information (if provided by the sponsor)
-- **Attachments**: Files or documents uploaded by the sponsor
 - **Feedback**: Progress updates from the sponsor
 
 ### How to Submit Your Preferences
 
-As a student, you can rank up to three projects in order of preference. Your rankings are important because they help determine your final project assignment.
+As a student, you can rank projects in order of preference. Your rankings are important because they help determine your final project assignment.
 
 To submit or update your preferences:
 
-1. Navigate to **All Projects** from the sidebar.
+1. Navigate to **Submit Rankings** from the sidebar.
 2. Browse the list of available projects.
-3. When you find a project you are interested in, click on it to view the details.
-4. Click the **Rank This Project** button.
-5. Select your preferred rank number from the dropdown:
-   - **Rank 1**: This is your first choice (most wanted)
-   - **Rank 2**: This is your second choice
-   - **Rank 3**: This is your third choice
-6. Click **Submit** or **Save** to confirm your ranking.
-7. Repeat these steps for other projects until you have ranked three projects.
+3. Click the **Rank** button on a project you are interested in.
+4. Select your preferred rank number from the dropdown:
+   - **Rank 1**: First choice (most wanted)
+   - **Rank 2**: Second choice
+   - **Rank 3**: Third choice (least wanted)
+5. Click **Save** to confirm your ranking.
+6. Repeat these steps for other projects.
 
-![Rank Form](docs/assets/user-guide/student/rank-form.png)
+![Rank Form](../user-guide/student/rank-form.jpg)
 
 **Important Rules for Preferences:**
 
-- Each student can rank a maximum of three different projects.
-- You cannot assign the same rank number to two different projects (Rank 1 is for one project only, Rank 2 is for one project only, etc.).
+- Each student can rank a maximum of 15 projects total.
+- You can rank up to 5 projects per rank level (Rank 1, Rank 2, Rank 3).
+- You cannot assign the same rank number to more than 5 projects (Rank 1 is for up to 5 projects only, Rank 2 is for up to 5 projects only, etc.).
 - You can change your rankings at any time before the preference deadline.
 - After the deadline passes, your preferences are locked and cannot be changed.
 - Not ranking any projects may result in a random assignment.
@@ -253,29 +251,13 @@ To view your current rankings:
    - Change the rank of a project
    - Remove a project from your preferences
 
-![My Preferences Page](docs/assets/user-guide/student/my-preferences.png)
-
-### How to View Your Project Assignment
-
-After the preference deadline passes and assignments are created, you can view your final project assignment:
-
-1. Click on **My Assignment** in the sidebar.
-2. Your assigned project will be displayed.
-
-![My Assignment](docs/assets/user-guide/student/my-assignment.png)
-
-The assignment page shows:
-
-- **Project Name**: The name of your assigned project
-- **Sponsor Name**: The name of the sponsor who submitted the project
-- **Project Description**: The full project description
-- **Contact Information**: How to reach your sponsor
+![My Preferences Page](../user-guide/student/my-preferences.jpg)
 
 ### What to Do If You See "Not Registered"
 
 If upon logging in you see a message indicating "Not Registered" or you cannot access student features:
 
-![Not Registered](docs/assets/user-guide/student/not-registered.png)
+![Not Registered](../user-guide/student/not-registered.jpg)
 
 This message appears when your account exists in the system but your student record has not been created in the database. To resolve this:
 
@@ -292,9 +274,8 @@ This message appears when your account exists in the system but your student rec
 
 To update your personal information:
 
-1. Click on your name in the top-right corner of the screen.
-2. Select **Profile** from the dropdown menu.
-3. You can update the following fields:
+1. Select **Edit Profile** from the sidebar.
+2. Update the following fields:
 
 | Field | Description | Notes |
 |-------|-------------|-------|
@@ -304,10 +285,9 @@ To update your personal information:
 | Major Code | Your major | Examples: CS, CYS |
 | Class Year | Your class standing | FR (Freshman), SO (Sophomore), JR (Junior), SR (Senior), GR (Graduate) |
 
-4. Click **Save** to confirm your changes.
+3. Click **Save** to confirm your changes.
 
-![Student Profile Form](docs/assets/user-guide/student/student-profile-form.png)
-![Student Profile Saved](docs/assets/user-guide/student/student-profile-saved.png)
+
 
 ---
 
@@ -319,7 +299,7 @@ This section provides detailed instructions for sponsors on how to use the Capst
 
 After logging in, you will see your Sponsor Dashboard. This is your main page within the application.
 
-![Sponsor Dashboard](docs/assets/user-guide/sponsor/sponsor-dashboard.png)
+![Sponsor Dashboard](../user-guide/sponsor/sponsor-dashboard.jpg)
 
 The Sponsor Dashboard displays:
 
@@ -332,21 +312,21 @@ The Sponsor Dashboard displays:
 The sponsor interface includes a sidebar with the following menu options:
 
 - **Dashboard**: View your dashboard and project summary
-- **New Project**: Submit a new project idea
-- **My Projects**: View and manage your submitted projects
-- **All Projects**: Browse all projects in the system
+- **Submit Project**: Submit a new project idea
+- **Project Dashboard**: View and manage your submitted projects
+- **Project Gallery**: Browse all projects in the system
 - **Profile**: Update your organization information
 
-![Sponsor Sidebar Menu](docs/assets/user-guide/sponsor/sponsor-sidebar.png)
 
-### How to Submit a New Project
+
+### How to Submit a Submit Project
 
 To submit a new project idea for students to work on:
 
-1. Click on **New Project** in the sidebar.
+1. Click on **Submit Project** in the sidebar.
 2. A project submission form will appear.
 
-![New Project Form](docs/assets/user-guide/sponsor/new-project-form.png)
+![Submit Project Form](../user-guide/sponsor/new-project-form.jpg)
 
 3. Fill in the following fields:
 
@@ -373,10 +353,10 @@ A well-written project description helps students understand your expectations a
 
 To view all projects you have submitted:
 
-1. Click on **My Projects** in the sidebar.
+1. Click on **Project Dashboard** in the sidebar.
 2. A list of your submitted projects will be displayed.
 
-![My Projects](docs/assets/user-guide/sponsor/my-projects.png)
+
 
 For each project, you can see:
 
@@ -388,28 +368,28 @@ For each project, you can see:
 
 To make changes to a project you have submitted:
 
-1. Go to **My Projects**.
+1. Go to **Project Dashboard**.
 2. Click on the project you want to edit.
 3. Click the **Edit Project** button.
 4. Update the fields as needed.
 5. Click **Save Changes** to confirm your updates.
 
-![Edit Project Form](docs/assets/user-guide/sponsor/edit-project-form.png)
-![Project Edited Success](docs/assets/user-guide/sponsor/project-edited-success.png)
+![Edit Project Form](../user-guide/sponsor/edit-project-form.jpg)
+![Project Edited Success](../user-guide/sponsor/project-edited-success.jpg)
 
 **Note:** You can only edit projects that have not yet been assigned to students, or edit the description/sponsor fields of assigned projects.
 
-### How to Add Feedback About a Project
+### How to Submit Feedback About a Project
 
 You can provide feedback to communicate with students working on your project:
 
-1. Go to **My Projects**.
+1. Go to **Project Dashboard**.
 2. Click on the project you want to add feedback for.
-3. Click the **Add Feedback** button.
+3. Click the **Submit Feedback** button.
 4. Enter your feedback message in the text box.
 5. Click **Submit** to save your feedback.
 
-![Add Feedback](docs/assets/user-guide/sponsor/add-feedback.png)
+![Submit Feedback](../user-guide/sponsor/submit-feedback.jpg)
 
 **What to Include in Feedback:**
 
@@ -420,36 +400,16 @@ You can provide feedback to communicate with students working on your project:
 - Suggestions for improvement
 - Final evaluation at the end of the semester
 
-### How to Upload Attachments
-
-You can upload documents, images, or other files related to your project:
-
-1. Go to **My Projects**.
-2. Click on the project you want to add an attachment to.
-3. Click the **Add Attachment** button.
-4. Choose the type of attachment:
-   - **File Upload**: Click "Choose File" to select a file from your computer
-   - **Link**: Enter a URL to an external website or document
-5. If uploading a file, select the file from your computer.
-6. Click **Upload** to save the attachment.
-
-![Upload Attachment](docs/assets/user-guide/sponsor/upload-attachment.png)
-
-**File Requirements:**
-
-- Maximum file size: 25 MB
-- Allowed file types: PDF, DOCX, PPTX, PNG, JPG, ZIP
-
 ### How to View Assigned Students
 
 After the assignment date passes and students are assigned to projects:
 
-1. Go to **My Projects**.
+1. Go to **Project Dashboard**.
 2. Click on your project.
 3. Scroll to the "Assigned Students" section.
 4. You will see a list of students assigned to your project.
 
-![Assigned Students List](docs/assets/user-guide/sponsor/assigned-students-list.png)
+
 
 Each student is displayed with:
 
@@ -461,9 +421,8 @@ Each student is displayed with:
 
 To update your organization and contact information:
 
-1. Click on your name in the top-right corner.
-2. Select **Profile** from the dropdown.
-3. Update the following fields:
+1. Select **Edit Profile** from the sidebar.
+2. Update the following fields:
 
 | Field | Description |
 |-------|-------------|
@@ -471,9 +430,9 @@ To update your organization and contact information:
 | Phone Number | Your contact phone number |
 | Website | Your organization website (optional) |
 
-4. Click **Save** to confirm your changes.
+3. Click **Save** to confirm your changes.
 
-![Sponsor Profile Form](docs/assets/user-guide/sponsor/sponsor-profile-form.png)
+![Sponsor Profile Form](../user-guide/sponsor/sponsor-profile-form.jpg)
 
 ---
 
@@ -505,8 +464,8 @@ Once you have completed the steps above, follow these instructions to access the
 5. Enter your Django superuser credentials (username and password).
 6. Click **Log In** to access the admin panel.
 
-![Admin Button Location](docs/assets/user-guide/admin/admin-button-location.png)
-![Django Admin Login](docs/assets/user-guide/admin/django-admin-login.png)
+![Admin Button Location](../user-guide/admin/admin-button-location.jpg)
+![Django Admin Login](../user-guide/admin/django-admin-login.jpg)
 
 **Note:** If you do not see the Admin button after logging in, your account has not been assigned the admin role yet. Contact the system administrator to assign the 'admin' role to your account.
 
@@ -528,7 +487,7 @@ The admin panel is organized into sections:
   - Users
   - Groups
 
-![Admin Navigation Menu](docs/assets/user-guide/admin/admin-navigation-menu.png)
+![Admin Navigation Menu](../user-guide/admin/admin-navigation-menu.jpg)
 
 ### Managing Students
 
@@ -537,7 +496,7 @@ To add or edit student records:
 1. In the admin panel, click on **Students** under the USER section.
 2. Click **Add Student** to create a new student, or click on an existing student to edit.
 
-![Student Admin](docs/assets/user-guide/admin/student-admin.png)
+![Student Admin](../user-guide/admin/student-admin.jpg)
 
 **Student Fields:**
 
@@ -556,8 +515,8 @@ To add or edit student records:
 2. Fill in all required fields.
 3. Click the **Save** button to create the student record.
 
-![Add Student Form](docs/assets/user-guide/admin/add-student-form.png)
-![Student Added Success](docs/assets/user-guide/admin/student-added-success.png)
+![Add Student Form](../user-guide/admin/add-student-form.jpg)
+![Student Added Success](../user-guide/admin/student-added-success.jpg)
 
 ### Managing Sponsors
 
@@ -566,7 +525,7 @@ To add or edit sponsor records:
 1. Click on **Sponsors** under the USER section.
 2. Click **Add Sponsor** to create a new sponsor, or click on an existing sponsor to edit.
 
-![Sponsor Admin](docs/assets/user-guide/admin/sponsor-admin.png)
+![Sponsor Admin](../user-guide/admin/sponsor-admin.jpg)
 
 **Sponsor Fields:**
 
@@ -586,7 +545,7 @@ To add or edit project records:
 1. Click on **Projects** under the PROJECT section.
 2. Click **Add Project** to create a new project, or click on an existing project to edit.
 
-![Project Admin](docs/assets/user-guide/admin/project-admin.png)
+![Project Admin](../user-guide/admin/project-admin.jpg)
 
 **Project Fields:**
 
@@ -615,7 +574,7 @@ From the projects list, you can perform bulk actions:
 - **Assign to Semester**: Add selected projects to a specific semester
 - **Remove from Semester**: Remove selected projects from a semester
 
-![Project Bulk Actions](docs/assets/user-guide/admin/project-bulk-actions.png)
+![Project Bulk Actions](../user-guide/admin/project-bulk-actions.jpg)
 
 ### Managing Semesters
 
@@ -624,7 +583,7 @@ To create and manage semesters:
 1. Click on **Semesters** under the PROJECT section.
 2. Click **Add Semester** to create a new semester.
 
-![Semester Admin](docs/assets/user-guide/admin/semester-admin.png)
+![Semester Admin](../user-guide/admin/semester-admin.jpg)
 
 **Semester Fields:**
 
@@ -634,7 +593,7 @@ To create and manage semesters:
 | Year | Academic year | Yes | 4-digit year (e.g., 2026) |
 | Assignment Date | Deadline for student preferences | Yes | Date and time when preferences are locked |
 
-![Add Semester Form](docs/assets/user-guide/admin/add-semester-form.png)
+![Add Semester Form](../user-guide/admin/add-semester-form.jpg)
 
 ### Managing Preferences
 
@@ -643,7 +602,7 @@ To view student preferences:
 1. Click on **Preferences** under the PROJECT section.
 2. View all student project rankings.
 
-![Preferences Admin](docs/assets/user-guide/admin/preferences-admin.png)
+
 
 The preferences view shows:
 
@@ -656,8 +615,8 @@ The preferences view shows:
 
 - From the preferences list, you can select students and assign them to a project manually.
 
-![Preferences Bulk Actions](docs/assets/user-guide/admin/preferences-bulk-actions.png)
-![Assign Students to Project](docs/assets/user-guide/admin/assign-students-to-project.png)
+
+
 
 ### Managing Assignments
 
@@ -666,7 +625,7 @@ To view and create student assignments:
 1. Click on **Assignments** under the PROJECT section.
 2. View current student-to-project assignments.
 
-![Assignments Admin](docs/assets/user-guide/admin/assignments-admin.png)
+
 
 The assignments view shows:
 
@@ -687,7 +646,7 @@ To view feedback from sponsors:
 1. Click on **Feedback** under the PROJECT section.
 2. View all feedback messages.
 
-![Feedback Admin List](docs/assets/user-guide/admin/feedback-admin-list.png)
+![Feedback Admin List](../user-guide/admin/feedback-admin-list.jpg)
 
 **Feedback Fields:**
 
@@ -698,7 +657,7 @@ To view feedback from sponsors:
 | Content | The feedback message |
 | Created | Date and time the feedback was submitted |
 
-![View Feedback Detail](docs/assets/user-guide/admin/view-feedback-detail.png)
+![Feedback Admin List](../user-guide/admin/feedback-admin-list.jpg)
 
 ### Managing Attachments
 
@@ -707,7 +666,7 @@ To view and manage all file uploads:
 1. Click on **Attachments** under the PROJECT section.
 2. View all uploaded files and links.
 
-![Attachments Admin](docs/assets/user-guide/admin/attachments-admin.png)
+![Attachments Admin](../user-guide/admin/attachments-admin.jpg)
 
 **Attachment Fields:**
 
@@ -743,10 +702,10 @@ To send emails to multiple sponsors at once:
 5. Fill in the email form details.
 6. Click **Send** to send the emails, or download the attachments.
 
-![Select Sponsors for Email](docs/assets/user-guide/admin/select-sponsors-for-email.png)
-![Email Action Dropdown](docs/assets/user-guide/admin/email-action-dropdown.png)
-![Email Form Fill](docs/assets/user-guide/admin/email-form-fill.png)
-![Email Sent Success](docs/assets/user-guide/admin/email-sent-success.png)
+![Select Sponsors for Email](../user-guide/admin/select-sponsors-for-email.jpg)
+![Email Action Dropdown](../user-guide/admin/email-action-dropdown.jpg)
+![Email Form Fill](../user-guide/admin/email-form-fill.jpg)
+![Email Sent Success](../user-guide/admin/email-sent-success.jpg)
 
 ---
 
@@ -776,7 +735,7 @@ To send emails from the admin panel:
 6. Fill in the required fields in the email form.
 7. Click **Send** to send immediately.
 
-![Admin Email Send Flow](docs/assets/user-guide/admin/admin-email-send-flow.png)
+
 
 ### How to Use EML Files
 
@@ -792,8 +751,8 @@ If SMTP sending is not available or you prefer to send emails manually, you can 
 8. The email will open as a new unsent message with the recipient pre-filled.
 9. Click **Send** from your email client.
 
-![Download EML Files](docs/assets/user-guide/admin/download-eml-files.png)
-![EML File Opened in Email Client](docs/assets/user-guide/admin/eml-file-opened-email-client.png)
+![Download EML Files](../user-guide/admin/download-eml-files.jpg)
+![EML File Opened in Email Client](../user-guide/admin/eml-file-opened-email-client.jpg)
 
 ---
 
@@ -889,13 +848,12 @@ For more information, see these documents:
 |------|----------|---------------------|
 | Create account | All | Landing page > Sign Up |
 | Log in | All | Landing page > Log In |
-| Submit a project | Sponsor | Sidebar > New Project |
-| View my projects | Sponsor | Sidebar > My Projects |
-| View all projects | Student | Sidebar > All Projects |
-| Rank project preferences | Student | All Projects > Rank This Project |
-| View project assignment | Student | Sidebar > My Assignment |
-| Add feedback to project | Sponsor | My Projects > project name > Add Feedback |
-| Upload project files | Sponsor | My Projects > project name > Add Attachment |
+| Submit a project | Sponsor | Sidebar > Submit Project |
+| View my projects | Sponsor | Sidebar > Project Dashboard |
+| View all projects | Student | Sidebar > Project Gallery |
+| Rank project preferences | Student | Submit/Edit Rankings |
+| View project assignment | Student | Dashboard (after assignment) |
+| View my projects | Sponsor | Project Dashboard |
 | Manage all students | Admin | /admin/ > USER > Students |
 | Manage all sponsors | Admin | /admin/ > USER > Sponsors |
 | Manage all projects | Admin | /admin/ > PROJECT > Projects |
