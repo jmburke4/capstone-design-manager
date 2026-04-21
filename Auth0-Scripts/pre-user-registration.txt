@@ -1,0 +1,58 @@
+/**
+ * In Auth0, name this script: ValidateRole&Domain
+ * Pre User Registration Action
+ * Validates student email domain AND assigns role to user metadata
+ * Role is passed via custom scope (e.g., 'role:student')
+ */
+exports.onExecutePreUserRegistration = async (event, api) => {
+  const STUDENT_DOMAIN = 'crimson.ua.edu';
+  
+  console.log("=== PRE-REGISTRATION DEBUG ===");
+  console.log("Email:", event.user.email);
+  console.log("Requested scopes:", event.transaction?.requested_scopes);
+  console.log("Connection:", event.connection?.name);
+  
+  // Extract role from requested_scopes
+  // Look for scope like 'role:student' or 'role:sponsor'
+  const requestedScopes = event.transaction?.requested_scopes || [];
+  const roleScope = requestedScopes.find(scope => scope.startsWith('role:'));
+  
+  let roleHint = null;
+  if (roleScope) {
+    // Extract the role part after 'role:'
+    roleHint = roleScope.split(':')[1];
+    console.log("Role extracted from scope:", roleHint);
+  }
+  
+  // Validate and assign role based on role scope
+  if (roleHint === 'student') {
+    const email = event.user.email.toLowerCase().trim();
+    const emailDomain = email.split('@')[1] || '';
+    
+    if (emailDomain !== STUDENT_DOMAIN) {
+      console.log(`DENIED: Student signup with invalid domain: ${emailDomain}`);
+      api.access.deny(
+        'invalid_student_domain',
+        `Student accounts require a @${STUDENT_DOMAIN} email address. Your email (${email}) is not authorized.`
+      );
+      return;
+    }
+    
+    // Assign student role to user metadata
+    api.user.setAppMetadata('role', 'student');
+    console.log(`✓ Student role assigned to ${email}`);
+    
+  } else if (roleHint === 'sponsor') {
+    // Assign sponsor role to user metadata
+    api.user.setAppMetadata('role', 'sponsor');
+    console.log(`✓ Sponsor role assigned to ${event.user.email}`);
+    
+  } else {
+    // No role scope provided - deny signup
+    console.warn(`WARNING: Signup attempted without role scope. Scopes: ${requestedScopes.join(', ')}`);
+    api.access.deny(
+      'missing_role',
+      'Invalid signup request. Please use the signup form to select your role.'
+    );
+  }
+};

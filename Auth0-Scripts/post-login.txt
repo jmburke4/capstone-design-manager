@@ -1,0 +1,86 @@
+/**
+ * In Auth0, name this script: AssignRole&EnforceAccess
+ * Post-Login Action
+ * Handles:
+ * 1. Role assignment for social logins (sponsors)
+ * 2. Email verification enforcement
+ * 3. Role token claims (student/sponsor + admin)
+ */
+exports.onExecutePostLogin = async (event, api) => {
+  const namespace = 'https://backend-api-capstone/';
+  const STUDENT_DOMAIN = 'crimson.ua.edu';
+  
+  let assignedRole = event.user.app_metadata?.role;
+  
+  // === HANDLE ROLE ASSIGNMENT FOR FIRST-TIME SOCIAL LOGINS ===
+  if (!assignedRole) {
+    // Check if this is a first-time login (signup)
+    if (event.stats?.logins_count === 1) {
+      // Identify connection type
+      const isDatabaseConnection = event.connection?.strategy === 'auth0';
+      const isSocialConnection = !isDatabaseConnection;
+      
+      if (isSocialConnection) {
+        // ALL social logins get sponsor role
+        assignedRole = 'sponsor';
+        api.user.setAppMetadata('role', assignedRole);
+      } else {
+        // Database connection - role should have been set by Pre User Registration
+        api.access.deny(
+          "no_role_assigned",
+          "Role assignment failed during signup. Please try signing up again."
+        );
+        return;
+      }
+    } else {
+      // Not first login but no role exists - this is an error state
+      api.access.deny(
+        "no_role_assigned",
+        "No role has been assigned to your account. Please contact support."
+      );
+      return;
+    }
+  }
+  
+  // === ENFORCE EMAIL VERIFICATION ===
+  if (!event.user.email_verified) {
+    api.access.deny(
+      "unverified_email",
+      `Please verify ${event.user.email} before logging in. Check your inbox (and spam folder).`
+    );
+    return;
+  }
+  
+  // === ADD EMAIL TO TOKENS ===
+  if (event.user.email) {
+    api.accessToken.setCustomClaim(`${namespace}email`, event.user.email);
+    api.idToken.setCustomClaim(`${namespace}email`, event.user.email);
+  }
+  
+  // === VERIFY ROLE EXISTS (Final Safety Check) ===
+  if (!assignedRole) {
+    api.access.deny(
+      "no_role_assigned",
+      "Role assignment failed. Please contact support."
+    );
+    return;
+  }
+  
+  // === BUILD COMPLETE ROLES ARRAY ===
+  // Start with the primary role (student or sponsor)
+  let roles = [assignedRole];
+  
+  // Add any Auth0-assigned roles (like "admin")
+  if (event.authorization && event.authorization.roles) {
+    roles = roles.concat(event.authorization.roles);
+  }
+  
+  // Remove duplicates (in case someone has both assigned)
+  roles = [...new Set(roles)];
+  
+  // === ADD ALL ROLES TO TOKENS ===
+  api.idToken.setCustomClaim(`${namespace}roles`, roles);
+  api.accessToken.setCustomClaim(`${namespace}roles`, roles);
+  
+  console.log(`✓ Success: Roles '${roles.join(', ')}' added to tokens`);
+}
