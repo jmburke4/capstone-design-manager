@@ -4,6 +4,7 @@ import { FormKit } from '@formkit/vue';
 import { onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import ConfirmationModal from './ConfirmationModal.vue';
+import SponsorAttachmentUpload from './SponsorAttachmentUpload.vue';
 import apiService from '../services/api';
 
 const { getAccessTokenSilently } = useAuth0();
@@ -187,6 +188,11 @@ async function handleSubmission() {
           @cancel="cancelConfirm"
         />
         </FormKit>
+
+        <SponsorAttachmentUpload 
+          v-if="formData.project" 
+          :project-id="formData.project" 
+        />
     </div>
     </div>
     </div>

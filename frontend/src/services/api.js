@@ -89,6 +89,32 @@ class ApiService {
     unique.forEach((id, idx) => { map[String(id)] = results[idx]; });
     return map;
   }
+
+  async getAttachments(projectId) {
+    const response = await this.client.get(`/attachments/?project=${projectId}`);
+    return response.data;
+  }
+
+  async createAttachment(formData) {
+    const response = await this.client.post('/attachments/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async deleteAttachment(attachmentId) {
+    const response = await this.client.delete(`/attachments/${attachmentId}/`);
+    return response.data;
+  }
+
+  async downloadAttachment(attachmentId) {
+    const response = await this.client.get(`/attachments/${attachmentId}/download/`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
