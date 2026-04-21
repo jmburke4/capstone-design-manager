@@ -6,7 +6,7 @@ We are collecting projects for presentation for {{ collection_date }}. If you ha
 
 We are interested in projects every semester. I am available to discuss possible projects and answer any questions. Feel free to email me or we can schedule a Zoom meeting.
 
-Submit project to be presented to students: https://docs.google.com/forms/d/1nKLG-zMVIpQh8xtgm_wQCkbtGLH1zmzl9DrCjPtNcX8/edit
+Submit project to be presented to students: https://ua-capstone-projects.com/
 
 Best regards,
 UA CS Capstone Team
