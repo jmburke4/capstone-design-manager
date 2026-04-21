@@ -13,12 +13,24 @@
             margin-top: 0;
             margin-bottom: 0;
         }
+
+        iframe {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16/9;
+        }
     </style>
     <script src="markdown.js"></script>
     <script>
         window.onload = function () {
             const contentId = 'content';
             const storageKey = 'about-page-section';
+
+            function clearUrlHash() {
+                if (window.location.hash) {
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                }
+            }
 
             function rememberSection(markdownPath) {
                 try {
@@ -45,12 +57,20 @@
                 }
             }
 
-            document.querySelectorAll('.sidenav a[data-md]').forEach((link) => {
+            document.querySelectorAll('.sidenav a[data-md], .sidenav a[data-video]').forEach((link) => {
                 link.addEventListener('click', (event) => {
                     event.preventDefault();
+                    clearUrlHash();
+
                     const markdownPath = link.getAttribute('data-md');
                     if (markdownPath) {
                         loadSection(markdownPath);
+                    }
+
+                    const video = link.getAttribute('data-video');
+                    if (video) {
+                        const container = document.getElementById('content');
+                        container.innerHTML = `<iframe src="${video}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
                     }
                 });
             });
@@ -63,7 +83,7 @@
                 }
             })();
 
-            loadSection(savedSection || './assets/about/test-strategy.md');
+            loadSection(savedSection || 'https://www.youtube.com/embed/FEcXGf6hiFY?si=7UvLy_mTUnzpvnUY');
         };
     </script>
 </head>
@@ -75,7 +95,7 @@
     </header>
 
     <div class="sidenav">
-        <a href="#" data-md="./assets/about/project-video.md">Project Video</a>
+        <a href="#" data-video="https://www.youtube.com/embed/FEcXGf6hiFY?si=7UvLy_mTUnzpvnUY">Project Video</a>
         <a href="#" data-md="./assets/about/backlog.md">Backlog</a>
         <a href="#" data-md="./assets/about/cyber-security.md">Cyber Security</a>
         <a href="#" data-md="./assets/about/features.md">Features</a>
