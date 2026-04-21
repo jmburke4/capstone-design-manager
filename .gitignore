@@ -3,6 +3,7 @@
 env.*
 !env.*.example
 !.env.example
+!frontend/.env.local.example
 .DS_Store
 .lsp/
 docs/
