@@ -14,6 +14,29 @@ async function renderMarkdown(iframeId, markdownPath) {
         }
     }
 
+    function isRelativeUrl(url) {
+        if (!url) {
+            return false;
+        }
+
+        return !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(url);
+    }
+
+    function resolveRelativeUrls(containerEl, markdownFilePath) {
+        const markdownBaseUrl = new URL(markdownFilePath, window.location.href);
+
+        containerEl.querySelectorAll("img[src], a[href]").forEach((el) => {
+            const attrName = el.tagName.toLowerCase() === "img" ? "src" : "href";
+            const rawValue = el.getAttribute(attrName);
+
+            if (!isRelativeUrl(rawValue)) {
+                return;
+            }
+
+            el.setAttribute(attrName, new URL(rawValue, markdownBaseUrl).toString());
+        });
+    }
+
     const container = document.getElementById(iframeId);
     if (!container) throw new Error(`Container not found: ${iframeId}`);
 
@@ -45,6 +68,7 @@ async function renderMarkdown(iframeId, markdownPath) {
 
     const renderedContainer = document.createElement("div");
     renderedContainer.innerHTML = renderedHtml;
+    resolveRelativeUrls(renderedContainer, markdownPath);
 
     const usedIds = new Map();
     renderedContainer.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading, index) => {
