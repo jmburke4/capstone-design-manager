@@ -1,3 +1,4 @@
+import re
 from django.db import models
 from django.core.validators import RegexValidator
 
@@ -22,13 +23,13 @@ class Sponsor(models.Model):
     """[Optional] A company, school, or other organization the sponsor may be attached to"""
 
     phone_number = models.CharField(
-        max_length=18,
+        max_length=15,
         blank=True,
         null=True,
         validators=[
             RegexValidator(
-                regex=r'^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}$',
-                message='Must be a valid phone number.'
+                regex=r'^(\+?\d{1,2})?[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$',
+                message='Phone number is invalid. Must be at least 10 digits.'
             )
         ]
     )
@@ -45,6 +46,47 @@ class Sponsor(models.Model):
 
     def name(self):
         """Returns first and last name"""
+        return f'{self.first_name} {self.last_name}'
+
+    def __str__(self):
+        return self.name()
+
+    # Functions
+    def clean_phone_number(self):
+        """Extract only digits from phone number and validate length"""
+        if not self.phone_number:
+            return None
+
+        # Remove all non-digit characters
+        digits_only = re.sub(r'\D', '', self.phone_number)
+
+        # Validate length: allow 10 digits or 11 digits (with leading 1)
+        if len(digits_only) not in (10, 11):
+            raise ValidationError({
+                'phone_number': 'Phone number must contain 10 or 11 digits.'
+            })
+
+        # Optional: If 11 digits, ensure it starts with 1 (North American)
+        # TODO: add support for other country codes.
+        if len(digits_only) == 11 and not digits_only.startswith('1'):
+            raise ValidationError({
+                'phone_number': '11-digit numbers must start with 1.'
+            })
+
+        return digits_only
+
+    def save(self, *args, **kwargs):
+        """Clean and normalize phone number before saving"""
+        if self.phone_number:
+            cleaned = self.clean_phone_number()
+            if cleaned:
+                self.phone_number = cleaned
+            else:
+                self.phone_number = None
+
+        super().save(*args, **kwargs)
+
+    def name(self):
         return f'{self.first_name} {self.last_name}'
 
     def __str__(self):
