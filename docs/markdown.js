@@ -1,4 +1,19 @@
 async function renderMarkdown(iframeId, markdownPath) {
+    const lightMarkdownCssHref = "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-light.min.css";
+    const darkMarkdownCssHref = "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown-dark.min.css";
+
+    function getMarkdownCssHrefForTheme() {
+        const activeTheme = document.documentElement.getAttribute("data-theme");
+        return activeTheme === "dark" ? darkMarkdownCssHref : lightMarkdownCssHref;
+    }
+
+    function updateMarkdownThemeStylesheet() {
+        const stylesheet = document.getElementById("github-markdown-css");
+        if (stylesheet) {
+            stylesheet.href = getMarkdownCssHrefForTheme();
+        }
+    }
+
     const container = document.getElementById(iframeId);
     if (!container) throw new Error(`Container not found: ${iframeId}`);
 
@@ -56,9 +71,10 @@ async function renderMarkdown(iframeId, markdownPath) {
         const link = document.createElement("link");
         link.id = "github-markdown-css";
         link.rel = "stylesheet";
-        link.href = "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css";
+        link.href = getMarkdownCssHrefForTheme();
         document.head.appendChild(link);
     }
+    updateMarkdownThemeStylesheet();
 
     if (!document.getElementById("render-markdown-style")) {
         const style = document.createElement("style");
@@ -67,16 +83,23 @@ async function renderMarkdown(iframeId, markdownPath) {
             .rendered-markdown {
                 margin: 0;
                 padding: 16px;
-                background: white;
+                background: var(--color-canvas-default);
+                color: var(--color-fg-default);
             }
             .rendered-markdown .markdown-body {
                 box-sizing: border-box;
                 min-width: 200px;
                 max-width: 100%;
                 margin: 0 auto;
+                background: transparent;
             }
         `;
         document.head.appendChild(style);
+    }
+
+    if (!window.__markdownThemeListenerAttached) {
+        window.addEventListener("site-theme-changed", updateMarkdownThemeStylesheet);
+        window.__markdownThemeListenerAttached = true;
     }
 
     container.classList.add("rendered-markdown");
