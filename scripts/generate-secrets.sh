@@ -5,7 +5,7 @@
 #
 # Creates .env.production files with secure random passwords
 #
-# Usage: ./scripts/generate-secrets.sh
+# Usage: ./scripts/generate-secrets.sh your-domain
 #############################################################################
 
 set -e
@@ -14,7 +14,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/config.sh"
 
-DOMAIN=${1:-""}  # Optional domain parameter
+DOMAIN=DEFAULT_DOMAIN # pulls from config.sh
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Generating Production Secrets"
@@ -37,15 +37,9 @@ fi
 echo "  ✓ VM found with IP: $EXTERNAL_IP"
 
 # Build ALLOWED_HOSTS based on domain parameter
-if [ -n "$DOMAIN" ]; then
-    echo "  ✓ Using domain: $DOMAIN"
-    ALLOWED_HOSTS="$DOMAIN www.$DOMAIN $EXTERNAL_IP localhost 127.0.0.1 backend"
-    APP_BASE_URL="https://$DOMAIN"
-else
-    echo "  ℹ No domain provided - using VM IP only"
-    ALLOWED_HOSTS="$EXTERNAL_IP localhost 127.0.0.1 backend"
-    APP_BASE_URL="https://$EXTERNAL_IP"
-fi
+echo "  ✓ Using domain: $DOMAIN"
+ALLOWED_HOSTS="$DOMAIN www.$DOMAIN $EXTERNAL_IP localhost 127.0.0.1 backend"
+APP_BASE_URL="https://$DOMAIN"
 
 echo "  ✓ APP_BASE_URL set to: $APP_BASE_URL"
 
@@ -224,14 +218,7 @@ echo "  ${ALLOWED_HOSTS}"
 echo ""
 echo "⚠️  IMPORTANT: Save these credentials securely!"
 echo ""
-if [ -n "$DOMAIN" ]; then
-    echo "✓ DJANGO_ALLOWED_HOSTS set to: $DOMAIN (+ www.$DOMAIN + $EXTERNAL_IP)"
-else
-    echo "✓ DJANGO_ALLOWED_HOSTS set to: $EXTERNAL_IP"
-    echo ""
-    echo "ℹ To include a domain, run:"
-    echo "  ./scripts/generate-secrets.sh yourdomain.com"
-fi
+echo "✓ DJANGO_ALLOWED_HOSTS set to: $DOMAIN (+ www.$DOMAIN + $EXTERNAL_IP)"
 echo ""
 echo "Next step:"
 echo "  ./scripts/03-deploy-app.sh"
