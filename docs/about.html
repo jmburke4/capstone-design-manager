@@ -58,6 +58,11 @@
                 }
             }
 
+            function loadVideo(url) {
+                const container = document.getElementById('content');
+                container.innerHTML = `<iframe src="${url}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
+            }
+
             document.querySelectorAll('.sidenav a[data-md], .sidenav a[data-video]').forEach((link) => {
                 link.addEventListener('click', (event) => {
                     event.preventDefault();
@@ -70,8 +75,7 @@
 
                     const video = link.getAttribute('data-video');
                     if (video) {
-                        const container = document.getElementById('content');
-                        container.innerHTML = `<iframe src="${video}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
+                        loadVideo(video);
                     }
                 });
             });
@@ -84,7 +88,11 @@
                 }
             })();
 
-            loadSection(savedSection || 'https://www.youtube.com/embed/FEcXGf6hiFY?si=7UvLy_mTUnzpvnUY');
+            if (savedSection) {
+                loadSection(savedSection);
+            } else {
+                loadVideo('https://www.youtube.com/embed/FEcXGf6hiFY?si=7UvLy_mTUnzpvnUY');
+            }
         };
     </script>
 </head>
