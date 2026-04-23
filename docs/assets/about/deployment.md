@@ -118,7 +118,7 @@ Using a text editor of your choice, open each file and update the values as desc
 | `DEBUG` | Set to `1` for local development. Change to `0` in production. |
 | `SECRET_KEY` | Set to any secret key of your choice. |
 | `DJANGO_ALLOWED_HOSTS` | **Leave as-is.** For local deployment: `localhost 127.0.0.1 [::1] backend` |
-| `APP_BASE_URL` | Set to `http://localhost:5173` for local deployment of the Cloud-V2 branch. |
+| `APP_BASE_URL` | Set to `http://localhost:5173` for local deployment of the Cloud-V2 branch. In cloud deployment, change this to your base domain. |
 | `AUTH0_DOMAIN` | Found in your Auth0 dashboard under Application → Settings → Basic Information. |
 | `AUTH0_CLIENT_ID` | Found in your Auth0 dashboard under Application → Settings → Basic Information. |
 | `AUTH0_AUDIENCE` | Set to `https://backend-api-capstone/`. Configured during Auth0 setup. |
