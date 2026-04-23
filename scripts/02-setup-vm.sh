@@ -207,6 +207,7 @@ else
     echo " ✓ Node.js installed: $(node --version), npm: $(npm --version)"
 fi
 
+# TODO: investigate if this is worth the potential environment messup that updates could cause. (Fallout from updates may mess with app deployment)
 # Automatic security updates
 echo ""
 echo "10. Enabling automatic security updates..."
@@ -254,6 +255,6 @@ echo " ✓ VM Setup Complete (Patched + IAP SSH)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "Next steps:"
-echo " 1. Generate secrets: ./scripts/generate-secrets.sh ua-capstone-projects.com"
+echo " 1. Generate secrets: ./scripts/generate-secrets.sh"
 echo " 2. Deploy application: ./scripts/03-deploy-app.sh"
 echo ""
