@@ -1,551 +1,481 @@
-
-**NOTE** Please read all notes.
+# Capstone Design Manager — Deployment Documentation
 
 ---
 
-# Required Technologies 
+# Summary of Contents
 
-Basic familiarity with this tech stack is a big bonus and will help deployment go very smoothly.
+This document covers everything needed to deploy the Capstone Design Manager application, both locally and to Google Cloud. It is recommended that you read through each section in order, as later sections build on earlier ones.
 
-### For local developement and deployment:
+| Section | Description |
+|---|---|
+| [Required Technologies](#required-technologies) | Full list of technologies used, broken down by deployment context |
+| [Local Deployment](#local-deployment) | Step-by-step guide for getting the app running on your local machine |
+| [Setting Up Auth0](#setting-up-auth0) | Auth0 tenant creation, trigger configuration, and API setup |
+| [Cloud Deployment](#cloud-deployment) | GCP project setup, VM provisioning, domain registration, SSL, and deployment scripts |
+| [Common Issues](#common-issues) | Frequently encountered problems and their solutions |
+| [Helpful Commands](#helpful-commands) | Quick reference for Git, Docker, and gcloud CLI commands |
 
-1. git / github account
-   - You will have to be able to clone the repository
-2. Docker
-   - For local developement, Docker will need to be installed.
-   - The docker daemon must be running to launch the app locally
-3. Postgress instance.
+---
 
-### For cloud hosting:
+# Required Technologies
 
-1. Google cloud account / project setup
+Basic familiarity with this tech stack is a significant advantage and will help deployment go smoothly.
 
-2. Domain registration through Google
+### All Technologies Used
 
-3. Gcloud CLI
-   - This is a must for running the deployment scripts
+1. Git
+2. GitHub
+3. Docker
+4. Docker Compose
+5. Django (within Docker containers)
+6. Postgres / psql (within Docker containers)
+7. Vue.js (frontend)
+8. Auth0
+9. Google Cloud (Compute Engine & Domains)
+10. Google Cloud CLI
+11. Let's Encrypt (deployment scripts)
+12. Certbot (deployment scripts)
+13. Nginx (Docker container for cloud deployment only)
+14. NPM (for serving static files to Nginx in the production environment)
+15. Mailhog (optional configuration)
+16. Gmail SMTP (optional configuration)
 
-### Necessary for both local and cloud solutions:
+### For Local Development and Deployment
 
-1. Auth0 account and application setup
+1. **Git / GitHub account** — you will need to be able to clone the repository.
+2. **Docker** — Docker must be installed and the Docker daemon must be running to launch the app locally. Docker Desktop can be helpful if you are not familiar with the CLI, though some terminal usage is required.
+
+### For Cloud Hosting
+
+1. **Google Cloud account / project setup**
+2. **Domain registration through Google**
+3. **gcloud CLI** — required for running the deployment scripts.
+
+### Necessary for Both Local and Cloud
+
+1. **Auth0 account and application setup** — see the [Setting Up Auth0](#setting-up-auth0) section.
 
 ---
 
 # Local Deployment
 
-**NOTE** It is recommended that a developer ensure a local deployemnt of the app is working before they attempt to host the app on the cloud.
+> **Note:** It is strongly recommended that you get a local deployment working before attempting to host the app on the cloud.
 
-## 0. Ensure you have the required technologies installed:
+## 0. Prerequisites
 
-1. Docker
-   Docker desktop can be helpful if you are not familiar with the CLI. However, you will need to run some commands from the terminal in order to get this project running.
-2. Git
+Ensure the following are installed on your machine before proceeding:
 
-## 1. General instructions:
+1. **Docker** — Docker Desktop is available at [https://docs.docker.com/desktop/](https://docs.docker.com/desktop/). Select your operating system and follow the installation instructions.
+2. **Git** — check if it is already installed with `git --version`. If not, install it from [https://git-scm.com/book/en/v2/Getting-Started-Installing-Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
-0. If on windows, use a unix-like terminal (such as Cygwin)
+> If you are on Windows, use a Unix-like terminal such as Cygwin for the steps below.
 
-1. Create environment files
+## 1. Clone the Repository
 
-    The ```docker-compose.yml``` scripts require valid ```.env``` and ```.env.db``` files to be in the root directory. See ```env.example``` and ```env.example.db``` for ```.env``` file examples. The default naming conventions for this repositories development environment are ```docker-compose.dev.yml```, ```.env.dev```, and ```.env.deb.db```. In these files you must configure a default username, password, and default database name.
+```bash
+git clone https://github.com/jmburke4/capstone-design-manager.git
+cd capstone-design-manager
+```
 
-    > Never commit your own development or production environment files to keep secrets protected.
+For local development, use the `main` branch. For cloud deployment, see the [Cloud Deployment](#cloud-deployment) section, which uses the `Cloud-V2` branch.
 
-2. Start the Docker engine on your machine
+## 2. Set Up Auth0
 
-3. Build containers
+Before configuring your environment files, you must have an Auth0 tenant set up. The environment files require Auth0 values that are only available after completing the Auth0 setup.
 
-    > Specify a compose script with ```docker-compose -f <compose script name>```
+Go to the [Setting Up Auth0](#setting-up-auth0) section, complete it, then return here.
 
-     ```docker-compose -f <compose script> build```
-4. Start containers
+## 3. Configure Environment Files
 
-    ```docker-compose -f <compose script> up```
-5. Run migrations
+Inside the root of the cloned repository, create your environment files by copying the provided examples:
 
-    ```docker-compose -f <compose script> exec backend python manage.py migrate --noinput```
+```bash
+cp .env.example .env.dev
+cp .env.example.db .env.dev.db
 
-    > If you have added new models or a new app, run ```docker-compose -f <compose script> exec backend python manage.py makemigrations``` before running the migrate command
+# Navigate to the frontend directory to create the frontend env file
+cd frontend
+cp .env.example.local .env.dev.local
+cd ..
+```
 
-6. Create Admin User
+> **Note:** Files beginning with `.` are hidden by default in most file explorers. Refer to your file explorer's documentation to reveal hidden files if needed.
 
-    ```docker-compose -f <compose script> exec backend python manage.py createsuperuser ```
+> **Note:** Never commit your development or production environment files. They contain secrets and are excluded from version control for this reason.
 
-    > Setting up an admin will allow you to log in to the Django admin page.
+> **Backlog:** Consolidating the environment files into a single file is a backlog item. The frontend env file in particular is redundant as it uses the same values as `.env.dev`.
 
-7. Stop containers
-
-    ```docker-compose -f <compose script> stop```
-
-
-
-## 2. Example deployment:
-
-These are exactly the steps I followed to get the local developer env working on a new mac-os. 
-
-It is recommended that you follow this guide and substitute the proper instruction translation depending on your system.
-
-1. Install homebrew (or similar package manager. This is completely a mattr of preference. There are many ways to install the tools we need.): https://brew.sh/
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
-
-   (This may take awhile)
-2. Check if git is already installed
-   ```bash
-   git --version
-   ```
-
-   My system already had git. But if you do not, you will need to install it: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
-
-3. Install docker desktop
-
-   I Used homebrew for this:
-   ```bash
-   brew install --cask docker-desktop
-
-   # After that runs you should see it installed
-   docker --version
-   ```
-
-   There are other ways to install docker. See: https://docs.docker.com/desktop/ (Scroll down on this page to install and select your system)
-
-4. Install docker compose
-
-   I Used homebrew for this:
-
-   ```bash
-   brew install docker docker-compose
-
-   # After that runs you should see it installed
-   docker-compose --version
-   ```
-
-3. Clone the repository
-
-   ```bash
-   git clone https://github.com/jmburke4/capstone-design-manager.git 
-   ```
-
-   For local development, I will use the main branch. Currently, our cloud deployment is managed on the Cloud-V2 branch. For cloud deployment, see the cloud deployment section.
-
-4. Configure env files
-
-   Navigate to teh local repository.
-
-   If you are using this as a guide for your own deployment, go to the `Setting up Auth0` section and complete that first. You will not be able to properly configure your env files without an Auth0 tenant.
-
-   Once you have finished setting up Auth0 for local deployment, you can resume at this point.
-
-   Inside your local capstone-design-manager repo, make copie of the following files and name them accordingly
-   **THE APP EXPECTS THE FOLLOWING NAMING CONVENTION. IF YOU HAVE ISSUES YOU MAY HAVE TO CHANGE YOUR DOCKER COMPOSE / DOCKER FILES**
-      ```bash
-      
-
-      cp .env.example .env.dev
-      cp .env.example.db .env.db
-
-      # Navigate to the frontend directory to create the frontend env file
-      cd frontend
-      cp .env.example.local .env.dev.local
-
-      ```
-   **NOTE** It is on the backlog to condense the env files into one file. Currently, the frontend env file is especially stupid as it uses the exact same values as the other .env.dev file.
-
-   Then, using a text editor of your choice, change all of the values in the dev folders to the ones you will use in your project.
-
-   **NOTE** since these files start with a '.' they will likely be hidden by default in your file explorer. Refer to your file explorer's guide on how to unhide the files if you need to see the files in order to open and edit them.
-
-   As you can tell, a lot of the environment values are somewhat arbitrary, as they are used by the docker containers. It is recomended that you use strong passwords for deployment. However take note of the following:
-    - Your sql user, database, password values in .env.dev must match the corresponding postgres user, passoword and db values in .env.dev.db
-    - Your Auth0 values must match the corresponding values found in your Auth0 dashboard. It is perfectly good for multiple developers to use the same Auth0 values, as they should be sharing the tenant. 
-    - The following value guid is not syntactically accurate. The format is: ENV_VALUE_NAME=ENV_VALUE_VALUE
-
-   ### Value guide for .env.dev (Not syntactically correct)
-
-   `DEBUG` : Leave this as '1' for local developement. (Change to 0 in production)
-   `SECRET_KEY` : substitute for whatever secret key you wish to use
-   `DJANGO_ALLOWED_HOSTS` : **LEAVE THIS AS IS** For local deployment, this line should be: 'DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1] backend'
-   `APP_BASE_URL` : This is for local deployment of the Cloud-V2 branch. Set it to `http://localhost:5173`
-   `AUTH0_DOMAIN` : Get this value from your Auth0 dashboard. See `3.1 Basic setup`
-   `AUTH0_CLIENT_ID` : Get this value from your Auth0 dashboard. See `3.1 Basic setup`
-   `AUTH0_AUDIENCE` : Get this value from your Auth0 dashboard. See `3.1 Basic setup`
-   `SQL_ENGINE` : **LEAVE THIS AS IS**
-   `SQL_DATABASE` : Replace with your desired db name (**NOTE** must match correlating value in .env.dev.db)
-   `SQL_USER` : Replace with your desired user name (**NOTE** must match correlating value in .env.dev.db)
-   `SQL_PASSWORD` : Replace with desired password (**NOTE** must match correlating value in .env.dev.db)
-   `SQL_HOST` : **LEAVE THIS AS IS** : 'db'
-   `SQL_PORT` : Replace with desired port no. I used 5432.
-   `DATABASE` : **LEAVE THIS AS IS**
-   `MINIO_ROOT_USER` : Replace with desired username
-   `MINIO_ROOT_PASSWORD` : Replace with desired password
-   `AWS_STORAGE_BUCKET_NAME` : Replace with desired bucket name
-
-   For the rest of the email values, I simply deleted them. If you have mailhog or gmail smtp setup with credentials, you can fill those feilds in and use them.
-
-   ### Value guide for .env.dev.db
-   `POSTGRES_USER`: Replace with your desired user name (**NOTE** must match correlating value in .env.dev.db)
-   `POSTGRES_PASSWORD` : Replace with desired password (**NOTE** must match correlating value in .env.dev.db)
-   `POSTGRES_DB` :Replace with your desired db name (**NOTE** must match correlating value in .env.dev)
-
-   ### Value guide for frontend/.env.dev.local (See 3.1 Basic setup if you don't know where to acquire these values)
-   `VITE_AUTH0_DOMAIN` : You will use the same value as in .env.dev
-   `VITE_AUTH0_CLIENT_ID` : You will use the same value as in .env.dev
-   `VITE_AUTH0_AUDIENCE` : You will use the same value as in .env.dev
-
-5. Build and launch docker containers. 
-
-   **NOTE** check if docker compose is installed. If you try the second version, make sure it says 'Docker compose` in the output. If it just says Docker, you need to install docker compose: https://docs.docker.com/compose/install/
-      ```bash
-      docker-compose --version
-      docker compose --version
-      ```
-
-   **NOTE** ensure the docker daemon is running: 
-      ```bash
-         open -a Docker
-      ```
-
-      For my mac, I had to walk through the installation process. This required giving docker proper permissions on my system.
-
-      You can also open the docker desktop app/dashboard and this will start the daemon.
-
-      **NOTE** My docker was configured based on my account that I had already previously created long ago. If issues arise using docker, refer to the documentation provided by docker, or simply paste this entire script into an LLM, and tell it what step you are having issues with and what error message you are receiving and it will hopefully give you good debugging advice.
-
-   After checking to ensure compose was installed, and the daemon was running, I ran the following:
-   ```bash
-   docker-compose -f docker-compose.dev.yml up --build -d
-   ```
-
-   Running this script for the first time, I had to allow a lot of permissions. If at all prompted, just continue hitting `Allow`
-
-   **NOTE** The first spin up for me took around 1 minute.
-
-   **NOTE** If you get a mailhog error message, just ignore it. Unless you are tyring to use mailhog, it is not important.
-
-   After the script has finished, you should be able to see the docker containers running in docker desktop (or run 'docker ps' in CLI). If not, there should be error messages in docker desktop that can guide you toward debugging the situation. The most likely cause is improper env setup.
-
-6. Verify app
-
-   After successuflly spinningn up your docker containers with the compose script, you should be able to navigate to the frontend deployed at localhost:5173. You can either open a browser and paste in `http://localhost:5173` or navigate to the landing page through docker desktop.
-
-   At this point I was able to navigate to the app homepage and signup as a sponsor using the auth0 tenant.
-
-7. Create a django super user
-
-   This is necessary for importing data to your system, as well as having admin access to the app.
-
-   Run the following command in the root directory of the project
-   ```bash
-   docker-compose -f docker-compose.dev.yml exec backend python manage.py createsuperuser
-   ```
-
-   Answer the prompts accordingly. I always leave email blank, but this is likely a poor decision if you are deploying.
-
-   **NOTE** you will need to remember these credentials in order to log into the django admin panel. It is best that you make a note of them somwhere. Password manager is recommended for deployment.
-
-8. Verify django admin panel is accessible and working
-
-   Navigate to the backend through a browser using the following: `http://localhost:8000/admin/login/?next=/admin/` (The django backend should be deployed at prot 8000)
-
-   Login using the same credentials you used when creating a super user.
-
-   You should see the admin panel.
-
-   **NOTE** For cloud deployment, we have greater security around admin access. To access the admin panel in a cloud deployed setup, you will need to create a spnosor-admin account 
-
-9. Verify that student account creation is working
-
-   For developers wishing to access the frontend as a student user, you will need to add an entry in the student table with their crimson email. After this, a user will be able to create a student account following these general actions: landing page->signup->I am a student->Email-password option with their crimson account->verify email -> login
-
-   **NOTE** Student account creation and the rest of the user and admin workflows are covered in the rest of our documentation.
-
-   The rest of the steps are for verifying the Cloud-V2 branch can be deployed locally for local development.
-
-10. Spin down docker containers
-
-   I used the following command:
-      ```bash
-      docker-compose -f docker-compose.dev.yml down
-      ```
-   
-   You can also use docker desktop.
-
-11. Checkout the `Cloud-V2` branch
-
-   I used hte following command:
-   ```bash
-   git checkout Cloud-V2
-
-   # To verify you are on the cloud branch:
-   git branch
-   ```
-
-12. Spin up containers
-
-   You should not have to reconfigure environment files. If you run into issues, you can try running with the --no-cache flag. This will give 
-
-   ```bash
-   docker-compose -f docker-compose.dev.yml up --build -d
-   ```
-
-13. Verify admin panel functionality
-
-   Admin access works differently on the cloud branch. We need to create an admin sponsor account. This is covered in more depth in the documentaiton video, starting at around the 10:25 minute mark: https://www.youtube.com/watch?v=FEcXGf6hiFY&feature=youtu.be
-
-   For this, I created a sponsor account using the google.
-
-   I then navigated to the Auth0 dashboard to User Management->Users
-
-   I then selected the three dots to the right of the sponsor accoutn I created using google sso, and selected more Actions->Assing Roles->admin
-
-   Hit `Assign`
-
-   I then refreshed my sponsor's homepage, and the admin panel button appeared on the sidepanel.
-
-   Clicking this, I was directed to the Django admin panel login page, where login was successful.
-
-   **NOTE** With local deployment, the admin login guard might not work as expected. This is because of browsing cache and is fixed in the cloud deployment version of the app.
-
-14. Spin down containers
+Using a text editor of your choice, open each file and update the values as described in the guides below.
 
 ---
 
-# Setting up Auth0
+### `.env.dev` value guide
 
-- For the following guide, I will be providing all values that I used when creating my Auth0 tenant. Some values it would be unwise to change. Others can likely be changed with little to no consequences (such as 'application name'). Simply use your best disgression.
-- Additionally, I'd advise reading everything carefully and not skimming over these instructions.
+> The format is `KEY=VALUE`. The guide below is for reference only and is not syntactically accurate.
 
-## 1. Create an account
-
-- For long term account, I would recommend using email regisration instead of SSO. I have found the auth0 SSO login options sometimes a pain to navigate to. Additionally, if you sign up with an email, you will always know what email is associated with that Auth0 account.
-- Navigate to: https://auth0.com/signup?place=header&type=button&text=sign%20up
-- Create an account
-   - Personal account type
-   - Do not check advanced settings (This likely does not matter)
-
-## 2. Create a new application
-
-- Directly after signing up, you will be prompted with creating a new application.
-- Fill in the name value: `capstone-design-manager`
-   - Select `Vue` for the technology (Unless you know what you are doing, select this option.).
-- Select `Single-paged application` for the application type.
-- Hit `Create Application`
-
-
-## 3. First integration phase (local deployment)
-
-
-
-### 3.1 Basic setup 
-- Many options will appear after click `Create Application` However, most of the Auth0 setup has already been taken care of.
-- First, we will test with configuring our Auth0 tenant for local deployment / development
-- In the Vue quickstart, the `Application Origin` field should be: `http://localhost:5173`
-   - Hit `Continue`
-- The `Callback` , `Logout` URLs, and `Web Origin` values should all be/contiain `http://localhost:5173`
-- Hit `Update Required Settings`
-- DO NOT TRY TO INTEGRATE WITH AI
-- Navigate from the `Quickstart` tab to the `Settings` Tab (to its direct right)
-- You must take note of two fields from the Basic information section: `Domain` and `Client ID`. You will need to update your environment scripts with these values in order for Auth0 to work. The Auth0 section of your .env.dev file shoudl look something like this:
-   ```bash
-   AUTH0_DOMAIN=dev-qjyd077ykn3qqq7v.us.auth0.com   # This value is found in Auth0 dashboard, in your applicaiotn, in the settings tab under basic information, it is the `domain` field
-   AUTH0_CLIENT_ID=WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3 # This value is found in Auth0 dashboard, in your applicaiotn, in the settings tab under basic information, it is the `Client ID` field
-   AUTH0_AUDIENCE=https://backend-api-capstone/ # We have not set this up yet at this point in the integration. We will get to it soon
-   ```
-   Do not update your env files yet. We will finish configuring Auth0 first.
-- 
-
-### 3.2 Create the triggers
-- For this step, you will need access to the Auth0 scripts stored on the repository in `capstone-design-manager/Auth0-Scripts/`
-   - It is therefore recommended that you either navigate to the github repository at: https://github.com/jmburke4/capstone-design-manager
-   - Or clone the repo and reference it on your local machine
-- On your Auth0 dashboard, using the veritcal navigaiton pane on the left, select Actions->Triggers
-
-For the pre-user-registration trigger:
-- Under `Triggers` Under `Sign Up & Login` Select `pre-user-registration`
-- In the middle-topish right, select the `Add action` button (Should be a + symbol)
-   - Selet `Create Custom Action`
-   - Name the action: `ValidateRole&Domain`
-   - Leave the other feilds as their defaults (Trigger: Pre User Registration & Runtime: Node 22)
-   - select `Create`
-- Delete the template code
-- Copy the code in `post-login.txt` (capstone-design-manager/Auth0-Scripts/post-login.txt)
-- Paste the code into the workspace
-- In the topish-right, select `Deploy` (this will also save your changes)
-- Navigate `Back To Triggers`
-   - You should see the action we just created on the right
-- Drag the newly made `ValidateRole&Domain` action between `Start` and `Complete` To set the trigger
-- Hit `Apply`
-   - The action should now be apart of your sign-up/login flow
-
-For the post-login trigger:
-- Under `Triggers` Under `Sign Up & Login` Select `post-login`
-- In the middle-topish right, select the `Add action` button (Should be a + symbol)
-   - Selet `Create Custom Action`
-   - Name the action: `AssignRole&EnforceAccess`
-   - Leave the other feilds as their defaults (Trigger: Login / Post Login & Runtime: Node 22)
-   - select `Create`
-- Delete the template code
-- Copy the code in `post-login.txt` (capstone-design-manager/Auth0-Scripts/post-login.txt)
-- Paste the code into the trigger workspace
-- In the topish-right, select `Deploy` (this will also save your changes)
-- Navigate `Back To Triggers`
-   - You should see the action we just created on the right
-- Drag the newly made `AssignRole&EnforceAccess` action between `Start` and `Complete` To set the trigger
-- Hit `Apply`
-   - The action should now be apart of your sign-up/login flow
-
-### 3.3 Create the Atuh0 backend-api app
-
-First, you must create the backend API
-
-- On your Auth0 dashboard, using the veritcal navigaiton pane on the left, select Applications->APIs
-- Hit `+ Create API`
-   - Fill out the `name` field as: `backend-api`
-      # NOTE: This may not be the best naming convention. But if we change it we need to update documentation
-   -  Fill in the `Identifier`field as: `https://backend-api-capstone/`
-      **DON'T CHANGE THIS VALUE UNLESS YOU KNOW WHAT YOU'RE DOING!**
-      # NOTE: this may not be the best naming convention. But if we change it we need to update documentation and the env templates + deployment scripts
-   - Leave the rest of the values as default
-   - Hit `Create`
-- Next, while still in your backend-api Navigate to `Application Access`
-   - You will see a grid of sorts with `backend-api (Test Application)`, `capstone-design-manager` and `Default App` as row entries
-   - Currently, the `capstone-design-manager` row has `UNATHORIZED` for both `User Access` and `Client Access.` We must authorize these
-   - In the `capstone-design-manager` row, hit `Edit`
-      - Under `User Access` change `Authorization` to `Authorized`
-         - Hit `Save`
-      - Navigate to `Client Access`
-      - Change `Authorization` to `Authorized`
-         - Hit `Save`
-- This finishes the auth0 backend API creation
-
-Next, you must create the backend application
-
-- On your Auth0 dashboard, using the veritcal navigaiton pane on the left, select Applications->Applications
-- Select `+ Create Application`
-   - Name the application: `backend-api`
-      # NOTE: there may be a better naming convention than this. 
-   - Under `Choose an application type` Select `Machine to Machine Application`
-   - Hit `Create`
-- When prompted with selecting an API, select the `backend-api` We just created (with audience `https://backend-api-capstone/`)
-   - Select `Authorize`
-- This completes the backend-api app setup
-
-### 3.4 Create the admin role
-
-This step is not strictly necessary for local deployemnt. **NOTE** It is necessary, however, for a local deployment of the Cloud-V2 branch.
-
-- On your Auth0 dashboard, using the veritcal navigaiton pane on the left, select User Management->Roles
-- Hit `+ Create Role`
-   - Name the role `admin` **DO NOT CHANGE THIS VALUE** The app expects the admin role to be named 'admin'. This is necessary for admin auth on the cloud branch
-   - Description: This does not matter. I put 'Gives user access to Django admin acces on cloud branch'
-   - Hit `Save`
-
-### This concludes the Auth0 setup for local deployment
-
-You may now return to the local / cloud deployment setup. You will need to update your environment variables as specified by the local/cloud deployment instructions.
-
-
-## 4 Integrating cloud deployment with your Auth0 tenant
-
-There is not much in the way of required steps for this part.
-
-- On the Auth0 dashboard, navigate to Application->applicaitons
-- Select your application (`capstone-design-manager`)
-   - Add your domain (`https://ua-capstone-projects.com`, `https://www.ua-capstone-projects.com`) to the following fields:
-      - Allowed Callback URLs
-      - Allowed Logout URLs
-      - Allowed Web Origins
-   - Each value box should looks something like this:
-      http://localhost:5173/, https://www.ua-capstone-projects.com/, https://ua-capstone-projects.com/
-- THat should do it
+| Key | Notes |
+|---|---|
+| `DEBUG` | Set to `1` for local development. Change to `0` in production. |
+| `SECRET_KEY` | Set to any secret key of your choice. |
+| `DJANGO_ALLOWED_HOSTS` | **Leave as-is.** For local deployment: `localhost 127.0.0.1 [::1] backend` |
+| `APP_BASE_URL` | Set to `http://localhost:5173` for local deployment of the Cloud-V2 branch. |
+| `AUTH0_DOMAIN` | Found in your Auth0 dashboard under Application → Settings → Basic Information. |
+| `AUTH0_CLIENT_ID` | Found in your Auth0 dashboard under Application → Settings → Basic Information. |
+| `AUTH0_AUDIENCE` | Set to `https://backend-api-capstone/`. Configured during Auth0 setup. |
+| `SQL_ENGINE` | **Leave as-is.** |
+| `SQL_DATABASE` | Your desired database name. **Must match `POSTGRES_DB` in `.env.dev.db`.** |
+| `SQL_USER` | Your desired database username. **Must match `POSTGRES_USER` in `.env.dev.db`.** |
+| `SQL_PASSWORD` | Your desired database password. **Must match `POSTGRES_PASSWORD` in `.env.dev.db`.** |
+| `SQL_HOST` | **Leave as-is:** `db` |
+| `SQL_PORT` | Your desired port. `5432` is the standard Postgres port. |
+| `DATABASE` | **Leave as-is.** |
+| `MINIO_ROOT_USER` | Your desired MinIO username. |
+| `MINIO_ROOT_PASSWORD` | Your desired MinIO password. |
+| `AWS_STORAGE_BUCKET_NAME` | Your desired bucket name. |
+| Email values | Delete these if you are not using Mailhog or Gmail SMTP. |
 
 ---
 
-# For Cloud Deployment
+### `.env.dev.db` value guide
 
-**NOTE** Please read all notes.
+| Key | Notes |
+|---|---|
+| `POSTGRES_USER` | **Must match `SQL_USER` in `.env.dev`.** |
+| `POSTGRES_PASSWORD` | **Must match `SQL_PASSWORD` in `.env.dev`.** |
+| `POSTGRES_DB` | **Must match `SQL_DATABASE` in `.env.dev`.** |
 
-**NOTE** Currently, our repo has the cloud configuration setup on a branch seperate from main: `Cloud-V2`. It is the desire of the team to consolidate these changes to the main branch, but currently this is a backlog item. For cloud deployment, it is best that everything be done on the Cloud-V2 branch.
+---
 
-**NOTE** Before attempting to deploy to the cloud, it is highly recommended that you correctly deploy the app locally so you are familiar with the general developer workflow.
+### `frontend/.env.dev.local` value guide
 
-**NOTE** It is additionally recommended that, after deploying the main branch version of our app, that you deploy the Cloud-V2 version of our app local, and verifying its local functionality before attempting to deploy to the cloud. Again, this is not strictly necessary, but will likely help you to debug / develop if you are able to deploy the cloud branch locally. Currently, local deployment of Cloud-V2 merely differs from main in how it handles admin acces to the Django admin panel.
+See [Section 3.1 — Basic Setup](#31-basic-setup) if you are unsure where to find these values.
 
-**NOTE** To bring any changes over to the cloud deployment from local developement do the following:
-   1. PR local changes into main
-   2. Ensure changes are working
-   3. Create a local backup of Cloud-V2 in case something goes horribly wrong
-   4. On your local version of Cloud-V2 that is up to date, rebase onto main.
-   5. Test the rebased version of Cloud-V2 locally. (NOTE: admin access will be different on a local version of Cloud-V2. To access it, you will have to create a sponsor account)
+| Key | Notes |
+|---|---|
+| `VITE_AUTH0_DOMAIN` | Same value as `AUTH0_DOMAIN` in `.env.dev`. |
+| `VITE_AUTH0_CLIENT_ID` | Same value as `AUTH0_CLIENT_ID` in `.env.dev`. |
+| `VITE_AUTH0_AUDIENCE` | Same value as `AUTH0_AUDIENCE` in `.env.dev`. |
 
-**COMPLETE THESE BEFORE RUNNING ANY SCRIPTS**
+---
 
-## 0. Review config.sh
+## 4. Start the Docker Daemon
 
-If you are planning to change any of the values specified in this prerequisites guide, you will need to change the correlating value in the config.sh script, as the other deployment scripts depend on it to run. This script is located at: scripts/config.sh .
+Ensure Docker is running before proceeding:
+
+```bash
+# macOS
+open -a Docker
+```
+
+You can also open Docker Desktop directly. On first launch, you may need to grant Docker system permissions and walk through the installation process.
+
+Verify Docker Compose is available:
+
+```bash
+docker-compose --version
+# or
+docker compose --version
+```
+
+If neither command returns a Docker Compose version, install it from [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/).
+
+## 5. Build and Launch Containers
+
+From the root of the project, run:
+
+```bash
+docker-compose -f docker-compose.dev.yml up --build -d
+```
+
+The first build typically takes around one minute. If prompted for permissions, select **Allow**.
+
+> **Note:** If you see a Mailhog error, it can be safely ignored unless you are actively using Mailhog.
+
+After the script finishes, verify that containers are running using `docker ps` or Docker Desktop. If containers are not running, review the error output in Docker Desktop. The most common cause is an incorrectly configured environment file.
+
+## 6. Run Migrations
+
+```bash
+docker-compose -f docker-compose.dev.yml exec backend python manage.py migrate --noinput
+```
+
+> If you have added new models or a new app, run `makemigrations` first:
+>
+> ```bash
+> docker-compose -f docker-compose.dev.yml exec backend python manage.py makemigrations
+> ```
+
+## 7. Create a Django Superuser
+
+A superuser is required for data import and admin access.
+
+```bash
+docker-compose -f docker-compose.dev.yml exec backend python manage.py createsuperuser
+```
+
+Answer the prompts. Take note of the credentials — a password manager is recommended.
+
+## 8. Verify the App
+
+Navigate to [http://localhost:5173](http://localhost:5173) in a browser. You should see the app homepage and be able to sign up as a sponsor using the Auth0 tenant.
+
+## 9. Verify Django Admin Panel Access
+
+Navigate to [http://localhost:8000/admin/login/?next=/admin/](http://localhost:8000/admin/login/?next=/admin/) and log in with the superuser credentials you created.
+
+> **Note:** For cloud deployment, admin panel access is handled differently and requires additional Auth0 configuration. See [Step 13](#13-verify-admin-panel-functionality-cloud-v2) for details.
+
+## 10. Verify Student Account Creation
+
+To access the frontend as a student user, add an entry in the student table with their `crimson.ua.edu` email. After that, a student can create an account via: landing page → Sign Up → I am a student → Email/password with their crimson email → verify email → log in.
+
+## 11. Spin Down Containers
+
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+---
+
+## 12. Verify Cloud-V2 Branch Locally (Recommended before cloud deployment)
+
+Checkout the `Cloud-V2` branch and spin up containers to verify local functionality of the cloud branch before attempting a cloud deployment.
+
+```bash
+git checkout Cloud-V2
+git branch  # Verify you are on Cloud-V2
+
+docker-compose -f docker-compose.dev.yml up --build -d
+```
+
+You should not need to reconfigure your environment files. If you run into issues, try building with `--no-cache`.
+
+## 13. Verify Admin Panel Functionality (Cloud-V2)
+
+Admin access works differently on the Cloud-V2 branch. Rather than using a Django superuser directly, you must create an admin sponsor account through Auth0.
+
+A walkthrough is available in the documentation video starting at approximately the 10:25 mark: [https://www.youtube.com/watch?v=FEcXGf6hiFY&feature=youtu.be](https://www.youtube.com/watch?v=FEcXGf6hiFY&feature=youtu.be)
+
+1. Create a sponsor account using Google SSO.
+2. In the Auth0 dashboard, navigate to **User Management → Users**.
+3. Select the three dots to the right of the sponsor account and choose **More Actions → Assign Roles → admin**.
+4. Click **Assign**.
+5. Refresh the sponsor's homepage — the admin panel button should now appear in the sidebar.
+6. Click the admin panel button and verify that login to the Django admin panel is successful.
+
+> **Note:** On a local deployment of Cloud-V2, the admin login guard may not behave as expected due to browser caching. This is resolved in the cloud-deployed version.
+
+## 14. Spin Down Containers
+
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+---
+
+# Setting Up Auth0
+
+> Read all steps carefully before beginning. Some values must not be changed; others are flexible. Use your best judgment where noted.
+
+## 1. Create an Account
+
+- Navigate to: [https://auth0.com/signup](https://auth0.com/signup?place=header&type=button&text=sign%20up)
+- It is recommended to register with an email address rather than SSO, as it is easier to locate your account later.
+- Select **Personal** for account type.
+- Leave advanced settings unchecked.
+
+## 2. Create a New Application
+
+After signing up, you will be prompted to create a new application.
+
+- **Name:** `capstone-design-manager`
+- **Technology:** Vue
+- **Application type:** Single Page Application
+- Click **Create Application**.
+
+## 3. First Integration Phase (Local Deployment)
+
+### 3.1 Basic Setup
+
+- In the Vue Quickstart, set the **Application Origin** field to `http://localhost:5173` and click **Continue**.
+- The **Callback URLs**, **Logout URLs**, and **Web Origins** fields should all contain `http://localhost:5173`.
+- Click **Update Required Settings**.
+- Do not integrate with AI when prompted.
+- Navigate to the **Settings** tab (immediately to the right of Quickstart).
+- Take note of the **Domain** and **Client ID** fields under Basic Information. Your Auth0 environment values will look something like this:
+
+```bash
+AUTH0_DOMAIN=dev-qjyd077ykn3qqq7v.us.auth0.com
+AUTH0_CLIENT_ID=WMPr5zJLNFI0j9A8iUymDfAsP2mUXsn3
+AUTH0_AUDIENCE=https://backend-api-capstone/   # Configured in the next steps
+```
+
+Do not update your environment files yet — finish configuring Auth0 first.
+
+---
+
+### 3.2 Create the Triggers
+
+The Auth0 scripts are stored in the repository at `capstone-design-manager/Auth0-Scripts/`. You can reference them from a local clone or directly from [GitHub](https://github.com/jmburke4/capstone-design-manager).
+
+On your Auth0 dashboard, navigate to **Actions → Triggers**.
+
+**Pre-user-registration trigger:**
+
+1. Under **Sign Up & Login**, select **pre-user-registration**.
+2. Click the **Add Action** button (+ icon) in the upper right.
+3. Select **Create Custom Action**.
+   - **Name:** `ValidateRole&Domain`
+   - **Trigger:** Pre User Registration
+   - **Runtime:** Node 22
+   - Click **Create**.
+4. Delete the template code and paste in the contents of `Auth0-Scripts/pre-user-registration.txt`.
+5. Click **Deploy**.
+6. Click **Back to Triggers**.
+7. Drag the `ValidateRole&Domain` action between **Start** and **Complete**.
+8. Click **Apply**.
+
+**Post-login trigger:**
+
+1. Under **Sign Up & Login**, select **post-login**.
+2. Click the **Add Action** button (+ icon).
+3. Select **Create Custom Action**.
+   - **Name:** `AssignRole&EnforceAccess`
+   - **Trigger:** Login / Post Login
+   - **Runtime:** Node 22
+   - Click **Create**.
+4. Delete the template code and paste in the contents of `Auth0-Scripts/post-login.txt`.
+5. Click **Deploy**.
+6. Click **Back to Triggers**.
+7. Drag the `AssignRole&EnforceAccess` action between **Start** and **Complete**.
+8. Click **Apply**.
+
+---
+
+### 3.3 Create the Auth0 Backend API
+
+**Step 1 — Create the API:**
+
+1. Navigate to **Applications → APIs** in the left sidebar.
+2. Click **+ Create API**.
+   - **Name:** `backend-api`
+   - **Identifier:** `https://backend-api-capstone/` — **do not change this value.**
+   - Leave all other fields as default.
+   - Click **Create**.
+3. Navigate to **Application Access**.
+   - In the `capstone-design-manager` row, click **Edit**.
+   - Under **User Access**, set **Authorization** to **Authorized** and click **Save**.
+   - Under **Client Access**, set **Authorization** to **Authorized** and click **Save**.
+
+**Step 2 — Create the backend application:**
+
+1. Navigate to **Applications → Applications** in the left sidebar.
+2. Click **+ Create Application**.
+   - **Name:** `backend-api`
+   - **Type:** Machine to Machine Application
+   - Click **Create**.
+3. When prompted to select an API, select the `backend-api` with audience `https://backend-api-capstone/`.
+4. Click **Authorize**.
+
+---
+
+### 3.4 Create the Admin Role
+
+> This step is not strictly required for a basic local deployment, but is required for local deployment of the Cloud-V2 branch.
+
+1. Navigate to **User Management → Roles** in the left sidebar.
+2. Click **+ Create Role**.
+   - **Name:** `admin` — **do not change this value.** The application expects the role to be named exactly `admin`.
+   - **Description:** e.g., "Grants access to the Django admin panel on the cloud branch."
+   - Click **Save**.
+
+### Auth0 Setup for Local Deployment is Now Complete
+
+Return to [Step 3 — Configure Environment Files](#3-configure-environment-files) and update your `.env` files with the Auth0 values you collected.
+
+---
+
+## 4. Integrating Cloud Deployment with Your Auth0 Tenant
+
+1. In the Auth0 dashboard, navigate to **Applications → Applications**.
+2. Select the `capstone-design-manager` application.
+3. Add your production domain to each of the following fields (in addition to the existing `localhost` entries):
+   - **Allowed Callback URLs**
+   - **Allowed Logout URLs**
+   - **Allowed Web Origins**
+
+Each field should look something like:
+
+```
+http://localhost:5173/, https://www.ua-capstone-projects.com/, https://ua-capstone-projects.com/
+```
+
+1. Ensure the `admin` role is created and assigned to any users who need Django admin access.
+
+---
+
+# Cloud Deployment
+
+> **Note:** All notes below should be read before running any scripts.
+
+> **Note:** The cloud configuration lives on the `Cloud-V2` branch, separate from `main`. Consolidating these into `main` is a backlog item. All cloud deployment steps should be performed on `Cloud-V2`.
+
+> **Note:** It is strongly recommended to successfully deploy the app locally before attempting a cloud deployment.
+
+> **Note:** To bring local changes into the cloud deployment: (1) PR changes into `main`, (2) verify they work, (3) create a local backup of `Cloud-V2`, (4) rebase `Cloud-V2` onto `main`, (5) test the rebased version locally.
+
+> **Complete all prerequisites below before running any scripts.**
+
+## 0. Review `config.sh`
+
+All deployment scripts source `scripts/config.sh` for their variables. If you change any values from the defaults described in this guide, update `config.sh` accordingly before running any scripts.
 
 ---
 
 ## 1. GCP Project Setup
 
-### Create Project
+### Create the Project
 
-1. **Go to**: https://console.cloud.google.com/projectcreate
-
-2. **Fill in**:
-   - Project name: `Capstone Design App Prod`
-   - Project ID: `capstone-design-app-prod` (scripts/config.sh)
-   - Organization: No organization
-
-3. **Click**: "CREATE"
+1. Go to: [https://console.cloud.google.com/projectcreate](https://console.cloud.google.com/projectcreate)
+2. Fill in the following:
+   - **Project name:** `Capstone Design App Prod`
+   - **Project ID:** `capstone-design-app-prod` (referenced in `scripts/config.sh`)
+   - **Organization:** No organization
+3. Click **Create**.
 
 ### Enable Billing
 
-1. **Go to**: https://console.cloud.google.com/billing/linkedaccount?project=capstone-design-app-prod
-
-2. **Click**: "Link a billing account"
-
-3. **Select**: Your billing account (with $300 free credits)
-
-4. **Click**: "SET ACCOUNT"
-
-5. **Verify**: Billing shows as "Active" with green checkmark
+1. Go to: [https://console.cloud.google.com/billing/linkedaccount?project=capstone-design-app-prod](https://console.cloud.google.com/billing/linkedaccount?project=capstone-design-app-prod)
+2. Click **Link a billing account**.
+3. Select your billing account (eligible for $300 in free credits).
+4. Click **Set Account**.
+5. Verify that billing shows as **Active** with a green checkmark.
 
 ---
 
-## 2. Clone the repo
-
-**CRITICAL**: Scripts will clone from GitHub's Cloud-V2 branch.
-
-### Run the command
+## 2. Clone the Repository
 
 ```bash
-git clone https://github.com/jmburke4/capstone-design-manager 
-```
-
-### Checkout the cloud branch
-
-```bash
+git clone https://github.com/jmburke4/capstone-design-manager
+cd capstone-design-manager
 git checkout Cloud-V2
-# You should now be on the cloud branch
+git branch  # Verify you are on Cloud-V2
 ```
 
 ---
 
-## 3. Gcloud CLI
+## 3. Install and Configure the gcloud CLI
 
-1. **Install Gcloud CLI:** https://docs.cloud.google.com/sdk/docs/install-sdk
-
-2. **Ensure your account is configured and authenticated with the Gcloud CLI on your device**
+1. Install the gcloud CLI: [https://cloud.google.com/sdk/docs/install-sdk](https://cloud.google.com/sdk/docs/install-sdk)
+2. Ensure your account is authenticated and configured for the gcloud CLI on your device.
 
 ---
 
 ## 4. SSH Key Setup (Optional)
 
-The script requires an SSH connection to your Gcloud Compute VM. If you want to avoid typing in a password multiple times:
+The deployment scripts SSH into your GCP Compute VM. To avoid being prompted for a passphrase repeatedly, use one of the following options.
 
-### Option A: Remove Passphrase
+### Option A — Remove the Passphrase
 
 ```bash
 # Remove existing SSH keys
@@ -553,73 +483,202 @@ rm ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
 
 # Clear SSH config
 gcloud compute config-ssh --remove
-
-# Next time you SSH, gcloud will regenerate keys
-# When prompted for passphrase, just press ENTER (no passphrase)
 ```
 
-**Next time you run `gcloud compute ssh`**:
-```
-Generating SSH key...
-Enter passphrase (empty for no passphrase): [PRESS ENTER]
-Enter same passphrase again: [PRESS ENTER]
-```
+The next time you run `gcloud compute ssh`, new keys will be generated. When prompted for a passphrase, press **Enter** to leave it empty.
 
-### Option B: Use SSH Agent
-
-If you want to keep your passphrase but avoid typing it repeatedly:
+### Option B — Use the SSH Agent
 
 ```bash
-# Start SSH agent
+# Start the SSH agent
 eval $(ssh-agent)
 
-# Add your key
+# Add your key and enter your passphrase when prompted
 ssh-add ~/.ssh/google_compute_engine
-
-# Enter passphrase: [TYPE YOUR PASSPHRASE]
-# Identity added: /Users/cwk/.ssh/google_compute_engine
 ```
-
-**Then**: Run all deployment scripts in the same terminal session.
 
 ---
 
-## 5. Authenticate with GCP (If not yet done)
+## 5. Authenticate with GCP
 
 ```bash
-# Login to gcloud
+# Log in to gcloud (opens a browser)
 gcloud auth login
-# Opens browser, login with your Google account
 
-# Set default project
+# Set the default project
 gcloud config set project capstone-design-app-prod
 
 # Verify
 gcloud config get-value project
-# Should output: capstone-design-app-prod
+# Expected output: capstone-design-app-prod
 ```
 
-## 6. Acquire google domain 
+---
 
+## 6. Domain Registration & DNS Configuration
 
-## Begin deployment
+The following steps use the values from the reference deployment. Substitute your own values where appropriate.
 
-If you want to run each script individually (Helpful for debugging issues):
+### 6.1 Register the Domain
+
+1. Navigate to the [Google Cloud Domain Registration](https://console.cloud.google.com/net-services/domains/registrations/create?project=capstone-design-app-prod) page.
+2. Search for your desired domain (e.g. `ua-capstone-projects.com`) and select it from the results.
+3. Fill in contact info and address, then click **Activate**.
+
+### 6.2 Enable Cloud DNS
+
+1. Enable the Cloud DNS API via the [Cloud DNS metrics page](https://console.cloud.google.com/apis/api/dns.googleapis.com/metrics?project=capstone-design-app-prod).
+2. When prompted, select **Use Cloud DNS**.
+3. Set visibility to **Limit info available to public**.
+
+### 6.3 Create DNS Records
+
+Once the domain is registered, create an `A` record pointing to your VM's static IP. Replace `<YOUR_STATIC_IP>` with your actual static IP before running.
 
 ```bash
-# Start deployment
-./scripts/01-create-vm.sh
-# The script will guide you with what steps to take next.
+PROJECT=capstone-design-app-prod
+ZONE_NAME=ua-capstone-projects-com
+VM_IP=<YOUR_STATIC_IP>
+
+gcloud dns record-sets transaction start \
+  --zone="$ZONE_NAME" \
+  --project="$PROJECT"
+
+gcloud dns record-sets transaction add "$VM_IP" \
+  --name="www.ua-capstone-projects.com." \
+  --ttl=300 \
+  --type=A \
+  --zone="$ZONE_NAME" \
+  --project="$PROJECT"
+
+gcloud dns record-sets transaction execute \
+  --zone="$ZONE_NAME" \
+  --project="$PROJECT"
 ```
 
+> **Note:** DNS propagation can take up to 48 hours, though it typically resolves within a few minutes on Google Cloud DNS.
 
+---
 
+## 7. Run the Deployment Scripts
 
-The script will validate prerequisites automatically and warn you if anything is missing.
+The scripts must be run in the following order:
 
+| Step | Script | Description |
+|---|---|---|
+| 1 | `config.sh` | Configure all deployment variables. Review before running anything. |
+| 2 | `01-create-vm.sh` | Validates the GCP environment, creates firewall rules, and provisions the VM. |
+| 3 | `02-setup-vm.sh` | Configures the VM: system updates, prerequisite installs, rootless Docker, port forwarding, and repo clone. Takes a few minutes. |
+| 4 | `generate-secrets.sh` | Generates production `.env` files and transfers them to the VM. |
+| 5 | `03-deploy-app.sh` | Builds the frontend, builds Docker images, starts containers, runs migrations and `collectstatic`. This is the longest-running script (~5+ minutes) and has historically been the most error-prone. After this step, create a Django superuser. |
+| 6 | `04-setup-ssl.sh` | Obtains a TLS certificate via Certbot and Let's Encrypt, and configures Nginx to serve HTTPS traffic. |
 
+## 8. PLEASE NOTE DIFFERENCES
 
-Helpful commands:
+There are a few key differences between the structure of the cloud deployment and that of the local deployment.
 
+1. In the cloud/production version, there is no frontend container
+2. In the cloud/produciton version, we use Ngnix to serve through HTTPS
+3. Becuase of Ngnix, we must run `npm run build` inside the frontend directory of the VM in order for Nginx to serve our frontend.
+4. The production version uses different Docker, docker compose and environment files (.env files vary in name and value composition only. The structure remains the same).
+5. Currently, these cloud/production version differences are only on the Cloud-V2 branch, and have yet to be consolidated into main.
 
+### Script Details
 
+**`01-create-vm.sh`** — Validates that the following are all true before proceeding: the gcloud CLI is authenticated, the project exists as defined in `config.sh`, billing is enabled, Compute Engine is enabled, and the `Cloud-V2` branch exists in the repository. It then sets the project, ensures the VM's external IP is static, creates the necessary firewall rules, and initializes the VM if it does not already exist.
+
+**`02-setup-vm.sh`** — Performs system updates, installs prerequisites, configures rootless Docker, sets up iptables and port forwarding, and clones the repo into `$HOME/capstone`. Multiple verification steps are included for debugging purposes and may be cleaned up in future versions.
+
+**`generate-secrets.sh`** — Creates the production environment files and sends them to the VM. Output is printed to the terminal for debugging purposes. Several redundant checks are included that may be cleaned up in future versions.
+
+**`03-deploy-app.sh`** — Copies the `.env` files from `generate-secrets.sh`, builds the frontend for the Nginx container, builds Docker images, starts containers, and runs migrations and `collectstatic`. Also includes several verification steps. This script is the most error-prone and the slowest to run.
+
+**`04-setup-ssl.sh`** — Runs verification steps, uses Certbot (webroot mode) to obtain a TLS certificate from Let's Encrypt, and configures Nginx to serve HTTPS traffic. This is the second most error-prone script. Inline comments in the file provide additional documentation.
+
+---
+
+# Common Issues
+
+**SSH password prompts** — Depending on your gcloud setup, you may be prompted to enter your SSH passphrase multiple times throughout the deployment scripts, as many steps remote into the VM. See [Section 4 — SSH Key Setup](#4-ssh-key-setup-optional) to reduce this friction.
+
+**Configuration issues** — Many potential issues are tangential to the deployment scripts themselves: domain configuration, gcloud setup, Auth0 settings, and environment variables are all common sources of bugs.
+
+**Debugging script failures** — If a script hangs or always crashes at a certain point, SSH directly into the VM and run the failing commands manually for more detailed error output:
+
+```bash
+gcloud compute ssh capstone-prod-vm --zone=us-central1-b --project=capstone-design-app-prod --tunnel-through-iap
+```
+
+**SSL setup timing** — Sometimes simply waiting a few minutes after the initial VM setup resolves SSL issues. Wait before running `04-setup-ssl.sh`.
+
+**DNS caching** — If the SSL script reports that your domain resolves to the wrong IP, you may need to flush your local DNS cache:
+
+```bash
+# macOS
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+```
+
+The warning will look like:
+
+```
+⚠ WARNING: DNS for ua-capstone-projects.com resolves to 208.91.112.55 (expected 35.208.246.66).
+Continue anyway? (yes/no):
+```
+
+**Nginx infinite restart loop** — Ensure that only one `.conf` file exists in `nginx/conf.d/` at a time. At the end of the deployment process, `default.conf` and `redirect.conf` are renamed to `.bak` after `https.conf` is created. If both `https.conf` and one of the other `.conf` files coexist, Nginx will have conflicting backend references and restart indefinitely.
+
+**Nginx update issues** - If a frontend update is not apply, ensure that you've re-run `npm run build` inside the frontend directory of the VM. You may also need to run collectstatic to get Django admin panel CSS styling working properly (covered in 03-deploy-app.sh).
+
+**Backend container issues** — The vast majority of backend container issues are caused by either unapplied migrations or misconfigured `DJANGO_ALLOWED_HOSTS` / `backend/core/settings.py` values.
+
+**Auth0 issues** — Ensure the Auth0 setup was followed carefully. Most issues are caused by missing production domains in the **Allowed Callback URLs**, **Allowed Logout URLs**, and **Allowed Web Origins** fields in the application settings.
+
+**Environment file issues** — Carefully review all `.env` files and ensure they are all present and correctly configured.
+
+- **Local deployment:** `.env.dev`, `.env.dev.db`, `frontend/.env.dev.local`
+- **Production:** Same files with `dev` replaced by `production` (except the frontend file, which should be named `.env.production`)
+
+> **Backlog:** Consolidating the `.env` files is a known backlog item.
+
+**Docker issues** — Ensure the Docker daemon is running. Clearing the cache, containers, and volumes can resolve persistent issues, but note that this deletes data. This is acceptable during development but should be approached carefully in production.
+
+---
+
+# Helpful Commands
+
+### Git
+
+All standard Git commands apply during development.
+
+### Docker
+
+```bash
+# Bring containers down and remove volumes (deletes data — use with caution)
+docker compose -f <compose script> down -v
+
+# Check the status of running containers
+docker ps
+
+# View recent logs from a specific container
+docker logs <container-name> --tail 50
+```
+
+### gcloud CLI
+
+```bash
+# SSH into the production VM
+gcloud compute ssh capstone-prod-vm \
+  --zone=us-central1-b \
+  --project=capstone-design-app-prod \
+  --tunnel-through-iap
+
+# List all firewall rules
+gcloud compute firewall-rules list
+
+# Completely delete the VM and all its disks
+gcloud compute instances delete capstone-prod-vm \
+  --zone=us-central1-b \
+  --project=capstone-design-app-prod \
+  --delete-disks=all \
+  --quiet
+```
