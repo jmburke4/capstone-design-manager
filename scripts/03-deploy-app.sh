@@ -55,7 +55,7 @@ if [ -z "$EXTERNAL_IP" ]; then
 fi
 echo " ✓ VM external IP: $EXTERNAL_IP"
 
-# Patch DJANGO_ALLOWED_HOSTS — preserve domain + add IP if missing
+# DJANGO_ALLOWED_HOSTS — preserve domain + add IP if missing (this fixed a specific issue I was u)
 echo ""
 echo "Updating DJANGO_ALLOWED_HOSTS (preserves domain)..."
 if grep -q "^DJANGO_ALLOWED_HOSTS=" .env.production; then
@@ -296,5 +296,5 @@ echo " ✓ Deployment Complete"
 echo ""
 echo "🌐 Application URL: http://$EXTERNAL_IP   (and https://ua-capstone-projects.com after SSL setup)"
 echo ""
-echo "Next step: ./scripts/04-setup-ssl.sh ua-capstone-projects.com your-email@example.com"
+echo "Next step: ./scripts/04-setup-ssl.sh"
 echo ""

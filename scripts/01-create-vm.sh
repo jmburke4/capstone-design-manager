@@ -64,7 +64,7 @@ if ! gcloud services list --enabled --project=$PROJECT_ID 2>/dev/null | grep -q 
 fi
 echo " ✓ Compute Engine API enabled"
 
-# Check Cloud-V2 branch exists in remote repo
+# Check Cloud-V2 branch exists in remote repo (currently, our cloud deployment is seperated on this branch)
 echo " Checking GitHub repository..."
 if git ls-remote --heads https://github.com/jmburke4/capstone-design-manager.git Cloud-V2 | grep -q Cloud-V2; then
         echo " ✓ Cloud-V2 branch exists on GitHub"
@@ -97,6 +97,7 @@ fi
 echo ""
 echo "Creating firewall rules..."
 
+# This may be unecessary... But it is necessary for IAP
 # Allow SSH via IAP only (secure - no public port 22 exposure)
 if gcloud compute firewall-rules describe allow-ssh-iap --project=$PROJECT_ID &>/dev/null; then
         echo " ✓ IAP SSH firewall rule already exists"
