@@ -33,7 +33,7 @@ These items were not implemented from Sprint 3 and should be done for future wor
 ### Admin Features
 
 - Dashboard analytics and charts like on Google Forms
-- Actions regarding semesters and 
+- Actions regarding semesters 
 
 ### Technical
 
